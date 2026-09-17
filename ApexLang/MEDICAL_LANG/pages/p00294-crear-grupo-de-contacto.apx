@@ -1,0 +1,1036 @@
+page 294 (
+    name: Crear Grupo de Contacto
+    alias: CREAR-GRUPO-DE-CONTACTO
+    title: Crear Grupo de Contacto
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: var API_SECRET = '8e9a5fd1716b87565907233fa53607b8c1a86f5e';
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            /* Start by setting display:none to make this hidden.
+               Then we position it in relation to the viewport window
+               with position:fixed. Width, height, top and left speak
+               for themselves. Background we set to 80% white with
+               our animation centered, and no-repeating */
+            .modal {
+                display:    none;
+                position:   fixed;
+                z-index:    1000;
+                top:        0;
+                left:       0;
+                height:     100%;
+                width:      100%;
+                background: rgba( 255, 255, 255, .8 ) 
+                            url('#APP_FILES#Spinner-1s-200px (1).gif') 
+                            50% 50% 
+                            no-repeat;
+            }
+            
+            /* When the body has the loading class, we turn
+               the scrollbar off with overflow:hidden */
+            body.loading .modal {
+                overflow: hidden;   
+            }
+            
+            /* Anytime the body has the loading class, our
+               modal element will be visible */
+            body.loading .modal {
+                display: block;
+            }
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region formulario (
+        name: Formulario
+        type: staticContent
+        source {
+            htmlCode: <div class="modal"><!-- Place at bottom of page --></div>
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P294_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @formulario
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P294_NOMBRE (
+        type: textField
+        label {
+            label: <p>Nombre</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @formulario
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P294_RESPUESTA (
+        type: hidden
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    button crear (
+        buttonName: Crear
+        label: Crear
+        layout {
+            sequence: 30
+            region: @formulario
+            slot: regionBody
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P294_ID
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 50
+            region: @formulario
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P294_ID
+        }
+    )
+
+    dynamicAction borrar-grupo (
+        name: Borrar Grupo
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @delete
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                      declare
+                        l_clob      CLOB;     
+                        v_api_key   varchar2(200);
+                        v_cuenta_id number(10);
+                        v_recipiente varchar2(50);    
+                        v_tipo varchar2(20);
+                        v_mensaje varchar2(2000);
+                        url  varchar2(400);
+                        v_imagen blob;
+                    BEGIN
+                    
+                    
+                    v_api_key:='8e9a5fd1716b87565907233fa53607b8c1a86f5e';
+                    v_cuenta_id:=28;
+                    v_recipiente:=:P294_RECIPIENTE;
+                    v_tipo:=:P294_TIPO;
+                    v_mensaje:=:P294_MENSAJE;
+                    SELECT LOGO_COMPROBANTE 
+                    INTO V_IMAGEN
+                    FROM BSW_EMPRESAS
+                    WHERE ID=141;
+                    
+                     
+                    
+                           -- apex_json.initialize_clob_output();  
+                     --apex_json.open_object();  
+                     --apex_json.write('secret','8e9a5fd1716b87565907233fa53607b8c1a86f5e'); 
+                     --apex_json.write('account',28);
+                     --apex_json.write('recipient','595983429149');
+                     --apex_json.write('type','text');
+                     --apex_json.write('message','Hacer JSONS es divertido :)');
+                     --apex_json.close_all();
+                      --l_json:=apex_json.get_clob_output();
+                      --apex_json.free_output();
+                     -- dbms_output.put_line(l_json);
+                    
+                     
+                               apex_web_service.g_request_headers(1).name := 'Content-Type';
+                            apex_web_service.g_request_headers(1).value := 'image/png';
+                    
+                            apex_web_service.g_request_headers(1).name := 'media_file';
+                            apex_web_service.g_request_headers(1).value := 'filename.png';
+                       
+                       if :P294_TIPO='text' THEN 
+                    
+                       url:='https://flow.cnid.com.py/api/send/whatsapp?secret='||utl_url.escape(v_api_key)||'&account='||utl_url.escape(v_cuenta_id)||'&recipient='||utl_url.escape(v_recipiente)||'&type='||utl_url.escape(v_tipo)||'&message='||utl_url.escape(v_mensaje);
+                       elsif :P294_TIPO='media' then
+                          url:='https://flow.cnid.com.py/api/send/whatsapp?secret='||utl_url.escape(v_api_key)||'&account='||utl_url.escape(v_cuenta_id)||'&recipient='||utl_url.escape(v_recipiente)||'&type='||utl_url.escape(v_tipo)||'&message='||utl_url.escape(v_mensaje);
+                       end if;
+                      
+                     l_clob :=
+                        APEX_WEB_SERVICE.make_rest_request(
+                            p_url           => url,
+                            p_http_method   => 'POST',
+                            p_body_blob => v_imagen);
+                            
+                            
+                        
+                        :P294_RESPUESTA:=l_clob;
+                    
+                    
+                       
+                            
+                    
+                     EXCEPTION 
+                     WHEN OTHERS THEN
+                     RAISE_APPLICATION_ERROR(-20000,'Error al procesar la solicitud! ');
+                    END;
+                    ```
+                itemsToSubmit: P294_NOMBRE
+                itemsToReturn: P294_RESPUESTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                           lc_response      clob;
+                           lm_multipart     apex_web_service.t_multipart_parts;
+                           ln_secret VARCHAR2(400) := '8e9a5fd1716b87565907233fa53607b8c1a86f5e';
+                           ln_account number(10):=28;
+                           ln_recipient varchar2(50):=:P294_RECIPIENTE;
+                           ln_type varchar2(50):=:P294_TIPO;
+                           ln_message varchar(3000):=:P294_MENSAJE;
+                         --  lc_json          clob          := '{"hello":"world"}';   
+                           lv_filename      VARCHAR2(20)  := 'imagen';
+                           lv_base_url      VARCHAR2(100):='https://flow.cnid.com.py/api/send/whatsapp'; -- webservice base URL; 
+                           lv_api_key       VARCHAR2(100); -- API KEY 
+                           lb_blob          blob; -- Blob part of the multipart
+                    
+                    BEGIN
+                    SELECT LOGO_COMPROBANTE
+                    INTO lb_blob
+                    from bsw_empresas
+                    where id=121;
+                    
+                    
+                          --  apex_web_service.g_request_headers.delete();
+                            --apex_web_service.g_request_headers(1).name  := 'secret';
+                            --apex_web_service.g_request_headers(1).value := '8e9a5fd1716b87565907233fa53607b8c1a86f5e';   
+                    
+                            /* add a CLOB (JSON) to a multipart/form request body */
+                            /*IF lc_json is not null 
+                            THEN
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'json_param',
+                                    p_content_type => 'application/json',
+                                    p_body         => lc_json );
+                            END IF;*/
+                    
+                            /* add a plain text to a multipart/form request body */
+                            IF ln_secret is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'secret',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_secret ); 
+                            END IF;        
+                    
+                               IF ln_recipient is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'recipient',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_recipient ); 
+                            END IF;   
+                    
+                                 IF ln_type is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'type',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_type ); 
+                            END IF;    
+                    
+                                IF ln_message is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'message',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_message ); 
+                            END IF;          
+                              
+                    
+                             IF :P294_TIPO='media' then  
+                            /*add a BLOB to a multipart/form request body.*/        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'media_file',
+                                    p_filename     => lv_filename,
+                                    p_content_type => 'application/octet-stream',
+                                    p_body_blob    => lb_blob );
+                    
+                                    end if;
+                    
+                            lc_response  := apex_web_service.make_rest_request(
+                                                   p_url => lv_base_url,
+                                                   p_http_method => 'POST',
+                                                   p_body_blob => apex_web_service.generate_request_body(lm_multipart)); 
+                    
+                            -- generate_request_body: This function generates the multipart/form-data request body from the data in the t_multiparts array.
+                    
+                            dbms_output.put_line(lc_response);                      
+                    
+                    END;
+                    ```
+                itemsToSubmit: P294_NOMBRE
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try{
+                    
+                    
+                    //console.log($v('P294_RESPUESTA'));
+                    
+                    var json_respuesta = JSON.parse($v('P294_RESPUESTA'));
+                    
+                    
+                    $s('P294_RESPUESTA',json_respuesta.status);
+                    
+                    //console.log($v('P294_RESPUESTA'));
+                    
+                    
+                    }catch(e){
+                        apex.message.alert('Error al procesar la repuesta del servidor');
+                    }
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    function reqListener() {
+                      $("body").removeClass('loading');
+                     
+                    
+                    
+                    $s('P294_RESPUESTA',JSON.parse(this.responseText).status);
+                    $.event.trigger('Alerta');
+                     // console.log(this.responseText);
+                    }
+                    
+                    
+                    const formData = new FormData();
+                    
+                    console.log(API_SECRET);
+                    formData.append("secret", API_SECRET);
+                    formData.append('id',$v('P294_ID'));
+                    
+                    // HTML file input, chosen by user
+                    
+                     
+                       // document.getElementById("overlay__spinner").innerHTML = '<img src="#APP_FILES#Spinner-1s-200px (1).gif" />'; // Set here the image before sending request
+                       
+                    $("body").addClass('loading');
+                    
+                    
+                    const request = new XMLHttpRequest();
+                    request.addEventListener("load", reqListener);
+                    request.open("POST", "https://flow.cnid.com.py/api/delete/group");
+                    request.send(formData);
+                    ```
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction crear-grupo (
+        name: Crear Grupo
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @crear
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                      declare
+                        l_clob      CLOB;     
+                        v_api_key   varchar2(200);
+                        v_cuenta_id number(10);
+                        v_recipiente varchar2(50);    
+                        v_tipo varchar2(20);
+                        v_mensaje varchar2(2000);
+                        url  varchar2(400);
+                        v_imagen blob;
+                    BEGIN
+                    
+                    
+                    v_api_key:='8e9a5fd1716b87565907233fa53607b8c1a86f5e';
+                    v_cuenta_id:=28;
+                    v_recipiente:=:P294_RECIPIENTE;
+                    v_tipo:=:P294_TIPO;
+                    v_mensaje:=:P294_MENSAJE;
+                    SELECT LOGO_COMPROBANTE 
+                    INTO V_IMAGEN
+                    FROM BSW_EMPRESAS
+                    WHERE ID=141;
+                    
+                     
+                    
+                           -- apex_json.initialize_clob_output();  
+                     --apex_json.open_object();  
+                     --apex_json.write('secret','8e9a5fd1716b87565907233fa53607b8c1a86f5e'); 
+                     --apex_json.write('account',28);
+                     --apex_json.write('recipient','595983429149');
+                     --apex_json.write('type','text');
+                     --apex_json.write('message','Hacer JSONS es divertido :)');
+                     --apex_json.close_all();
+                      --l_json:=apex_json.get_clob_output();
+                      --apex_json.free_output();
+                     -- dbms_output.put_line(l_json);
+                    
+                     
+                               apex_web_service.g_request_headers(1).name := 'Content-Type';
+                            apex_web_service.g_request_headers(1).value := 'image/png';
+                    
+                            apex_web_service.g_request_headers(1).name := 'media_file';
+                            apex_web_service.g_request_headers(1).value := 'filename.png';
+                       
+                       if :P294_TIPO='text' THEN 
+                    
+                       url:='https://flow.cnid.com.py/api/send/whatsapp?secret='||utl_url.escape(v_api_key)||'&account='||utl_url.escape(v_cuenta_id)||'&recipient='||utl_url.escape(v_recipiente)||'&type='||utl_url.escape(v_tipo)||'&message='||utl_url.escape(v_mensaje);
+                       elsif :P294_TIPO='media' then
+                          url:='https://flow.cnid.com.py/api/send/whatsapp?secret='||utl_url.escape(v_api_key)||'&account='||utl_url.escape(v_cuenta_id)||'&recipient='||utl_url.escape(v_recipiente)||'&type='||utl_url.escape(v_tipo)||'&message='||utl_url.escape(v_mensaje);
+                       end if;
+                      
+                     l_clob :=
+                        APEX_WEB_SERVICE.make_rest_request(
+                            p_url           => url,
+                            p_http_method   => 'POST',
+                            p_body_blob => v_imagen);
+                            
+                            
+                        
+                        :P294_RESPUESTA:=l_clob;
+                    
+                    
+                       
+                            
+                    
+                     EXCEPTION 
+                     WHEN OTHERS THEN
+                     RAISE_APPLICATION_ERROR(-20000,'Error al procesar la solicitud! ');
+                    END;
+                    ```
+                itemsToSubmit: P294_NOMBRE
+                itemsToReturn: P294_RESPUESTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                           lc_response      clob;
+                           lm_multipart     apex_web_service.t_multipart_parts;
+                           ln_secret VARCHAR2(400) := '8e9a5fd1716b87565907233fa53607b8c1a86f5e';
+                           ln_account number(10):=28;
+                           ln_recipient varchar2(50):=:P294_RECIPIENTE;
+                           ln_type varchar2(50):=:P294_TIPO;
+                           ln_message varchar(3000):=:P294_MENSAJE;
+                         --  lc_json          clob          := '{"hello":"world"}';   
+                           lv_filename      VARCHAR2(20)  := 'imagen';
+                           lv_base_url      VARCHAR2(100):='https://flow.cnid.com.py/api/send/whatsapp'; -- webservice base URL; 
+                           lv_api_key       VARCHAR2(100); -- API KEY 
+                           lb_blob          blob; -- Blob part of the multipart
+                    
+                    BEGIN
+                    SELECT LOGO_COMPROBANTE
+                    INTO lb_blob
+                    from bsw_empresas
+                    where id=121;
+                    
+                    
+                          --  apex_web_service.g_request_headers.delete();
+                            --apex_web_service.g_request_headers(1).name  := 'secret';
+                            --apex_web_service.g_request_headers(1).value := '8e9a5fd1716b87565907233fa53607b8c1a86f5e';   
+                    
+                            /* add a CLOB (JSON) to a multipart/form request body */
+                            /*IF lc_json is not null 
+                            THEN
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'json_param',
+                                    p_content_type => 'application/json',
+                                    p_body         => lc_json );
+                            END IF;*/
+                    
+                            /* add a plain text to a multipart/form request body */
+                            IF ln_secret is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'secret',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_secret ); 
+                            END IF;        
+                    
+                               IF ln_recipient is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'recipient',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_recipient ); 
+                            END IF;   
+                    
+                                 IF ln_type is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'type',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_type ); 
+                            END IF;    
+                    
+                                IF ln_message is not null
+                            THEN        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'message',
+                                    p_content_type => 'text/plain',
+                                    p_body         => ln_message ); 
+                            END IF;          
+                              
+                    
+                             IF :P294_TIPO='media' then  
+                            /*add a BLOB to a multipart/form request body.*/        
+                            apex_web_service.APPEND_TO_MULTIPART (
+                                    p_multipart    => lm_multipart,
+                                    p_name         => 'media_file',
+                                    p_filename     => lv_filename,
+                                    p_content_type => 'application/octet-stream',
+                                    p_body_blob    => lb_blob );
+                    
+                                    end if;
+                    
+                            lc_response  := apex_web_service.make_rest_request(
+                                                   p_url => lv_base_url,
+                                                   p_http_method => 'POST',
+                                                   p_body_blob => apex_web_service.generate_request_body(lm_multipart)); 
+                    
+                            -- generate_request_body: This function generates the multipart/form-data request body from the data in the t_multiparts array.
+                    
+                            dbms_output.put_line(lc_response);                      
+                    
+                    END;
+                    ```
+                itemsToSubmit: P294_NOMBRE
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try{
+                    
+                    
+                    //console.log($v('P294_RESPUESTA'));
+                    
+                    var json_respuesta = JSON.parse($v('P294_RESPUESTA'));
+                    
+                    
+                    $s('P294_RESPUESTA',json_respuesta.status);
+                    
+                    //console.log($v('P294_RESPUESTA'));
+                    
+                    
+                    }catch(e){
+                        apex.message.alert('Error al procesar la repuesta del servidor');
+                    }
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    function reqListener() {
+                      $("body").removeClass('loading');
+                     
+                    
+                    
+                    $s('P294_RESPUESTA',JSON.parse(this.responseText).status);
+                    $.event.trigger('Alerta');
+                     // console.log(this.responseText);
+                    }
+                    
+                    
+                    const formData = new FormData();
+                    
+                    console.log(API_SECRET);
+                    formData.append("secret", API_SECRET);
+                    formData.append('name',$v('P294_NOMBRE'));
+                    
+                    // HTML file input, chosen by user
+                    
+                     
+                       // document.getElementById("overlay__spinner").innerHTML = '<img src="#APP_FILES#Spinner-1s-200px (1).gif" />'; // Set here the image before sending request
+                       
+                    $("body").addClass('loading');
+                    
+                    
+                    const request = new XMLHttpRequest();
+                    request.addEventListener("load", reqListener);
+                    request.open("POST", "https://flow.cnid.com.py/api/create/group");
+                    request.send(formData);
+                    ```
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction mensaje-de-respuesta (
+        name: Mensaje de Respuesta
+        execution {
+            sequence: 50
+        }
+        when {
+            event: custom
+            customEvent: Alerta
+            selectionType: jsExpression
+            javaScriptExpression: document
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: Proceso realizado de manera correcta
+                style: success
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_RESPUESTA
+                value: 200
+            }
+        )
+
+        action native-alert-2 (
+            action: alert
+            settings {
+                message: Clave de API es invalido !
+                style: danger
+                icon: fa-warning
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_RESPUESTA
+                value: 401
+            }
+        )
+
+        action native-alert-3 (
+            action: alert
+            settings {
+                title: Advertencia
+                message: Parámetros Invalidos
+                style: danger
+                icon: fa-warning
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_RESPUESTA
+                value: 400
+            }
+        )
+
+        action native-alert-4 (
+            action: alert
+            settings {
+                message: Acceso denegado a la API !
+                style: danger
+                icon: fa-warning
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_RESPUESTA
+                value: 403
+            }
+        )
+
+        action native-alert-5 (
+            action: alert
+            settings {
+                message: "Cuenta de Whatsapp no existe "
+                style: danger
+                icon: fa-warning
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_RESPUESTA
+                value: 404
+            }
+        )
+
+        action native-alert-6 (
+            action: alert
+            settings {
+                message: "Un error inesperado ha ocurrido "
+                style: warning
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_RESPUESTA
+                value: 500
+            }
+        )
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 80
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction ocultar (
+        name: Ocultar
+        execution {
+            sequence: 30
+        }
+        when {
+            event: ready
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: [
+                    P294_IMAGEN
+                    P294_DOCUMENTO
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction ocultar-desocultar (
+        name: Ocultar/Desocultar
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P294_TIPO
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: [
+                    P294_IMAGEN
+                    P294_DOCUMENTO
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P294_IMAGEN
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_TIPO
+                value: media
+            }
+        )
+
+        action native-show-2 (
+            action: show
+            affectedElements {
+                selectionType: items
+                items: P294_DOCUMENTO
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P294_TIPO
+                value: document
+            }
+        )
+
+    )
+
+)
+

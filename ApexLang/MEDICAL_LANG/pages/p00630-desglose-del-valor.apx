@@ -1,0 +1,340 @@
+page 630 (
+    name: Desglose del Valor
+    alias: DESGLOSE-DEL-VALOR
+    title: Desglose del Valor
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region desglose-del-método-seleccionado (
+        name: Desglose del Método Seleccionado
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT PC.NOMBRE, SU.DESCRIPCION, MC.Fec_Mov_Caj, MC.Nro_Mov_Caj, FC.Tip_Documento, FC.MONTO, MC.Nro_Mov_Caj as Ver_Movimiento, MC.ID
+                
+                FROM CCW_MOVIMIENTOS_CAJAS MC,
+                     CCW_FORMAS_COBROS FC,
+                     CCW_CAJAS CA,
+                     Bsw_Subtipos_Trans SU,
+                     CCW_CLIENTES CLI,
+                     Bsw_Personas PC
+                WHERE MC.ID = FC.id_mov_caj
+                AND MC.ID_CAJA = CA.ID
+                AND SU.ID = FC.Id_Sub_Tipo_Trans
+                AND SU.DESCRIPCION = :P630_DESCRIPCION
+                --AND MC.Fec_Mov_Caj = :P645_FEC_COMP
+                --AND CA.COD_CAJA = '03'
+                --AND MC.NRO_HABILITACION = 33
+                --AND SU.SUBTIPO_TRANS = 1
+                AND MC.ID_CLIENTE = CLI.ID
+                AND CLI.ID_PERSONA = PC.ID
+                --AND (mc.NRO_HABILITACION = :P645_HABILITACION OR :P645_HABILITACION IS NULL)
+                --AND (MC.Fec_Mov_Caj = :P645_FEC_COMP OR :P645_FEC_COMP IS NULL)
+                AND (MC.fec_mov_caj BETWEEN :P630_FEC_INI AND :P630_FEC_FIN)
+                AND (MC.NRO_HABILITACION = :P630_HABILITACION OR :P630_HABILITACION IS NULL)
+                ORDER BY SU.DESCRIPCION
+                ```
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            includeSearchBar: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 21600421004747704
+        }
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Método
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column FEC_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Fecha Movimiento Caja
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column MONTO (
+            type: plainText
+            heading {
+                heading: Monto
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column NOMBRE (
+            type: plainText
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column NRO_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Número Movimiento Caja
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TIP_DOCUMENTO (
+            type: plainText
+            heading {
+                heading: Tipo Documento
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column VER_MOVIMIENTO (
+            type: link
+            heading {
+                heading: Ver Movimiento Caja
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 75
+                    items: {
+                        P75_ID: #ID#
+                    }
+                }
+                linkText: Ver Movimiento
+                linkAttributes: class="t-Button t-Button--hot"
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        savedReport 220004 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn DESCRIPCION (
+                sequence: 2
+            )
+
+            displayColumn FEC_MOV_CAJ (
+                sequence: 3
+            )
+
+            displayColumn MONTO (
+                sequence: 6
+            )
+
+            displayColumn NOMBRE (
+                sequence: 1
+            )
+
+            displayColumn NRO_MOV_CAJ (
+                sequence: 4
+            )
+
+            displayColumn TIP_DOCUMENTO (
+                sequence: 5
+            )
+
+            displayColumn VER_MOVIMIENTO (
+                sequence: 7
+            )
+
+        )
+
+    )
+
+    pageItem P630_CAJA (
+        type: hidden
+        layout {
+            sequence: 80
+            slot: body
+        }
+    )
+
+    pageItem P630_DESCRIPCION (
+        type: hidden
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P630_FEC_FIN (
+        type: hidden
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P630_FEC_INI (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    pageItem P630_HABILITACION (
+        type: hidden
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P630_PAGE_ID (
+        type: hidden
+        layout {
+            sequence: 70
+            slot: body
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 100
+            region: @desglose-del-método-seleccionado
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--padBottom
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 629
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+)
+

@@ -1,0 +1,231 @@
+page 806 (
+    name: Subir Presupuesto Anual Excel
+    alias: SUBIR-PRESUPUESTO-ANUAL-EXCEL
+    title: Subir Presupuesto Anual Excel
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P806_EXCEL (
+        type: fileUpload
+        label {
+            label: <p>Excel:&ensp;</p>
+            alignment: left
+        }
+        display {
+            displayAs: blockDropzone
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        help {
+            inlineHelpText:
+                ```html
+                <strong>A continuación se presentará el formato aceptado para subir el Excel. No se validará otra plantilla. <br>
+                Presione <a href="#APP_FILES#PresupuestoAnualFormato.xlsx" title="Descargar" download> Aquí </a> para descargar</strong>
+                ```
+        }
+    )
+
+    dynamicAction submit (
+        name: Submit
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P806_EXCEL
+        }
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 63288721175288435
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P806_EXCEL
+        }
+    )
+
+    process subir-excel (
+        name: Subir Excel
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VID_EJERCICIO   COW_EJERCICIOS.ID%TYPE;
+                    VID_CENTRO      COW_CENTRO_COSTOS.ID%TYPE;
+                    VID_PLAN_CUENTA COW_PLAN_CUENTAS.ID%TYPE;
+                BEGIN
+                    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION('PRESUPUESTO_ERR');
+                    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION('PRESUPUESTO');
+                    FOR R1 IN (SELECT *  
+                                 FROM APEX_APPLICATION_TEMP_FILES F, 
+                                      TABLE( APEX_DATA_PARSER.PARSE(
+                                                P_CONTENT                     => F.BLOB_CONTENT,
+                                                P_ADD_HEADERS_ROW             => 'N',
+                                                P_FILE_NAME                   => F.FILENAME) 
+                                            ) P
+                                 WHERE F.NAME = :P806_EXCEL AND
+                                       P.LINE_NUMBER > 1
+                              )
+                    LOOP
+                        IF R1.COL001 IS NOT NULL AND R1.COL002 IS NOT NULL AND R1.COL003 IS NOT NULL THEN
+                            -- Buscamos el ejercicio
+                            BEGIN
+                                SELECT ID
+                                  INTO VID_EJERCICIO
+                                  FROM COW_EJERCICIOS
+                                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                                   AND COD_EJERCICIO = R1.COL001;
+                
+                            EXCEPTION
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error inesperado intentando obtener el ejercicio en la linea '||R1.LINE_NUMBER||'. Err '||SQLERRM);
+                            END;
+                
+                            -- Buscamos el centro
+                            BEGIN
+                                SELECT ID
+                                  INTO VID_CENTRO
+                                  FROM COW_CENTRO_COSTOS
+                                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                                   AND COD_CENTRO = R1.COL002;
+                
+                            EXCEPTION
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error inesperado intentando obtener el centro en la linea '||R1.LINE_NUMBER||'. Err '||SQLERRM);
+                            END;
+                
+                            -- Buscamos el plan de cuentas
+                            BEGIN
+                                SELECT ID
+                                  INTO VID_PLAN_CUENTA
+                                  FROM COW_PLAN_CUENTAS
+                                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                                   AND COD_CUENTA = R1.COL003;
+                
+                            EXCEPTION
+                               WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error inesperado intentando obtener la cuenta contable en la linea '||R1.LINE_NUMBER||'. Err '||SQLERRM);
+                            END;
+                
+                            -- Datos Numericos
+                            BEGIN
+                                INSERT INTO COW_PRESUPUESTO_ANUAL(
+                                                      ID_EMPRESA,
+                                                      ID_EJERCICIO,
+                                                      ID_CENTRO,
+                                                      ID_CUENTA,
+                                                      PRE_ENERO,
+                                                      PRE_FEBRERO,
+                                                      PRE_MARZO,
+                                                      PRE_ABRIL,
+                                                      PRE_MAYO,
+                                                      PRE_JUNIO,
+                                                      PRE_JULIO,
+                                                      PRE_AGOSTO,
+                                                      PRE_SEPTIEMBRE,
+                                                      PRE_OCTUBRE,
+                                                      PRE_NOVIEMBRE,
+                                                      PRE_DICIEMBRE)
+                                VALUES(
+                                    :P0_ID_EMPRESA,
+                                    VID_EJERCICIO,
+                                    VID_CENTRO,
+                                    VID_PLAN_CUENTA,
+                                    REPLACE(R1.COL004, '.', ','), -- Enero
+                                    REPLACE(R1.COL005, '.', ','), -- Febrero
+                                    REPLACE(R1.COL006, '.', ','), -- Marzo
+                                    REPLACE(R1.COL007, '.', ','), -- Abril
+                                    REPLACE(R1.COL008, '.', ','), -- Mayo
+                                    REPLACE(R1.COL009, '.', ','), -- Junio
+                                    REPLACE(R1.COL010, '.', ','), -- Julio
+                                    REPLACE(R1.COL011, '.', ','), -- Agosto
+                                    REPLACE(R1.COL012, '.', ','), -- Septiembre
+                                    REPLACE(R1.COL013, '.', ','), -- Octubre
+                                    REPLACE(R1.COL014, '.', ','), -- Noviembre
+                                    REPLACE(R1.COL015, '.', ',') -- Diciembre
+                                );
+                            EXCEPTION
+                                WHEN OTHERS THEN
+                                    APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'PRESUPUESTO_ERR',
+                                                               P_C001            => 'No se insertaron',
+                                                               P_N001            => R1.LINE_NUMBER);
+                            END;
+                        END IF;
+                            
+                        END LOOP;
+                
+                    -- IF VCANTIDAD > 0 THEN
+                    --     :P794_MENSAJE := 'Proceso concluido con Exito. Se procesaron '||VCANTIDAD||' registros';
+                    -- ELSE
+                    --     :P794_MENSAJE := 'No se realizó ninguna accion';
+                    -- END IF;
+                
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 63288409991288432
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P806_EXCEL
+        }
+    )
+
+)
+

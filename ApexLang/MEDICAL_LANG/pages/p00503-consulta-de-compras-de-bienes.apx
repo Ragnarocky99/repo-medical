@@ -1,0 +1,690 @@
+page 503 (
+    name: Consulta de Compras de Bienes
+    alias: CONSULTA-DE-COMPRAS-DE-BIENES
+    title: Consulta de Compras de Bienes
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 20
+            parentRegion: @filtros
+            slot: regionBody
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region consulta-de-compras-de-bienes (
+        name: Consulta de Compras de Bienes
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select  --d.id_bien,
+                        b.descripcion as bien,
+                        c.REFERENCIA,
+                        C.ID_EMPRESA as proveedor,
+                        c.TIP_COMPROBANTE,
+                        c.SER_COMPROBANTE,
+                        c.NRO_COMPROBANTE,
+                        c.FEC_COMPROBANTE,
+                        d.descripcion,
+                        b.mon_costo as costo_unitario,
+                        d.cantidad, 
+                        d.mon_costo,
+                        d.mon_costo_ext,
+                        c.ID_SUCURSAL,
+                        c.ID_CENTRO,
+                        c.ID_DEPARTAMENTO,
+                        c.ID_SECCION,
+                        c.ID_RESPONSABLE,
+                        d.id
+                from cow_mov_bienes_det d, 
+                     cow_bienes_uso b,
+                     cow_mov_bienes_cab c
+                where d.id_movbien_cab = C.ID 
+                  AND D.ID_BIEN = B.ID
+                  AND C.TIP_COMPROBANTE = 'FAC'
+                  AND (c.REFERENCIA = :P503_REFERENCIA OR :P503_REFERENCIA IS NULL)
+                  and (c.ID_RESPONSABLE = :P503_PROVEEDOR OR :P503_PROVEEDOR IS NULL) --VERIFICAR
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 80245074009471928
+        }
+
+        column BIEN (
+            type: plainText
+            heading {
+                heading: Bien
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column COSTO_UNITARIO (
+            type: plainText
+            heading {
+                heading: <p>Costo Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: <p>Fecha de Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column ID_CENTRO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Centro</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column ID_DEPARTAMENTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Departamento</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-departamentos-rrhh
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ID_RESPONSABLE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Responsable</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-responsables-bien
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_SECCION (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Sección</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-secciones
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Sucursal</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column MON_COSTO (
+            type: plainText
+            heading {
+                heading: <p>Monto Nacional</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column MON_COSTO_EXT (
+            type: plainText
+            heading {
+                heading: <p>Monto Exterior</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: <p>Nro. de Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-empresas
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: <p>Serie de Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: <p>Tipo de Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Consulta de Compras de Bienes
+        }
+
+        savedReport 887757 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 8
+            )
+
+            displayColumn COSTO_UNITARIO (
+                sequence: 7
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 6
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 5
+            )
+
+            displayColumn ID (
+                sequence: 14
+            )
+
+            displayColumn ID_CENTRO (
+                sequence: 13
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 12
+            )
+
+            displayColumn MON_COSTO (
+                sequence: 9
+            )
+
+            displayColumn MON_COSTO_EXT (
+                sequence: 10
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn PROVEEDOR (
+                sequence: 11
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 1
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--hideHeader
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region filtros-2 (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P503_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empresas
+        }
+        layout {
+            sequence: 20
+            region: @filtros-2
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 18
+        }
+        validation {
+            maxLength: 18
+        }
+    )
+
+    pageItem P503_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Referencia: </p>
+            alignment: left
+        }
+        settings {
+            submitWhenEnterPressed: true
+        }
+        layout {
+            sequence: 10
+            region: @filtros-2
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 18
+        }
+        validation {
+            maxLength: 18
+        }
+    )
+
+    button buscar (
+        buttonName: BUSCAR
+        label: Buscar
+        layout {
+            sequence: 10
+            region: @botones
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-dynamic-content
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 63190566559293507
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+)
+

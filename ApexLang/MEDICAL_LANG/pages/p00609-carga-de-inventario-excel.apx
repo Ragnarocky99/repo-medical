@@ -1,0 +1,718 @@
+page 609 (
+    name: Carga de inventario Excel
+    alias: CARGA-DE-INVENTARIO-EXCEL
+    title: Carga de inventario excel
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            strong{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#060608;
+            }
+            
+            
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region buttons (
+        name: buttons
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region cabecera-inventario (
+        name: Cabecera Inventario
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       NUM_INVENT,
+                       FEC_INI_INVENT,
+                       FEC_FIN_INVENT,
+                       ID_SUCURSAL,
+                       COD_USUARIO_AUD,
+                       FEC_ALTA,
+                       ID_SUCURSAL_CENTRAL
+                  from STW_INVENT_CAB
+                ```
+            pageItemsToSubmit: P609_ID
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region info (
+        name: Info
+        type: helpText
+        layout {
+            sequence: 70
+            parentRegion: @cabecera-inventario
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @collapsible
+            templateOptions: [
+                #DEFAULT#
+                is-expanded
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+    )
+
+    region page_plug (
+        name: 1
+        type: staticContent
+        layout {
+            sequence: 60
+            parentRegion: @cabecera-inventario
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--standardPadding
+            ]
+        }
+    )
+
+    pageItem P609_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @cabecera-inventario
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P609_EXCEL (
+        type: fileUpload
+        label {
+            label: Excel
+            alignment: left
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 40
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P609_FEC_ALTA (
+        type: hidden
+        layout {
+            sequence: 90
+            region: @cabecera-inventario
+            slot: regionBody
+        }
+        appearance {
+            formatMask: DD/MM/YYYY
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: FEC_ALTA
+            dataType: date
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT SYSDATE FROM DUAL;
+        }
+    )
+
+    pageItem P609_FEC_FIN_INVENT (
+        type: datePicker
+        label {
+            label: <p>Fecha Final :</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: FEC_FIN_INVENT
+            dataType: date
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select sysdate from dual;
+        }
+    )
+
+    pageItem P609_FEC_INI_INVENT (
+        type: datePicker
+        label {
+            label: <p>Fecha Inicial:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: FEC_INI_INVENT
+            dataType: date
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select sysdate from dual;
+        }
+    )
+
+    pageItem P609_ID (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @cabecera-inventario
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: STW_INVENT_CAB_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P609_ID_EMPRESA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @cabecera-inventario
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P609_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P609_ID_SUCURSAL_CENTRAL (
+        type: hidden
+        layout {
+            sequence: 100
+            region: @cabecera-inventario
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: ID_SUCURSAL_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P609_NEW (
+        type: displayImage
+        label {
+            label: <strong>El documento de Excel solo debe contener los datos y no incluya títulos o cabeceras en las columnas. Siguiendo el siguiente orden: *Código *Cantidad </strong>
+            alignment: left
+        }
+        settings {
+            basedOn: url
+        }
+        layout {
+            sequence: 10
+            region: @info
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: #APP_FILES#INVENTARIO_EXCEL.PNG
+        }
+    )
+
+    pageItem P609_NUM_INVENT (
+        type: numberField
+        label {
+            label: <p>Numero:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @cabecera-inventario
+            column: NUM_INVENT
+            dataType: number
+        }
+    )
+
+    button clear (
+        buttonName: CLEAR
+        label: Limpiar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button inventario (
+        buttonName: INVENTARIO
+        label: Inventario
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 197
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button upload (
+        buttonName: UPLOAD
+        label: Cargar Excel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-send-o
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+    )
+
+    computation p609-num-invent (
+        itemName: P609_NUM_INVENT
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(I.NUM_INVENT)), 0)+1
+                from STW_INVENT_CAB I
+                WHERE I.ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    process eliminar-collection (
+        name: ELIMINAR COLLECTION
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                IF  APEX_COLLECTION.COLLECTION_EXISTS('INVENTARIO_EXCEL') THEN
+                
+                    APEX_COLLECTION.TRUNCATE_COLLECTION('INVENTARIO_EXCEL');
+                
+                END IF;  
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 12832058716067838
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear
+        }
+    )
+
+    process initialize-form-carga-de-inventario-prueba (
+        name: Initialize form Carga de inventario prueba
+        type: formInitialization
+        formRegion: @cabecera-inventario
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 12830256325067820
+        }
+    )
+
+    process limpiar-sesión (
+        name: "Limpiar sesión "
+        type: clearSessionState
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 12832149110067839
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: UPLOAD,CLEAR
+        }
+    )
+
+    process proceso (
+        name: Proceso
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VID_ARTICULO        NUMBER(10);
+                    VID_UNIDAD_MEDIDA   NUMBER(10);
+                    ---VID_IVA            NUMBER(10);
+                    VMONEDA             VARCHAR2(200);
+                    VDESC_ARTICULO      VARCHAR2(200);
+                    VNRO_LOTE           VARCHAR(50);
+                    VID_LOTE            NUMBER(10);--.-W_BUSCA_PARAMETRO('CM','ID_IVA_EXENTA');
+                    VNOMBRE_ARCHIVO     VARCHAR(100);
+                    VTIPO_VACION        VARCHAR(100);
+                    VID_MONEDA         VARCHAR(100);
+                
+                BEGIN
+                
+                    -- Borra el detalle 
+                    IF  APEX_COLLECTION.COLLECTION_EXISTS('INVENTARIO_EXCEL') THEN
+                        APEX_COLLECTION.TRUNCATE_COLLECTION('INVENTARIO_EXCEL');
+                    END IF;
+                    
+                    -- Vuelve a crear el detalle
+                    IF NOT APEX_COLLECTION.COLLECTION_EXISTS('INVENTARIO_EXCEL') THEN
+                        APEX_COLLECTION.CREATE_COLLECTION('INVENTARIO_EXCEL');
+                    END IF; 
+                
+                    VNOMBRE_ARCHIVO := :P609_EXCEL; --substr(:P613_EXCEL, instr(:P613_EXCEL,'/') + 1);
+                    -- Primer RAISE para verificar si entró al loop
+                    --RAISE_APPLICATION_ERROR(-20996, 'Ingresó al loop ' || VNOMBRE_ARCHIVO);
+                    
+                    for r1 in (select *  
+                                 from apex_application_temp_files f, 
+                                      table( apex_data_parser.parse(
+                                                p_content                     => f.blob_content,
+                                                p_add_headers_row             => 'N',
+                                                -- p_store_profile_to_collection => 'FILE_PROV_CASH',
+                                                p_file_name                   => f.filename) 
+                                            ) p
+                                 where f.name LIKE VNOMBRE_ARCHIVO
+                              )
+                    loop
+                        -- Consultamos los datos del articulo
+                        BEGIN
+                            SELECT A.ID, A.DESCRIPCION, A.ID_UNIDAD_MEDIDA, L.ID, L.NRO_LOTE, A.ID_MONEDA_BASE, A.ID_MONEDA_BASE
+                              INTO VID_ARTICULO, VDESC_ARTICULO,VID_UNIDAD_MEDIDA, VID_LOTE, VNRO_LOTE, VMONEDA,VID_MONEDA
+                              FROM STW_ARTICULOS A, STW_LOTES L---, BSW_MONEDAS M
+                             WHERE A.COD_ARTICULO    = r1.col001
+                               AND A.ID_EMPRESA      = :P0_ID_EMPRESA
+                               AND A.ID              = L.ID_ARTICULO;
+                               --AND A.ID_MONEDA_BASE  = M.ID;
+                              
+                        END;
+                
+                        -- Segundo RAISE para verificar si se obtuvieron los datos del artículo
+                        --RAISE_APPLICATION_ERROR(-20997, 'Se obtuvieron los datos del artículo');
+                        
+                        BEGIN
+                                --RAISE_APPLICATION_ERROR(-20910, 'entro al insert');
+                
+                
+                            INSERT INTO STW_INVENT_DET (
+                               
+                                ID_EMPRESA,
+                                ID_NUM_INVENT_CAB,
+                                ID_ARTICULO,
+                                CANT_REAL,
+                                CANT_FISICA,
+                                CANT_BLOQUEO,
+                                ORDEN,
+                                COD_USUARIO_AUD,
+                                ID_LOTE,
+                                NRO_LOTE,
+                                LOTE_VENC,
+                                ID_UNIDAD_MEDIDA,
+                                CANTIDAD_UB,
+                                ID_MONEDA,
+                                TIP_CAMBIO,
+                                COSTO
+                            ) VALUES (
+                                ----:P613_ID,               -- ID
+                                :P0_ID_EMPRESA,             -- ID_EMPRESA
+                                :P609_ID,                   -- ID_NUM_INVENT_CAB (obtenido por parámetro)
+                                VID_ARTICULO,               -- ID_ARTICULO
+                                0,                          -- CANT_REAL
+                                r1.col002,                  -- CANT_FISICA (mismo valor que CANT_REAL)
+                                0,                          -- CANT_BLOQUEO (asumimo 0)
+                                0,                          -- ORDEN (asumimo 0)
+                                :APP_USER,                  -- COD_USUARIO_AUD (asumimo NULL)
+                                VID_LOTE,                   -- ID_LOTE (asumimo NULL)
+                                VNRO_LOTE,                  -- NRO_LOTE (asumimo NULL)
+                                '31/12/2099',               -- LOTE_VENC (asumimo NULL)
+                                VID_UNIDAD_MEDIDA,          -- ID_UNIDAD_MEDIDA
+                                r1.col003,                  -- CANTIDAD_UB (mismo valor que CANT_REAL)
+                                VMONEDA,                    -- ID_MONEDA (asumimo NULL)
+                                ftipos_cambio(VID_MONEDA,sysdate,'C','C'), -- TIP_CAMBIO (asumimo NULL)
+                                0                         -- COSTO */
+                            ); 
+                
+                            -- Tercer RAISE para verificar si se realizó el insert en STW_INVENT_DET
+                            --RAISE_APPLICATION_ERROR(-20998, 'Se realizó el insert en STW_INVENT_DET');
+                        EXCEPTION
+                            WHEN no_data_found THEN
+                                RAISE_APPLICATION_ERROR(-20999, 'ERROR: al insertar ' || SQLERRM);
+                            WHEN OTHERS THEN 
+                                BEGIN
+                                    RAISE_APPLICATION_ERROR(-20995, 'ERROR: al insertar arti ' || :C004 || '- err ' || SQLERRM);
+                                    -- Si quieres saber que se realizó el insert correctamente, puedes agregar un mensaje adicional aquí
+                                    -- RAISE_APPLICATION_ERROR(-20997, 'El insert se realizó correctamente en STW_INVENT_DET');
+                                END;
+                                
+                                -- Cuarto RAISE para verificar que se realizó el insert en STW_INVENT_DET
+                                RAISE_APPLICATION_ERROR(-20994, 'El insert se realizó correctamente en STW_INVENT_DET');
+                        END;
+                        
+                    END LOOP; 
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 12831973349067837
+        }
+    )
+
+    process save-form (
+        name: Save Form
+        type: formAutoRowProcessing
+        formRegion: @cabecera-inventario
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 12831851683067836
+        }
+    )
+
+)
+

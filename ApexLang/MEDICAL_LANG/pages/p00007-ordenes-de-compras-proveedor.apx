@@ -1,0 +1,6881 @@
+page 7 (
+    name: Carga Ordenes de Compras
+    alias: ORDENES-DE-COMPRAS-PROVEEDOR
+    title: Carga Ordenes de Compras
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var orden = 0;
+            // Funcion  para calcular los totales de la factura cada vez que se ingresa un detalle 
+            function recalculaImporte(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_importe   = model.getFieldKey("MONTO_TOTAL_C_IVA");
+                var v_iva       = model.getFieldKey("TOTAL_IVA");
+                var v_porc_iva = model.getFieldKey("PORC_IVA");
+                var v_total_s_iva=model.getFieldKey('MONTO_TOTAL');
+                var v_descuento = model.getFieldKey('DESCUENTO');
+                var v_descuento_c_iva=model.getFieldKey('DESCUENTO_C_IVA');
+                var vanulado = model.getFieldKey("ANULADO");
+                var v_total_descuento =0;
+                var v_total     = 0;
+                var v_total_iva = 0;
+                var v_total_gravadas_10=0;
+                var v_total_gravadas_5=0;
+                var v_total_exentas=0;
+                var v_subtotal=0;
+                var v_iva_10=0;
+                var v_iva_5=0;
+            
+            
+            
+            
+            
+                model.forEach(function(r, index, id) {
+            
+                   if (v_iva =="") {
+                        v_iva = 0;
+                    }    
+                   
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+                         // Si el registro está anulado (ANULADO == "S") no se considera para los totales
+                         if (r[vanulado] && String(r[vanulado]).toUpperCase() === "S") {
+                             return; // continúa al siguiente registro
+                         }
+                         
+                         if (parseInt(r[v_porc_iva])==10) {
+                             let numeroIva10 = r[v_iva].replace(/\./g,'');
+            
+                             let numeroGravadas10=r[v_total_s_iva].replace(/\./g,'');
+            
+                               v_total_gravadas_10=v_total_gravadas_10+parseFloat(numeroGravadas10.replace(',','.'));
+            
+                               //v_iva_10=v_iva_10+parseFloat(r[v_iva].replace(/\./g,''));
+                               v_iva_10=v_iva_10+parseFloat(numeroIva10.replace(',','.'));
+            
+                               
+                         }else if(parseInt(r[v_porc_iva])==5){
+                             let numeroIva5=r[v_iva].replace(/\./g,'');
+            
+                             let numeroGravadas5=r[v_total_s_iva].replace(/\./g,'');
+            
+                            v_total_gravadas_5=v_total_gravadas_5+parseFloat(numeroGravadas5.replace(',','.'));
+            
+                            v_iva_5=v_iva_5+parseFloat(numeroIva5.replace(',','.'));
+                         }else{
+                             let numeroExentas=r[v_total_s_iva].replace(/\./g,'')
+                            v_total_exentas=v_total_exentas+parseFloat(numeroExentas.replace(',','.')||0);
+                         }
+            
+                         let numeroTotal=r[v_importe].replace(/\./g,'');
+                         let numeroTotalIVA=r[v_iva].replace(/\./g,'');
+            
+                        v_total      = v_total     + parseFloat(numeroTotal.replace(',','.'));
+                        v_total_iva  = v_total_iva + parseFloat(numeroTotalIVA.replace(',','.'));
+                        v_total_descuento=v_total_descuento+(parseFloat(r[v_descuento_c_iva].replace(/\./g,'')))-(parseFloat(r[v_descuento_c_iva].replace(/\./g,'')))*
+                        (parseFloat(r[v_porc_iva].replace(/\./g,'')))/(100+parseFloat(r[v_porc_iva].replace(/\./g,'')))
+                        
+                    }
+                    
+                });
+                  v_subtotal=v_total-v_total_iva;
+            
+                $s('P7_TOT_COMPROBANTE',  v_total.toString().replace(/\./g,','));
+                 $s('P7_TOT_GRAVADAS_10',  v_total_gravadas_10.toString().replace(/\./g,','));
+                 $s('P7_TOT_GRAVADAS_5',  v_total_gravadas_5.toString().replace(/\./g,','));
+                 $s('P7_TOT_EXENTAS',  v_total_exentas.toString().replace(/\./g,','));
+               // $s('P23_SALDO_FACTURA',  v_total.toString().replace('.', ';')); // Factura con Mov de Caja, no debe modificarse, sino el saldo estaria incorrecto. 
+              $s('P7_TOT_IVA',  v_total_iva.toString().replace(/\./g,','));
+              $s('P7_SUBTOTAL',  v_subtotal.toString().replace(/\./g,','));
+               $s('P7_IVA_10',  v_iva_10.toString().replace(/\./g,','));
+               $s('P7_IVA_5',  v_iva_5.toString().replace(/\./g,','));
+               $s('P7_DESCUENTO',Math.round(parseFloat(v_total_descuento)));
+               //console.log(Math.round(parseFloat(v_total_descuento)));
+            
+            
+            
+                
+            }
+            /*$(document).ready(function () { 
+                  $('input[id="Cantidad"]').keypress(function (e) {     
+                           if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {     return false;    }   });});*/
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            //Este script es para hacer que los elementos sea de solo lectura y no se pueden escribir en ellos 
+            document.getElementById("P7_SER_COMPROBANTE").readOnly = true;
+            //document.getElementById("P155_NRO_TIMBRADO").readOnly = true;
+            document.getElementById("P7_TIP_CAMBIO").readOnly = true;
+            document.getElementById("P7_TOT_COMPROBANTE").readOnly = true;
+            document.getElementById("P7_TOT_IVA").readOnly = true;
+            document.getElementById("P7_TOT_GRAVADAS_10").readOnly = true;
+            document.getElementById("P7_TOT_GRAVADAS_5").readOnly = true;
+            document.getElementById("P7_TOT_EXENTAS").readOnly = true;
+            document.getElementById("P7_IVA_10").readOnly = true;
+            document.getElementById("P7_IVA_5").readOnly = true;
+            document.getElementById("P7_SUBTOTAL").readOnly = true;
+            document.getElementById("P7_NRO_COMPROBANTE").readOnly = true;
+            
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+        browserCache: false
+    }
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT 
+                       D.ID,
+                       D.ID_ARTICULO,
+                       A.cod_articulo,
+                       D.CANTIDAD,
+                       D.MONTO_TOTAL,
+                       D.TOTAL_IVA,
+                       D.COD_USUARIO_AUD,
+                       D.CANTIDAD_UB,
+                       D.ID_UNIDAD_MEDIDA,
+                       D.MONTO_TOTAL_C_IVA,
+                       D.IND_STOCK,
+                       D.ID_PEDIDO_CAB,
+                       D.PRECIO_UNITARIO_C_IVA,
+                       NVL(D.PORC_DESCUENTO,0) PORC_DESCUENTO,
+                       NVL(D.DESCUENTO,0) DESCUENTO,
+                       NVL(D.DESCUENTO_C_IVA,0) DESCUENTO_C_IVA,
+                       D.PORC_GRAVADA,
+                       D.IVA,
+                       D.EXENTO,
+                       D.GRAVADA,
+                       D.TOTAL_EXENTO,
+                       D.TOTAL_GRAVADA,
+                       A.DESCRIPCION DESC_ARTICULO,
+                       D.ID_IVA,
+                       D.PRECIO_UNITARIO,
+                       A.id_envase,
+                       A.ID_MARCA,
+                       A.Cod_Origen_Art COD_FABRICANTE,
+                       A.ID_RUBRO,
+                       D.ID_PLAZO_ENTREGA,
+                       PC.FEC_COMPROBANTE + T.NRO_DIAS         AS FECHA_PLAZO,
+                       D.FEC_VENCIMIENTO,
+                       D.NRO_LOTE,
+                       A.ID_grupo_art,
+                       D.COMENTARIO,
+                       '' vacio,
+                       PC.FEC_COMPROBANTE                       AS FEC_COMPROBANTE,
+                       D.ANULADO,
+                       D.NRO_OCC,
+                       D.FECHA_ANULACION,
+                       D.CANTIDAD_ANULADA,
+                       D.COD_USUARIO_ANULA,
+                       D.COMENTARIO_ANULACION,
+                       D.Nro_Pedido,
+                       D.COMENTARIO_A_COMPRA,
+                       D.id_cotiza_art,
+                       D.ID_OFERTA_LIC,
+                       D.IND_PARA_STOCK,
+                       D.IND_ANULA_OCC,
+                       NVL(D.ID_COTIZA_ART, D.ID_APROBACION_LIC) REF_COTIZACION,
+                       CASE
+                           WHEN D.ID_COTIZA_ART IS NOT NULL THEN 'PED'
+                           WHEN D.ID_APROBACION_LIC IS NOT NULL THEN 'LIC'
+                       END TIP_COMPROBANTE,
+                       COALESCE(PC_COT.NRO_COMPROBANTE, LC.NRO_LICITACION) AS NRO_COMPROBANTE,
+                       ROUND((COST.ULT_COSTO - D.PRECIO_UNITARIO_C_IVA) / COST.ULT_COSTO * 100) PORC_VARIACION_COSTO,
+                       D.ID_APROBACION_LIC
+                       
+                  FROM CMW_PEDIDOS_DETALLE D
+                  JOIN STW_ARTICULOS            A     ON A.ID = D.ID_ARTICULO
+                  LEFT JOIN CMW_PEDIDOS_CABECERA PC   ON PC.ID = D.ID_PEDIDO_CAB
+                  LEFT JOIN CMW_TIPO_ENTREGA     T    ON T.ID = D.ID_PLAZO_ENTREGA
+                  LEFT JOIN CMW_COTIZA_ARTICULOS CA   ON CA.ID = D.ID_COTIZA_ART
+                  LEFT JOIN VTW_PEDIDOS_CABECERA PC_COT ON PC_COT.ID = CA.ID_PEDIDO
+                  LEFT JOIN LCW_OFERTAS_APROBACIONES OA ON OA.ID = D.ID_APROBACION_LIC
+                  LEFT JOIN LCW_OFERTAS          O    ON O.ID = OA.ID_OFERTA
+                  LEFT JOIN LCW_LICITACIONES_CAB LC   ON LC.ID = O.ID_LICITACION_CAB
+                  CROSS APPLY (SELECT CMWF_TRAE_ULTIMO_COSTO_FACTURA(D.ID_ARTICULO) AS ULT_COSTO FROM DUAL) COST
+                
+                 WHERE D.ID_PEDIDO_CAB = :P7_ID
+                ```
+            pageItemsToSubmit: P7_ID
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--noBorders
+                t-Form--standardPadding
+                t-Form--stretchInputs
+                t-Form--labelsAbove
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+        performance {
+            lazyLoading: true
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+            ]
+            addButtonLabel: Añadir
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                
+                
+                
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    recalculaImporte();
+                                    orden=orden-1;
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    recalculaImporte();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    recalculaImporte();
+                            }; 
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    recalculaImporte();
+                            };    
+                       
+                       
+                                
+                
+                        } ;      
+                        return config;
+                }
+                
+                
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 106472381778029330
+        }
+
+        savedReport 166510 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @PORC_VARIACION_COSTO
+                layout {
+                    width: 98
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @IND_ANULA_OCC
+                layout {
+                    width: 90
+                    sequence: 50
+                }
+            )
+
+            displayColumn (
+                column: @REF_COTIZACION
+                layout {
+                    width: 109
+                    sequence: 43
+                }
+            )
+
+            displayColumn (
+                column: @ID_COTIZA_ART
+                layout {
+                    show: false
+                    width: 114
+                    sequence: 41
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_PLAZO
+                layout {
+                    width: 100
+                    sequence: 34
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO_A_COMPRA
+                layout {
+                    width: 142
+                    sequence: 55
+                }
+            )
+
+            displayColumn (
+                column: @ID_OFERTA_LIC
+                layout {
+                    show: false
+                    sequence: 56
+                }
+            )
+
+            displayColumn (
+                column: @IND_PARA_STOCK
+                layout {
+                    width: 83
+                    sequence: 47
+                }
+            )
+
+            displayColumn (
+                column: @ID_ENVASE
+                layout {
+                    width: 92
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_MARCA
+                layout {
+                    width: 174
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @COD_FABRICANTE
+                layout {
+                    width: 117
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_PLAZO_ENTREGA
+                layout {
+                    width: 129
+                    sequence: 33
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 117
+                    sequence: 37
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    width: 58
+                    sequence: 35
+                }
+            )
+
+            displayColumn (
+                column: @VACIO
+                layout {
+                    show: false
+                    width: 40
+                    sequence: 48
+                }
+            )
+
+            displayColumn (
+                column: @ID_GRUPO_ART
+                layout {
+                    show: false
+                    width: 142
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    width: 122
+                    sequence: 38
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    show: false
+                    width: 100
+                    sequence: 40
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_PLAZO3
+                layout {
+                    show: false
+                    width: 100
+                    sequence: 39
+                }
+            )
+
+            displayColumn (
+                column: @ID_RUBRO
+                layout {
+                    show: false
+                    width: 161
+                    sequence: 36
+                }
+            )
+
+            displayColumn (
+                column: @ANULADO
+                layout {
+                    width: 65
+                    sequence: 49
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    width: 88
+                    sequence: 46
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 105
+                    sequence: 44
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 72
+                    sequence: 42
+                }
+            )
+
+            displayColumn (
+                column: @ID_APROBACION_LIC
+                layout {
+                    show: false
+                    sequence: 57
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO
+                layout {
+                    show: false
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_ANULACION
+                layout {
+                    width: 107
+                    sequence: 51
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_ANULADA
+                layout {
+                    width: 92
+                    sequence: 52
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_ANULA
+                layout {
+                    width: 116
+                    sequence: 53
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO_ANULACION
+                layout {
+                    width: 133
+                    sequence: 54
+                }
+            )
+
+            displayColumn (
+                column: @ID_IVA
+                layout {
+                    show: false
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PEDIDO
+                layout {
+                    show: false
+                    width: 92
+                    sequence: 45
+                }
+            )
+
+            displayColumn (
+                column: @IND_STOCK
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_CAB
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @EXENTO
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @GRAVADA
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_EXENTO
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_GRAVADA
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 351
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 82
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    show: false
+                    width: 73
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 73
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 134
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_IVA
+                layout {
+                    width: 131
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_UB
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 106
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @PORC_DESCUENTO
+                layout {
+                    width: 75
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @IVA
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_C_IVA
+                layout {
+                    width: 133
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_C_IVA
+                layout {
+                    width: 151
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO_C_IVA
+                layout {
+                    show: false
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @PORC_GRAVADA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @PORC_IVA
+                layout {
+                    width: 84
+                    sequence: 25
+                }
+            )
+
+            sort (
+                column: @ID_ARTICULO
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column ANULADO (
+            type: checkbox
+            heading {
+                heading: <P>Anulado</P>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 800
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ANULADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+                duplicateCopiesExistingValue: false
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: rowsReturned
+                sqlQuery:
+                    ```sql
+                    SELECT 1
+                      FROM CMW_COMPRAS_CABECERA CC
+                      JOIN CMW_COMPRAS_DETALLE  CD ON CC.ID = CD.ID_COMPRAS_CAB
+                      JOIN CMW_PEDIDOS_CABECERA PC ON CC.NRO_COMPROBANTE_REF = PC.NRO_COMPROBANTE
+                     WHERE CC.TIP_COMPROBANTE_REF = 'PED'
+                       AND CC.SER_COMPROBANTE_REF = 'A'
+                       AND PC.ID = :ID_PEDIDO_CAB
+                       AND CD.ID_ARTICULO = :ID_ARTICULO
+                       AND NVL(CC.ESTADO, 'P') = 'C'
+                    ```
+                execute: forEachRow
+            }
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: textField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            enableUsersTo {
+                sort: false
+            }
+            advanced {
+                htmlDomId: Cantidad
+            }
+        )
+
+        column CANTIDAD_ANULADA (
+            type: numberField
+            heading {
+                heading: <p>Cant Anulada</p>
+                alignment: center
+            }
+            layout {
+                sequence: 830
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD_ANULADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_UB (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: CANTIDAD_UB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 650
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: textField
+            heading {
+                heading: <p> Cod. Fabricante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 700
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            link {
+                target: {
+                    type: url
+                    url: javascript:openModal('UltCompra');
+                }
+                linkText: &COD_FABRICANTE.
+            }
+            source {
+                databaseColumn: COD_FABRICANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column COD_USUARIO_ANULA (
+            type: textField
+            heading {
+                heading: <p>Usuario Anulacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 840
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: COD_USUARIO_ANULA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COMENTARIO (
+            type: textField
+            heading {
+                heading: <P>Comentario</P>
+                alignment: center
+            }
+            layout {
+                sequence: 760
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COMENTARIO_ANULACION (
+            type: textarea
+            heading {
+                heading: <p>Comentario Anulacion</p>
+            }
+            layout {
+                sequence: 850
+            }
+            validation {
+                maxLength: 300
+            }
+            source {
+                databaseColumn: COMENTARIO_ANULACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column COMENTARIO_A_COMPRA (
+            type: textarea
+            heading {
+                heading: <p>Comentario a Compra</p>
+                alignment: center
+            }
+            layout {
+                sequence: 870
+            }
+            validation {
+                maxLength: 2000
+            }
+            source {
+                databaseColumn: COMENTARIO_A_COMPRA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCUENTO_C_IVA (
+            type: numberField
+            heading {
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 340
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: DESCUENTO_C_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 640
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 400
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column EXENTO (
+            type: hidden
+            layout {
+                sequence: 600
+            }
+            source {
+                databaseColumn: EXENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FECHA_ANULACION (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Anulacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 820
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: DD-MM-YYYY
+            }
+            source {
+                databaseColumn: FECHA_ANULACION
+                dataType: date
+            }
+        )
+
+        column FECHA_PLAZO (
+            type: textField
+            heading {
+                heading: <p>Fecha Plazo</p>
+            }
+            layout {
+                sequence: 770
+            }
+            appearance {
+                cssClasses: is-readonly
+                width: 20
+            }
+            source {
+                databaseColumn: FECHA_PLAZO
+                dataType: date
+            }
+        )
+
+        column FECHA_PLAZO3 (
+            type: hidden
+            layout {
+                sequence: 790
+            }
+            source {
+                databaseColumn: FECHA_PLAZO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: textField
+            heading {
+                heading: Fec Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 780
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <P>Fecha Venci</P>
+                alignment: center
+            }
+            layout {
+                sequence: 720
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            default {
+                type: static
+                staticValue: 31/12/2099
+            }
+        )
+
+        column GRAVADA (
+            type: hidden
+            layout {
+                sequence: 610
+            }
+            source {
+                databaseColumn: GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            accessibility {
+                valueIdentifiesRow: true
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_APROBACION_LIC (
+            type: numberField
+            heading {
+                heading: Id Aprobacion Lic
+                alignment: end
+            }
+            layout {
+                sequence: 970
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_APROBACION_LIC
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                manualEntry: true
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos-pedido-sin-estandar
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+                stretch: always
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            advanced {
+                htmlDomId: ID_ART
+            }
+        )
+
+        column ID_COTIZA_ART (
+            type: numberField
+            heading {
+                heading: ID_COTIZA_ART
+                alignment: center
+            }
+            layout {
+                sequence: 890
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_COTIZA_ART
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_ENVASE (
+            type: selectList
+            heading {
+                heading: <p>Presentación</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 680
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_ENVASE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_GRUPO_ART (
+            type: selectList
+            heading {
+                heading: <P>Categoría de Producto</P>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-grupos-art
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 750
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_GRUPO_ART
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_IVA (
+            type: textField
+            heading {
+                alignment: center
+            }
+            layout {
+                sequence: 660
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MARCA (
+            type: selectList
+            heading {
+                heading: <p>Marca</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 690
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_MARCA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_OFERTA_LIC (
+            type: numberField
+            heading {
+                heading: Id Oferta Lic
+                alignment: end
+            }
+            layout {
+                sequence: 900
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_OFERTA_LIC
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_PEDIDO_CAB (
+            type: hidden
+            layout {
+                sequence: 550
+            }
+            source {
+                databaseColumn: ID_PEDIDO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PLAZO_ENTREGA (
+            type: selectList
+            heading {
+                heading: <p>Plazo Entrega</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-plazo-entrega
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 710
+            }
+            source {
+                databaseColumn: ID_PLAZO_ENTREGA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ID_RUBRO (
+            type: selectList
+            heading {
+                heading: <p>Categoria de producto</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-rubros-articulos
+            }
+            layout {
+                sequence: 880
+            }
+            source {
+                databaseColumn: ID_RUBRO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: selectList
+            heading {
+                heading: <p>Unidad Medida</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 270
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column IND_ANULA_OCC (
+            type: checkbox
+            heading {
+                heading: <p>Anula OCC</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 920
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_ANULA_OCC
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_PARA_STOCK (
+            type: checkbox
+            heading {
+                heading: <p>Para Stock</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 910
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_PARA_STOCK
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_STOCK (
+            type: hidden
+            layout {
+                sequence: 540
+            }
+            source {
+                databaseColumn: IND_STOCK
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IVA (
+            type: textField
+            heading {
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column MONTO_TOTAL (
+            type: numberField
+            heading {
+                heading: <p>Monto Total</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D000000
+            }
+            source {
+                databaseColumn: MONTO_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_TOTAL_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Total C/IVA</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 190
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D000000
+            }
+            source {
+                databaseColumn: MONTO_TOTAL_C_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Nro. PED/LIC</p>
+                alignment: center
+            }
+            layout {
+                sequence: 950
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 730
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: <P>Nro OCC</P>
+            }
+            layout {
+                sequence: 810
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_PEDIDO (
+            type: numberField
+            heading {
+                heading: <p>Nro Pedido</p>
+                alignment: end
+            }
+            layout {
+                sequence: 860
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NRO_PEDIDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PORC_DESCUENTO (
+            type: numberField
+            heading {
+                heading: <p>% Desc</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: PORC_DESCUENTO
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PORC_GRAVADA (
+            type: hidden
+            layout {
+                sequence: 400
+            }
+            source {
+                databaseColumn: PORC_GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_IVA (
+            type: textField
+            heading {
+                heading: <p>% IVA</p>
+                alignment: center
+            }
+            layout {
+                sequence: 430
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: IVA
+                dataType: number
+            }
+        )
+
+        column PORC_VARIACION_COSTO (
+            type: numberField
+            heading {
+                heading: <p>% Variacion Costo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 960
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: PORC_VARIACION_COSTO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: textField
+            heading {
+                heading: Precio Unitario
+            }
+            layout {
+                sequence: 670
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: useLov
+            }
+        )
+
+        column PRECIO_UNITARIO_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Costo Unitario</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D000000
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO_C_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column REF_COTIZACION (
+            type: popupLov
+            heading {
+                heading: <p>Ref. Cotizacion</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos-cotiza-ocp
+                nullDisplayValue: --SIN SELECCIONAR--
+            }
+            cascadingLov {
+                parentColumns: [
+                    ID_ARTICULO
+                    TIP_COMPROBANTE
+                ]
+            }
+            layout {
+                sequence: 930
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: REF_COTIZACION
+                dataType: number
+                queryOnly: true
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: selectList
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            lov {
+                type: staticValues
+                staticValues: STATIC2:PED;PED,LIC;LIC
+                nullDisplayValue: --SIN SELECCIONAR--
+            }
+            layout {
+                sequence: 940
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column TOTAL_EXENTO (
+            type: hidden
+            layout {
+                sequence: 620
+            }
+            source {
+                databaseColumn: TOTAL_EXENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOTAL_GRAVADA (
+            type: hidden
+            layout {
+                sequence: 630
+            }
+            source {
+                databaseColumn: TOTAL_GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOTAL_IVA (
+            type: numberField
+            heading {
+                heading: <p>IVA</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOTAL_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column VACIO (
+            type: textField
+            heading {
+                alignment: center
+            }
+            layout {
+                sequence: 740
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 0
+            }
+            source {
+                databaseColumn: VACIO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    region orden-de-compra-proveedor-ocp (
+        name: Orden de Compra Proveedor - OCP
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       TIP_COMPROBANTE,
+                       SER_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       ID_SUCURSAL,
+                       FEC_COMPROBANTE,
+                       ID_PROVEEDOR,
+                       ID_CONDICION_COMPRA,
+                       TOT_COMPROBANTE,
+                       TOT_GRAVADAS,
+                       TOT_EXENTAS,
+                       TOT_IVA,
+                       DESCUENTO,
+                       ID_MONEDA,
+                       TIP_CAMBIO,
+                       VERIFICADORA,
+                       TRANSPORTE,
+                       ID_VIA,
+                       FEC_EMBARQUE,
+                       FEC_CONFIRMACION,
+                       ESTADO,
+                       FEC_ESTADO,
+                       ID_USUARIO,
+                       FEC_ALTA,
+                       ANULADO,
+                       CAMBIO_MONEDA_PRECIO,
+                       TIP_COMPROBANTE_REF,
+                       SER_COMPROBANTE_REF,
+                       NRO_COMPROBANTE_REF,
+                       REFERENCIA,
+                       ID_PROVEEDOR_REF,
+                       COD_USUARIO_AUD,
+                       ID_ENTSAL_CAB,
+                       FAC_REFERENCIA,
+                       ID_SUCURSAL_CENTRAL,
+                       COMENTARIO,
+                       FEC_ANULACION,
+                       TIPO,
+                       FOTO_COMPROBANTE,
+                       MIMETYPE,
+                       FILENAME,
+                       ID_COMPROBANTE_REF,
+                       PROFORMA,
+                       MODALIDAD_ENVIO,
+                       PLAZO_ENTREGA_CAB,
+                       NRO_POLIZA,
+                       FEC_POLIZA_INI,
+                       FEC_POLIZA_FIN
+                  from CMW_PEDIDOS_CABECERA
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            htmlDomId: Contenedor
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region ultimas-compras (
+        name: Ultimas compras
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT CC.FEC_COMPROBANTE,
+                       CC.REFERENCIA,
+                       CC.ID_PROVEEDOR,
+                       CD.PRECIO_UNITARIO_C_IVA COSTO_UNITARIO,
+                       CC.ID_MONEDA
+                  FROM CMW_COMPRAS_CABECERA CC
+                  JOIN CMW_COMPRAS_DETALLE  CD ON CC.ID = CD.ID_COMPRAS_CAB
+                 WHERE NVL(CC.ESTADO, 'P') = 'C'
+                   AND CD.ID_ARTICULO = :P7_ID_ARTICULO
+                ORDER BY CC.FEC_COMPROBANTE DESC, CC.NRO_COMPROBANTE DESC
+                FETCH FIRST 1 ROW ONLY
+                ```
+            pageItemsToSubmit: P7_ID_ARTICULO
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @inline-dialog
+            templateOptions: [
+                #DEFAULT#
+                js-dialog-autoheight
+                js-dialog-size600x400
+            ]
+        }
+        advanced {
+            htmlDomId: UltCompra
+        }
+        componentAppearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--stretch
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column COSTO_UNITARIO (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            heading {
+                heading: <p>Costo Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column ID_MONEDA (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column ID_PROVEEDOR (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 30
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column REFERENCIA (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: <p>Referencia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+    )
+
+    pageItem P7_ANULADO (
+        type: checkbox
+        label {
+            label: <p> Anulado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 70
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ANULADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    pageItem P7_BANDERA (
+        type: hidden
+        layout {
+            sequence: 70
+            slot: body
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P7_CAMBIO_MONEDA_PRECIO (
+        type: hidden
+        layout {
+            sequence: 450
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: CAMBIO_MONEDA_PRECIO
+            dataType: number
+        }
+    )
+
+    pageItem P7_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 370
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P7_COMENTARIO (
+        type: hidden
+        layout {
+            sequence: 480
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: COMENTARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_DECIMALES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                v_decimales number(10):=0;
+                BEGIN
+                SELECT DECIMALES
+                into v_decimales
+                 FROM BSW_MONEDAS
+                WHERE ID=:P7_ID_MONEDA;
+                return v_decimales;
+                exception 
+                when no_data_found then
+                return 0;
+                END;
+                ```
+        }
+    )
+
+    pageItem P7_DESCUENTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 340
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: DESCUENTO
+            dataType: number
+        }
+    )
+
+    pageItem P7_DESCUENTO_V (
+        type: numberField
+        label {
+            label: <p class="totales">DESCUENTO:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 80
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        comments {
+            comments: Descuento por articulo
+        }
+    )
+
+    pageItem P7_ESTADO (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ESTADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: P
+        }
+    )
+
+    pageItem P7_FAC_REFERENCIA (
+        type: hidden
+        layout {
+            sequence: 470
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FAC_REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_FEC_ALTA (
+        type: hidden
+        layout {
+            sequence: 360
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_ALTA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P7_FEC_ANULACION (
+        type: datePicker
+        label {
+            label: <p>Fecha</p>
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 130
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD-MON-YYYY HH:MI AM.
+            width: 30
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_ANULACION
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    pageItem P7_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p>Fecha:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        advanced {
+            customAttributes: TABINDEX="3"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_COMPROBANTE
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P7_FEC_CONFIRMACION (
+        type: hidden
+        layout {
+            sequence: 440
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_CONFIRMACION
+            dataType: date
+        }
+    )
+
+    pageItem P7_FEC_EMBARQUE (
+        type: hidden
+        layout {
+            sequence: 430
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_EMBARQUE
+            dataType: date
+        }
+    )
+
+    pageItem P7_FEC_ESTADO (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_ESTADO
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P7_FEC_POLIZA_FIN (
+        type: datePicker
+        label {
+            label: <p>Fec Poliza Fin</p>
+            alignment: left
+        }
+        layout {
+            sequence: 550
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_POLIZA_FIN
+            dataType: date
+        }
+    )
+
+    pageItem P7_FEC_POLIZA_INI (
+        type: datePicker
+        label {
+            label: <p>Fec Poliza Ini</p>
+            alignment: left
+        }
+        layout {
+            sequence: 540
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FEC_POLIZA_INI
+            dataType: date
+        }
+    )
+
+    pageItem P7_FILENAME (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 510
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FILENAME
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_FOTO_COMPROBANTE (
+        type: fileUpload
+        label {
+            label: <p>Foto Comprobante:</p>
+            alignment: left
+        }
+        storage {
+            mimeTypeColumn: MIMETYPE
+            filenameColumn: FILENAME
+        }
+        layout {
+            sequence: 490
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: FOTO_COMPROBANTE
+            dataType: blob
+        }
+    )
+
+    pageItem P7_ID (
+        type: hidden
+        layout {
+            sequence: 290
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: CMW_PEDIDOS_CABECERA_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P7_ID_ARTICULO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @ultimas-compras
+            slot: regionBody
+        }
+    )
+
+    pageItem P7_ID_COMPROBANTE_REF (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 520
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_COMPROBANTE_REF
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_CONDICION_COMPRA (
+        type: popupLov
+        label {
+            label: <p>Condición</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-condiciones-compra
+        }
+        layout {
+            sequence: 110
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            customAttributes: TABINDEX="5"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_CONDICION_COMPRA
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_EMPRESA
+        }
+    )
+
+    pageItem P7_ID_ENTSAL_CAB (
+        type: hidden
+        layout {
+            sequence: 460
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_ENTSAL_CAB
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_MONEDA (
+        type: popupLov
+        label {
+            label: <p>Moneda:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 210
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="6"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_MONEDA
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+        }
+        layout {
+            sequence: 50
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="5"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_PROVEEDOR
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_PROVEEDOR_REF (
+        type: hidden
+        layout {
+            sequence: 390
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_PROVEEDOR_REF
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 30
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 32
+        }
+        advanced {
+            cssClasses: fila
+            customAttributes: TABINDEX="1"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_SUCURSAL_CENTRAL (
+        type: hidden
+        layout {
+            sequence: 380
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_SUCURSAL_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P7_ID_USUARIO (
+        type: hidden
+        layout {
+            sequence: 350
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_USUARIO
+            dataType: number
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                v_id_usuario number;
+                BEGIN
+                SELECT ID 
+                into v_id_usuario
+                FROM BSW_USUARIOS
+                WHERE upper(COD_USUARIO)=upper(:APP_USER);
+                return v_id_usuario;
+                exception 
+                when no_data_found then
+                return null;
+                when others then
+                return null;
+                END;
+                ```
+        }
+    )
+
+    pageItem P7_ID_VIA (
+        type: hidden
+        layout {
+            sequence: 420
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: ID_VIA
+            dataType: number
+        }
+    )
+
+    pageItem P7_IND_EXENTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 560
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+    )
+
+    pageItem P7_IVA_10 (
+        type: numberField
+        label {
+            label: <p class="totales">IVA 10:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 50
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_IVA_5 (
+        type: numberField
+        label {
+            label: <p class="totales">IVA 5:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_LINK_IMPRESION (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+    )
+
+    pageItem P7_MIMETYPE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 500
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: MIMETYPE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_MODALIDAD_ENVIO (
+        type: textField
+        label {
+            label: <p>Modalidad de Envío:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 500
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: MODALIDAD_ENVIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_NRO_COMPROBANTE (
+        type: numberField
+        label {
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 100
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 21
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        advanced {
+            customAttributes: TABINDEX="2"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P7_NRO_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 330
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: NRO_COMPROBANTE_REF
+            dataType: number
+        }
+    )
+
+    pageItem P7_NRO_POLIZA (
+        type: textField
+        label {
+            label: <p>Nro Poliza</p>
+            alignment: left
+        }
+        layout {
+            sequence: 530
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 20
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: NRO_POLIZA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_PLAZO_ENTREGA (
+        type: hidden
+        layout {
+            sequence: 150
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+    )
+
+    pageItem P7_PLAZO_ENTREGA_CAB (
+        type: textField
+        label {
+            label: <p>Plazo de Entrega:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 240
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 200
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: PLAZO_ENTREGA_CAB
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_PROFORMA (
+        type: textField
+        label {
+            label: <p>Proforma: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 270
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 500
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: PROFORMA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Referencia:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 250
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="4"
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Número:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 1
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: A
+        }
+    )
+
+    pageItem P7_SER_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: SER_COMPROBANTE_REF
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_SUBTOTAL (
+        type: numberField
+        label {
+            label: <p class="totales">SUBTOTAL:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 90
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 19
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_TIPO (
+        type: radioGroup
+        label {
+            label: New
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Local;LOC,Importacion;IMP
+            displayNullValue: false
+        }
+        layout {
+            sequence: 260
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TIPO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: LOC
+        }
+    )
+
+    pageItem P7_TIP_CAMBIO (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: cambio
+            preText: <p>Cambio:</p>
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P7_TIP_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('CM','PEDIDOS_COMPRAS')
+        }
+    )
+
+    pageItem P7_TIP_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TIP_COMPROBANTE_REF
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_TOT_COMPROBANTE (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 30
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            formatMask: 999G999G999G999G990D000000
+            width: 100
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TOT_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P7_TOT_EXENTAS (
+        type: numberField
+        label {
+            label: <p class="totales">EXENTAS:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 70
+            region: @totales
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TOT_EXENTAS
+            dataType: number
+        }
+    )
+
+    pageItem P7_TOT_GRAVADAS (
+        type: hidden
+        layout {
+            sequence: 100
+            region: @totales
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TOT_GRAVADAS
+            dataType: number
+        }
+    )
+
+    pageItem P7_TOT_GRAVADAS_10 (
+        type: numberField
+        label {
+            label: <p class="totales">GRAVADAS 10:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_TOT_GRAVADAS_5 (
+        type: numberField
+        label {
+            label: <p class="totales">GRAVADAS 5:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 40
+            region: @totales
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_TOT_IVA (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL IVA:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 60
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TOT_IVA
+            dataType: number
+        }
+    )
+
+    pageItem P7_TRANSPORTE (
+        type: hidden
+        layout {
+            sequence: 410
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: TRANSPORTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P7_USUARIO (
+        type: textField
+        label {
+            label: <p>Usuario</p>
+            alignment: left
+        }
+        settings {
+            disabled: true
+        }
+        layout {
+            sequence: 140
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P7_VALOR1 (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_VALOR2 (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_VALOR3 (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P7_VERIFICADORA (
+        type: hidden
+        layout {
+            sequence: 400
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-compra-proveedor-ocp
+            column: VERIFICADORA
+            dataType: varchar2
+        }
+    )
+
+    button carga-rapida-proveedores (
+        buttonName: CARGA_RAPIDA_PROVEEDORES
+        label: Carga Rapida de Proveedores
+        layout {
+            sequence: 60
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 180
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P7_ID
+        }
+    )
+
+    button condicion (
+        buttonName: CONDICION
+        label: Condicion
+        layout {
+            sequence: 120
+            region: @orden-de-compra-proveedor-ocp
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 128
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P7_ID
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 20
+            region: @orden-de-compra-proveedor-ocp
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P7_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 40
+            region: @orden-de-compra-proveedor-ocp
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Está seguro que quiere eliminar?
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button movcaja (
+        buttonName: MovCaja
+        label: Caja
+        layout {
+            sequence: 10
+            region: @orden-de-compra-proveedor-ocp
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-money
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 75
+                items: {
+                    P75_ID_CLIENTE: &P7_ID_CLIENTE.
+                    P75_ID_MONEDA: &P7_ID_MONEDA.
+                    P75_ID_COMPROBANTE: &P7_ID.
+                    P75_ID: &P7_ID_MOV_CAJ.
+                    P75_SER_COMPROBANTE: &P7_SER_COMPROBANTE.
+                    P75_TIP_COMPROBANTE: &P7_TIP_COMPROBANTE.
+                    P75_IMPORTE: &P7_TOT_COMPROBANTE.
+                    P75_MONEDA: &P7_ID_MONEDA.
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button print (
+        buttonName: PRINT
+        label: Imprimir
+        layout {
+            sequence: 50
+            region: @orden-de-compra-proveedor-ocp
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--simple
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    button recalcula (
+        buttonName: Recalcula
+        label: Recalular Totales
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-calculator
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @orden-de-compra-proveedor-ocp
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 10
+            region: @orden-de-compra-proveedor-ocp
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 263
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction abrir-lista-de-valores (
+        name: Abrir Lista de Valores
+        execution {
+            sequence: 180
+        }
+        when {
+            event: dblclick
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: COD_ARTICULO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_ART_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction after-dialog-close (
+        name: AFTER DIALOG CLOSE
+        execution {
+            sequence: 200
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: region
+            region: @orden-de-compra-proveedor-ocp
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P7_ID_PROVEEDOR
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction auditoría-anulación-ocp (
+        name: Auditoría Anulación OCP
+        execution {
+            sequence: 300
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ANULADO
+        }
+
+        action set-cantidad (
+            name: Set Cantidad
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vcantidad number;
+                    BEGIN
+                        IF NVL(:ANULADO, 'N') = 'S' THEN
+                            vcantidad := :CANTIDAD;
+                        ELSE
+                            vcantidad := null;
+                        END IF;
+                        RETURN vcantidad;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    CANTIDAD
+                    ANULADO
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD_ANULADA
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action set-fecha (
+            name: Set Fecha
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vfecha date;
+                    BEGIN
+                        IF NVL(:ANULADO, 'N') = 'S' THEN
+                            vfecha := sysdate;
+                        ELSE
+                            vfecha := null;
+                        END IF;
+                        RETURN vfecha;
+                    END;
+                    ```
+                itemsToSubmit: ANULADO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FECHA_ANULACION
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action set-user (
+            name: Set User
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vuser VARCHAR2(30);
+                    BEGIN
+                        IF NVL(:ANULADO, 'N') = 'S' THEN
+                            vuser := :APP_USER;
+                        ELSE
+                            vuser := null;
+                        END IF;
+                        RETURN vuser;
+                    END;
+                    ```
+                itemsToSubmit: ANULADO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_ANULA
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction buscar-articulo (
+        name: Buscar Articulo
+        execution {
+            sequence: 170
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: COD_ARTICULO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    --Cargan los datos del articulo
+                    BEGIN
+                    SELECT A.ID
+                    INTO :ID_ARTICULO
+                    FROM STW_ARTICULOS A
+                    LEFT JOIN STW_BARRAS B ON A.ID=B.ID_ARTICULO
+                    WHERE
+                    (COD_ARTICULO=:COD_ARTICULO OR B.COD_BARRA=:COD_ARTICULO) AND
+                    A.ID_EMPRESA=:P0_COD_EMPRESA AND
+                    ROWNUM=1;
+                    END;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'No se encontro el articulo');
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de articulos');
+                    
+                    
+                    ```
+                itemsToSubmit: COD_ARTICULO
+                itemsToReturn: ID_ARTICULO
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 1
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_BANDERA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calcular-montos (
+        name: CALCULAR_MONTOS
+        execution {
+            sequence: 40
+        }
+        when {
+            event: keydown
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: [
+                CANTIDAD
+                PRECIO_UNITARIO_C_IVA
+                PORC_DESCUENTO
+            ]
+        }
+        comments {
+            comments: Aqui se van calculando los totales correspondientes  (Monto total con iva , monto total , total iva ,descuentos)
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :PORC_DESCUENTO IS NULL THEN
+                    :PORC_DESCUENTO:=0 ;
+                    END IF;
+                    
+                    :DESCUENTO_C_IVA:=REPLACE(:PRECIO_UNITARIO_C_IVA,'.','')*(:PORC_DESCUENTO/100);
+                    
+                    ```
+                itemsToSubmit: [
+                    PORC_DESCUENTO
+                    PRECIO_UNITARIO_C_IVA
+                ]
+                itemsToReturn: DESCUENTO_C_IVA
+                showProcessing: true
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    if :CANTIDAD is null then
+                         :CANTIDAD := 1;
+                    end if;
+                    
+                    if :PRECIO_UNITARIO_C_IVA is null THEN
+                        :PRECIO_UNITARIO_C_IVA    := 0;
+                        :TOTAL_IVA := 0;
+                        END IF;
+                    
+                        IF :DESCUENTO_C_IVA IS NULL THEN
+                        :DESCUENTO_C_IVA:=0;
+                    end if;
+                    
+                    
+                    :MONTO_TOTAL_C_IVA :=round(replace(:CANTIDAD, '.', '') * (replace(:PRECIO_UNITARIO_C_IVA, '.', '')-NVL(:DESCUENTO_C_IVA,0)),:P7_DECIMALES);
+                    IF :DESCUENTO_C_IVA IS NOT NULL AND :DESCUENTO_C_IVA!=0 THEN 
+                    :P7_DESCUENTO_V:=round(replace(:PRECIO_UNITARIO_C_IVA, '.', '')-NVL(:DESCUENTO_C_IVA,0),:P7_DECIMALES);
+                    END IF;
+                    --:MONTO_TOTAL_C_IVA:=:CANTIDAD * :PRECIO_UNITARIO_C_IVA;
+                    
+                    ```
+                itemsToSubmit: [
+                    PRECIO_UNITARIO_C_IVA
+                    CANTIDAD
+                    DESCUENTO_C_IVA
+                    P7_DECIMALES
+                ]
+                itemsToReturn: [
+                    MONTO_TOTAL
+                    MONTO_TOTAL_C_IVA
+                    P7_DESCUENTO_V
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-3 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    if :PRECIO_UNITARIO_C_IVA is null  then
+                       :PRECIO_UNITARIO_C_IVA := 0;
+                    end if;
+                    
+                    if :TOTAL_IVA is null then
+                       :TOTAL_IVA := 0;
+                    end if;
+                    
+                    :TOTAL_IVA := round((((replace(:PRECIO_UNITARIO_C_IVA, '.', '')-NVL(:DESCUENTO_C_IVA,0)) * replace(:CANTIDAD, '.', '')) * :PORC_IVA ) / (100 + :PORC_IVA),:P7_DECIMALES);
+                    ```
+                itemsToSubmit: [
+                    CANTIDAD
+                    PRECIO_UNITARIO_C_IVA
+                    PORC_IVA
+                    DESCUENTO_C_IVA
+                    P7_DECIMALES
+                ]
+                itemsToReturn: TOTAL_IVA
+                showProcessing: true
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-4 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    if :MONTO_TOTAL is null  then
+                       :MONTO_TOTAL:= 0;
+                    end if;
+                    
+                    
+                    --:MONTO_TOTAL :=:MONTO_TOTAL_C_IVA -:IVA;
+                    :MONTO_TOTAL := round((replace(:MONTO_TOTAL_C_IVA, '.', '') - replace(:TOTAL_IVA, '.', '')),:P7_DECIMALES);
+                    ```
+                itemsToSubmit: [
+                    MONTO_TOTAL_C_IVA
+                    TOTAL_IVA
+                    P7_DECIMALES
+                ]
+                itemsToReturn: MONTO_TOTAL
+                showProcessing: true
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-5 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare
+                    v_precio_unitario number;
+                    begin
+                    IF :PRECIO_UNITARIO IS NULL THEN
+                    :PRECIO_UNITARIO:=0;
+                    END IF;
+                    
+                     v_precio_unitario:=round(replace(:PRECIO_UNITARIO_C_IVA,'.','')*(:PORC_IVA/(100+:PORC_IVA)),:P7_DECIMALES);
+                     :PRECIO_UNITARIO:=round(replace(:PRECIO_UNITARIO_C_IVA,'.','')-v_precio_unitario,:P7_DECIMALES);
+                     end;
+                    ```
+                itemsToSubmit: [
+                    PRECIO_UNITARIO_C_IVA
+                    PORC_IVA
+                ]
+                itemsToReturn: PRECIO_UNITARIO
+                showProcessing: true
+            }
+            execution {
+                sequence: 80
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: recalculaImporte();
+            }
+            execution {
+                sequence: 90
+            }
+        )
+
+        action p7-decimales (
+            name: P7_DECIMALES
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: MONEDA_DECIMALES(:P7_ID_MONEDA)
+                itemsToSubmit: P7_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_DECIMALES
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                componentType: item
+                item: P7_DECIMALES
+            }
+        )
+
+    )
+
+    dynamicAction cambiar-factura-proveedor (
+        name: Cambiar Factura Proveedor
+        execution {
+            sequence: 120
+        }
+        when {
+            selectionType: items
+            items: [
+                P7_VALOR3
+                P7_VALOR2
+                P7_VALOR1
+            ]
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    nvl(:P7_VALOR1,'001')||'-'||nvl(:P7_VALOR2,'001')
+                    	                        ||'-'||LPAD(:P7_VALOR3,7,'0')
+                    ```
+                itemsToSubmit: [
+                    P7_VALOR1
+                    P7_VALOR2
+                    P7_VALOR3
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_REFERENCIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cargar-datos-proveedor (
+        name: Cargar Datos Proveedor
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: items
+            items: P7_ID_PROVEEDOR
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    v_nombre_proveedor  BSW_PERSONAS.NOMBRE%TYPE;
+                    BEGIN
+                    select ltrim(p.nombre) nombre
+                    INTO v_nombre_proveedor
+                     from bsw_personas p, cmw_proveedores v 
+                     where v.id_empresa = :P0_COD_EMPRESA
+                     and v.id_persona = p.ID 
+                     AND V.ID=:P7_ID_PROVEEDOR;
+                    RETURN v_nombre_proveedor;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN 
+                    return null;
+                    when others then
+                    raise_application_error(-20000,'Error en la tabla de proveedores'||sqlerrm);
+                    return null;
+                    END;
+                    ```
+                itemsToSubmit: P7_ID_PROVEEDOR
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_NOM_PROVEEDOR
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT EXENTO 
+                    FROM CMW_PROVEEDORES
+                    WHERE ID=:P7_ID_PROVEEDOR
+                    ```
+                itemsToSubmit: P7_ID_PROVEEDOR
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_IND_EXENTO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    V_CONDICION_COMPRA  VARCHAR2(10);
+                    BEGIN
+                    select V.ID_CONDICION_COMPRA
+                    INTO V_CONDICION_COMPRA
+                     from cmw_proveedores v 
+                     where v.id_empresa = :P0_COD_EMPRESA
+                     AND V.ID=:P7_ID_PROVEEDOR;
+                    RETURN V_CONDICION_COMPRA;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN 
+                    return '61';
+                    when others then
+                    raise_application_error(-20000,'Error en la tabla de proveedores'||sqlerrm);
+                    return null;
+                    END;
+                    ```
+                itemsToSubmit: P7_ID_PROVEEDOR
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_ID_CONDICION_COMPRA
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 250
+        }
+        when {
+            selectionType: items
+            items: P7_FEC_COMPROBANTE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P7_FEC_COMPROBANTE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P7_FEC_COMPROBANTE,'/','');
+                            conv_fecha := substr(:P7_FEC_COMPROBANTE,1,2)||'/'||
+                                                      substr(:P7_FEC_COMPROBANTE,3,2)||'/'||
+                                                      lpad(substr(:P7_FEC_COMPROBANTE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P7_FEC_COMPROBANTE := conv_fecha;
+                            ELSIF (length(:P7_FEC_COMPROBANTE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P7_FEC_COMPROBANTE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction desactivar-acciones (
+        name: "Desactivar acciones "
+        execution {
+            sequence: 60
+        }
+        when {
+            event: ready
+        }
+        comments {
+            comments: Desactiva algunas acciones del interactive grid del detalle de la factura
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    let actions = apex.region("Detalles").call("getActions");
+                    actions.hide("selection-duplicate");
+                    actions.hide("selection-delete");
+                    actions.hide("selection-copy-down");
+                    actions.hide("selection-copy");
+                    actions.hide("selection-refresh"); 
+                    actions.hide("selection-revert"); 
+                    //actions.hide("selection-add-row");
+                    actions.hide("selection-fill"); 
+                    actions.hide("selection-clear"); 
+                    actions.hide("single-row-view");
+                    //actions.hide("row-add-row");
+                    actions.hide("row-duplicate");
+                    //actions.hide("row-delete"); 
+                    actions.hide("row-refresh");  
+                    //actions.hide("row-revert");
+                    ```
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction descuento-por-detalle (
+        name: Descuento por detalle
+        execution {
+            sequence: 150
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalles
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :PORC_DESCUENTO IS NOT NULL AND NVL(:PORC_DESCUENTO,0)<>0 THEN 
+                    :P7_DESCUENTO_V:=REPLACE(NVL(:PRECIO_UNITARIO_C_IVA,0),'.','')-REPLACE(NVL(:DESCUENTO_C_IVA,0),'.','');
+                    ELSE 
+                    :P7_DESCUENTO_V:='';
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    PORC_DESCUENTO
+                    PRECIO_UNITARIO_C_IVA
+                    DESCUENTO_C_IVA
+                ]
+                itemsToReturn: P7_DESCUENTO_V
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction fecha-anulacion (
+        name: Fecha Anulacion
+        execution {
+            sequence: 210
+        }
+        when {
+            selectionType: items
+            items: P7_ANULADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+                    
+                    ```
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_FEC_ANULACION
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P7_ANULADO
+                value: S
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: NULL
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_FEC_ANULACION
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item!=value
+                item: P7_ANULADO
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction fecha-confirmacion (
+        name: Fecha Confirmacion
+        execution {
+            sequence: 160
+        }
+        when {
+            selectionType: items
+            items: P7_ESTADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_FEC_ESTADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P7_ESTADO
+                value: C
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: NULL
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_FEC_ESTADO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P7_ESTADO
+                value: P
+            }
+        )
+
+    )
+
+    dynamicAction imprimir-orden (
+        name: Imprimir Orden
+        execution {
+            sequence: 220
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @print
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.navigation.openInNewWindow($v('P7_LINK_IMPRESION'));
+                    
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    v_checksum varchar2(2000);
+                    
+                    BEGIN 
+                     dbms_lock.sleep(0.2);
+                     RETURN  APEX_UTIL.PREPARE_URL('f?p='||:APP_ID||':265:'||:APP_SESSION||'::NO::P7_ID,P0_COD_EMPRESA:'||:P7_ID||','||
+                     '&P0_COD_EMPRESA.', p_checksum_type => 'SESSION');
+                     exception 
+                     when others then 
+                     RAISE_APPLICATION_ERROR(-20000,'ERROR al realizar la impresion!');
+                    END;
+                    
+                    ```
+                itemsToSubmit: P7_ID
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_LINK_IMPRESION
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: Inicializar
+        execution {
+            sequence: 190
+        }
+        when {
+            event: ready
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: dbms_lock.sleep(1);
+            }
+            execution {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode: recalculaImporte();
+            }
+            execution {
+                sequence: 30
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction limpiar (
+        name: Limpiar
+        execution {
+            sequence: 350
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: TIP_COMPROBANTE
+        }
+
+        action id-aprobacion-lic (
+            name: ID_APROBACION_LIC
+            action: clear
+            affectedElements {
+                selectionType: columns
+                columns: ID_APROBACION_LIC
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: PED
+            }
+        )
+
+        action id-cotiza-art-nro-pedido (
+            name: ID_COTIZA_ART,NRO_PEDIDO
+            action: clear
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    ID_COTIZA_ART
+                    NRO_PEDIDO
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: LIC
+            }
+        )
+
+        action todo (
+            name: Todo
+            action: clear
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    ID_COTIZA_ART
+                    NRO_PEDIDO
+                    NRO_COMPROBANTE
+                    ID_APROBACION_LIC
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: TIP_COMPROBANTE
+            }
+        )
+
+    )
+
+    dynamicAction moneda-defecto (
+        name: Moneda Defecto
+        execution {
+            sequence: 70
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P7_ID
+        }
+        comments {
+            comments: "Carga la moneda guaraníes como la moneda por defecto en el cabecera de la factura "
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: W_BUSCA_PARAMETRO('BS','COD_MONEDA_GS')
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_ID_MONEDA
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: itemIsNull
+                item: P7_ID
+            }
+            serverSideCondition {
+                type: itemIsNull
+                item: P7_ID
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 330
+        }
+        when {
+            event: ready
+        }
+        clientSideCondition {
+            type: itemIsNull
+            item: P7_TOT_COMPROBANTE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: recalculaImporte();
+            }
+            affectedElements {
+                selectionType: region
+                region: @totales
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction orden (
+        name: Orden
+        execution {
+            sequence: 50
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: NUM_ORDEN
+        }
+        clientSideCondition {
+            type: itemColumnIsNull
+            column: NUM_ORDEN
+        }
+        serverSideCondition {
+            type: never
+        }
+        comments {
+            comments: "Metodo aun en prueba para guardar el orden de los detalles de la factura "
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: orden += 1;
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: NUM_ORDEN
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: orden
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NUM_ORDEN
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction prederterminado (
+        name: Prederterminado
+        execution {
+            sequence: 110
+        }
+        when {
+            event: focusin
+            selectionType: items
+            items: P7_VALOR2
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 001
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_VALOR2
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNull
+                item: P7_VALOR2
+            }
+        )
+
+    )
+
+    dynamicAction predeterminado (
+        name: Predeterminado
+        execution {
+            sequence: 100
+        }
+        when {
+            event: focusin
+            selectionType: items
+            items: P7_VALOR1
+        }
+        clientSideCondition {
+            type: itemIsNull
+            item: P7_VALOR1
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 001
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_VALOR1
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNull
+                item: P7_VALOR1
+            }
+        )
+
+    )
+
+    dynamicAction reaccion-grilla (
+        name: Reaccion grilla
+        execution {
+            sequence: 280
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                        $grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction recalculame (
+        name: Recalculame
+        execution {
+            sequence: 320
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @recalcula
+        }
+        comments {
+            comments:
+                ```
+                esta
+                
+                ```
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: recalculaImporte();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: refrescar
+        execution {
+            sequence: 240
+        }
+        when {
+            selectionType: items
+            items: P7_ID_CONDICION_COMPRA
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P7_ID_CONDICION_COMPRA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-lv (
+        name: Refrescar LV
+        execution {
+            sequence: 230
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @carga-rapida-proveedores
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @orden-de-compra-proveedor-ocp
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-region (
+        name: Refrescar Region
+        execution {
+            sequence: 370
+        }
+        when {
+            selectionType: items
+            items: P7_ID_ARTICULO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ultimas-compras
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambio (
+        name: Setear Cambio
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P7_ID_MONEDA
+        }
+        comments {
+            comments: "Setea el cambio de la moneda seleccionada  de la factura "
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:P7_ID_MONEDA,SYSDATE,'C','V');
+                    ---RETURN FTIPOS_CAMBIO(:P7_ID_MONEDA,:P7_FEC_COMPROBANTE,'C','V');
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el cambio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: P7_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM BSW_MONEDAS
+                    WHERE ID=:P7_ID_MONEDA
+                    ```
+                itemsToSubmit: P7_ID_MONEDA
+                suppressChangeEvent: true
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_DECIMALES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos (
+        name: Setear Datos
+        execution {
+            sequence: 340
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: REF_COTIZACION
+        }
+
+        action nro-comprobante-occ-oferta (
+            name: NRO_COMPROBANTE, OCC, OFERTA
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT AE.NRO_LICITACION, AE.NRO_OCC, AE.ID_APROBACION
+                      FROM LCWV_ARTICULOS_A_ENTREGAR AE
+                     WHERE AE.ID_APROBACION = :REF_COTIZACION
+                    ```
+                itemsToSubmit: REF_COTIZACION
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    NRO_COMPROBANTE
+                    NRO_OCC
+                    ID_APROBACION_LIC
+                ]
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: LIC
+            }
+        )
+
+        action nro-pedido-nro-occ (
+            name: NRO_PEDIDO, NRO_OCC
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT CO.NRO_PEDIDO, CO.NRO_PEDIDO NRO_COMPROBANTE, CO.NRO_OCC, CO.C_ID
+                      FROM CMWV_COTIZACIONES CO
+                     WHERE CO.C_ID = :REF_COTIZACION
+                    ```
+                itemsToSubmit: REF_COTIZACION
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    NRO_PEDIDO
+                    NRO_COMPROBANTE
+                    NRO_OCC
+                    ID_COTIZA_ART
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: PED
+            }
+        )
+
+    )
+
+    dynamicAction setear-fecha-plazo (
+        name: SETEAR_FECHA_PLAZO
+        execution {
+            sequence: 260
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_PLAZO_ENTREGA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    
+                    v_fecha_calculdada date;
+                    v_nro_dias number;
+                    begin
+                    
+                    
+                    
+                    
+                    SELECT E.NRO_DIAS
+                    
+                     INTO
+                     v_nro_dias    
+                        
+                    FROM 
+                        CMW_TIPO_ENTREGA E
+                        
+                        
+                     where
+                     E.ID  = :ID_PLAZO_ENTREGA;
+                    
+                     return TO_DATE(:P7_FEC_COMPROBANTE,'DD/MM/YYYY') + v_nro_dias;
+                    end;
+                    
+                    ```
+                itemsToSubmit: [
+                    ID_PLAZO_ENTREGA
+                    P7_FEC_COMPROBANTE
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FECHA_PLAZO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-foco (
+        name: Setear Foco
+        execution {
+            sequence: 270
+        }
+        when {
+            event: ready
+        }
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression: $( "Detalles" ).grid( "focus" );
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-id-articulo (
+        name: Setear ID_ARTICULO
+        execution {
+            sequence: 360
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalles
+        }
+
+        action p7-id-articulo (
+            name: P7_ID_ARTICULO
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :ID_ARTICULO
+                itemsToSubmit: ID_ARTICULO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_ID_ARTICULO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-precios-y-lote (
+        name: Setear Precios y Lote
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_ARTICULO
+        }
+        comments {
+            comments: "Al seleccionar un producto setea su precio y lote correspondiente si es que tienen "
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    if :PRECIO_UNITARIO_C_IVA is null then
+                         :PRECIO_UNITARIO_C_IVA :=0;
+                    end if;
+                    if :IVA IS NULL THEN
+                    :IVA:=0;
+                    END IF;
+                    
+                    
+                    BEGIN
+                    SELECT NVL(MAX(PRECIO),0) 
+                    INTO :PRECIO_UNITARIO_C_IVA
+                    FROM CMWV_PROVEEDORES_ARTICULOS
+                    WHERE ID_PROVEEDOR=:P7_ID_PROVEEDOR
+                    AND ID_ARTICULO=:ID_ARTICULO;
+                    
+                    SELECT ID_UNIDAD_MEDIDA
+                    INTO :ID_UNIDAD_MEDIDA
+                    FROM STW_ARTICULOS
+                    WHERE ID=:ID_ARTICULO;
+                    
+                    IF :CANTIDAD IS NULL THEN
+                        SELECT 1
+                        INTO :CANTIDAD 
+                        FROM DUAL;
+                    END IF;
+                    
+                    END;
+                    
+                    
+                        
+                    
+                    ```
+                itemsToSubmit: [
+                    ID_ARTICULO
+                    P7_ID_PROVEEDOR
+                    CANTIDAD
+                ]
+                itemsToReturn: [
+                    PRECIO_UNITARIO_C_IVA
+                    IVA
+                    PORC_IVA
+                    CANTIDAD
+                    ID_UNIDAD_MEDIDA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      v_maneja_lote varchar(1);
+                      v_id_iva number;
+                      vind_exento varchar2(1);
+                    BEGIN
+                        begin
+                          select NVL(EXENTO,'N')
+                           into vind_exento
+                          from cmw_proveedores
+                          where id = :P7_ID_PROVEEDOR;
+                        exception
+                         when no_data_found then
+                           raise_application_error(-20000,'No se encuentra proveedor '||:P7_ID_PROVEEDOR);
+                         when others then
+                           raise_application_error(-20000,'Error encuentra proveedor '||:P7_ID_PROVEEDOR||' '||sqlerrm);
+                        end;
+                        --IF NVL(:P7_IND_EXENTO,'N')='N' THEN 
+                        /* Si es una importacion siempre es exento o el proveedor tiene marcado como exento en la ficha */
+                        IF NVL(vind_exento,'N') = 'N' THEN 
+                          BEGIN
+                              SELECT NVL(ar.IND_MANEJA_LOTE,'N'), ar.ID_IVA, Iv.PORC_IVA_VENTA
+                                into v_maneja_lote, :ID_IVA, :PORC_IVA
+                              from stw_articulos ar, stw_iva iv 
+                              where ar.id = :id_articulo 
+                                and ar.id_iva = iv.id;
+                          exception
+                            when no_data_found then
+                              raise_application_error(-20000,'No se encuentra el id_articulo '||:id_articulo);
+                            when others then
+                              raise_application_error(-20000,'Error No se encuentra el id_articulo '||:id_articulo);
+                          end;
+                        ELSE 
+                          begin
+                            SELECT  I.ID, I.PORC_IVA_VENTA 
+                              INTO :id_iva, :PORC_IVA
+                            FROM STW_IVA I 
+                            WHERE COD_IVA = '0'; ---W_BUSCA_PARAMETRO('ST','COD_IVA_EXENTA');
+                            --raise_application_error(-20000,v_id_iva);
+                          exception
+                            when no_data_found then
+                              raise_application_error(-20000,'No se encuentra codigo de iva excento ');
+                            when others then
+                              raise_application_error(-20000,'Error No se encuentra codigo de iva excento '||sqlerrm);
+                          end;
+                        END IF;
+                    EXCEPTION
+                      when OTHERS THEN
+                        raise_application_error(-20000,'Error en procedimiento '||sqlerrm);
+                    END;
+                    ```
+                itemsToSubmit: [
+                    ID_ARTICULO
+                    P7_IND_EXENTO
+                    P7_ID_PROVEEDOR
+                ]
+                itemsToReturn: [
+                    PORC_IVA
+                    ID_IVA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    var array = grid.getSelectedRecords();
+                    grid.gotoCell(array[0][0],'COD_ARTICULO');
+                    
+                    ```
+            }
+            execution {
+                sequence: 80
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P7_BANDERA
+                value: 0
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DESCRIPCION FROM 
+                    STW_ARTICULOS WHERE
+                    ID=:ID_ARTICULO 
+                    ```
+                itemsToSubmit: ID_ARTICULO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DESC_ARTICULO
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT COD_ARTICULO FROM STW_ARTICULOS
+                    WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                    AND ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+                suppressChangeEvent: true
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_ARTICULO
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT COD_ORIGEN_ART, ID_MARCA, ID_ENVASE, ID_GRUPO_ART FROM STW_ARTICULOS
+                    WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                    AND ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    COD_FABRICANTE
+                    ID_MARCA
+                    ID_ENVASE
+                    ID_GRUPO_ART
+                ]
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-4 (
+            action: setValue
+            settings {
+                value: 0
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_BANDERA
+            }
+            execution {
+                sequence: 90
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction traer-ultimo-timbrado (
+        name: Traer Ultimo Timbrado
+        execution {
+            sequence: 140
+        }
+        when {
+            event: focusout
+            selectionType: items
+            items: P7_NRO_TIMBRADO
+        }
+        clientSideCondition {
+            type: itemIsNull
+            item: P7_NRO_TIMBRADO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare
+                    v_nro_timbrado CMW_COMPRAS_CABECERA.NRO_TIMBRADO%TYPE;
+                    v_ven_timbrado CMW_COMPRAS_CABECERA.FEC_VENC_TIMBRADO%TYPE;
+                    begin
+                    IF :P7_ID_PROVEEDOR IS NOT NULL THEN 
+                    SELECT TIMBRADO,FEC_VENC_TIMBRADO  
+                    INTO V_NRO_TIMBRADO,V_VEN_TIMBRADO
+                    FROM CMWV_PROVEEDORES_COMPRAS
+                    WHERE ID_PROVEEDOR=:P7_ID_PROVEEDOR AND 
+                    ID_EMPRESA=:P0_COD_EMPRESA;
+                    :P7_NRO_TIMBRADO:=v_nro_timbrado;
+                    :P7_FEC_VENC_TIMBRADO:=v_ven_timbrado;
+                    END IF;
+                    EXCEPTION 
+                    WHEN NO_DATA_FOUND THEN 
+                    NULL;
+                    WHEN OTHERS THEN
+                    NULL;
+                    end;
+                    ```
+                itemsToSubmit: P7_ID_PROVEEDOR
+                itemsToReturn: [
+                    P7_NRO_TIMBRADO
+                    P7_FEC_VENC_TIMBRADO
+                ]
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction validar-fecha-timbrado (
+        name: Validar Fecha Timbrado
+        execution {
+            sequence: 130
+        }
+        when {
+            selectionType: items
+            items: P7_FEC_VENC_TIMBRADO
+        }
+        clientSideCondition {
+            type: jsExpression
+            javaScriptExpression:
+                ```javascript-browser
+                ($v("P7_FEC_COMPROBANTE")>$v("P7_FEC_VENC_TIMBRADO"))
+                
+                ```
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Atencion
+                message: "La fecha de vencimiento no puede ser menor a la fecha del comprobante "
+                style: warning
+                okLabel: Aceptar
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+                suppressChangeEvent: true
+            }
+            affectedElements {
+                selectionType: items
+                items: P7_FEC_VENC_TIMBRADO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation plazo-nulo (
+        name: Plazo Nulo
+        execution {
+            sequence: 30
+        }
+        validation {
+            editableRegion: @detalles
+            type: columnIsNotNull
+            column: ID_PLAZO_ENTREGA
+        }
+        error {
+            errorMessage: Debe asignar un plazo de entrega
+            associatedColumn: ID_PLAZO_ENTREGA
+        }
+    )
+
+    validation validar-fecha (
+        name: Validar Fecha
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                  vmensaje varchar2(400);
+                  begin
+                    select ver_fecha(:P0_ID_EMPRESA,W_BUSCA_PARAMETRO('CM','ID_MODULO_CM'),:P7_FEC_COMPROBANTE) 
+                    into vmensaje
+                    from dual;
+                    IF VMENSAJE IS NULL THEN
+                    RETURN TRUE;
+                    ELSE 
+                    RETURN FALSE;
+                    END IF;
+                end;
+                ```
+        }
+        error {
+            errorMessage: Fecha Fuera de Rango
+            associatedItem: @P7_FEC_COMPROBANTE
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    validation validar-si-es-para-stock (
+        name: Validar si es para stock
+        execution {
+            sequence: 40
+        }
+        validation {
+            editableRegion: @detalles
+            plsqlExpression: NVL(:IND_PARA_STOCK, 'N') = 'N' AND (:ID_COTIZA_ART IS NOT NULL OR :ID_APROBACION_LIC IS NOT NULL)
+        }
+        error {
+            errorMessage: Debe referenciar una cotización o marcar "Para Stock"
+            associatedColumn: IND_PARA_STOCK
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: NVL(:IND_PARA_STOCK, 'N') = 'N'
+        }
+    )
+
+    validation validar-total (
+        name: Validar Total
+        execution {
+            sequence: 10
+        }
+        validation {
+            plsqlExpression: replace(:P7_TOT_COMPROBANTE,'.','')!=0 AND :P7_TOT_COMPROBANTE IS NOT NULL
+        }
+        error {
+            errorMessage: El comprobante no puede ser 0 o estar vacio !
+            associatedItem: @P7_TOT_COMPROBANTE
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    computation p7-id-sucursal (
+        itemName: P7_ID_SUCURSAL
+        execution {
+            sequence: 30
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT ID FROM BSW_SUCURSALES 
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                AND ID=:P0_COD_SUCURSAL
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P7_ID
+        }
+    )
+
+    computation p7-iva (
+        itemName: P7_IVA_5
+        execution {
+            sequence: 70
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    CURSOR cursor_detalle IS SELECT * FROM CMW_PEDIDOS_DETALLE
+                    WHERE :P7_ID=ID_PEDIDO_CAB;
+                    item_detalle CMW_PEDIDOS_DETALLE%rowtype;
+                    v_total_iva_5    CMW_PEDIDOS_CABECERA.TOT_GRAVADAS%TYPE:=0;
+                BEGIN
+                  OPEN cursor_detalle;
+                  LOOP
+                    FETCH cursor_detalle INTO item_detalle;
+                    EXIT WHEN cursor_detalle%NOTFOUND;
+                    IF( item_detalle.IVA = 5 ) THEN
+                     v_total_iva_5:=v_total_iva_5+item_detalle.total_iva;
+                    END IF;
+                  END LOOP;
+                  CLOSE cursor_detalle;
+                  RETURN v_total_iva_5;
+                  EXCEPTION WHEN OTHERS THEN
+                  RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    computation p7-iva-2 (
+        itemName: P7_IVA_10
+        execution {
+            sequence: 80
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    CURSOR cursor_detalle IS SELECT * FROM CMW_PEDIDOS_DETALLE
+                    WHERE :P7_ID=ID_PEDIDO_CAB;
+                    item_detalle CMW_PEDIDOS_DETALLE%rowtype;
+                    v_total_iva_10    CMW_PEDIDOS_CABECERA.TOT_GRAVADAS%TYPE:=0;
+                BEGIN
+                  OPEN cursor_detalle;
+                  LOOP
+                    FETCH cursor_detalle INTO item_detalle;
+                    EXIT WHEN cursor_detalle%NOTFOUND;
+                    IF( item_detalle.IVA = 10 ) THEN
+                     v_total_iva_10:=v_total_iva_10+item_detalle.total_iva;
+                    END IF;
+                  END LOOP;
+                  CLOSE cursor_detalle;
+                  RETURN v_total_iva_10;
+                  EXCEPTION WHEN OTHERS THEN
+                  RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    computation p7-nro-comprobante (
+        itemName: P7_NRO_COMPROBANTE
+        execution {
+            sequence: 60
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                --Cargo el numero de comprobante si que es no escribio de manera manual 
+                DECLARE
+                v_nro_comprobante VTW_COMPROBANTES_CABECERA.NRO_COMPROBANTE%TYPE;
+                BEGIN
+                IF :P7_NRO_COMPROBANTE IS  NULL THEN
+                SELECT NVL(MAX(NRO_COMPROBANTE),0)+1
+                INTO v_nro_comprobante
+                FROM
+                CMW_PEDIDOS_CABECERA 
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                AND :P7_SER_COMPROBANTE=SER_COMPROBANTE
+                AND :P7_TIP_COMPROBANTE=TIP_COMPROBANTE;
+                RETURN V_NRO_COMPROBANTE;
+                END IF;
+                 RETURN :P7_NRO_COMPROBANTE;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                V_NRO_COMPROBANTE:=1;
+                RETURN V_NRO_COMPROBANTE;
+                WHEN OTHERS THEN 
+                RAISE_APPLICATION_ERROR(-20000,'Error al cargar el numero de comprobante'||sqlerrm);
+                END;
+                EXCEPTION WHEN
+                OTHERS THEN
+                RAISE_APPLICATION_ERROR(-20000,'Error al cargar el numero de comprobante'||sqlerrm);
+                ```
+        }
+        comments {
+            comments: "Calculo para calcular el nro comprobante a guardarse si es qque no se escribio un numero de manera manual "
+        }
+    )
+
+    computation p7-subtotal (
+        itemName: P7_SUBTOTAL
+        execution {
+            sequence: 60
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    CURSOR cursor_cabecera IS SELECT * FROM CMW_PEDIDOS_CABECERA
+                    WHERE :P7_ID=ID;
+                    item_cabecera CMW_PEDIDOS_CABECERA%rowtype;
+                    v_subtotal   CMW_PEDIDOS_CABECERA.TOT_COMPROBANTE%TYPE:=0;
+                BEGIN
+                  OPEN cursor_CABECERA;
+                  LOOP
+                    FETCH cursor_cabecera INTO item_cabecera;
+                    EXIT WHEN cursor_cabecera%NOTFOUND;
+                    v_subtotal:=nvl(item_cabecera.tot_comprobante,0)-nvl(item_cabecera.tot_iva,0);
+                  END LOOP;
+                  CLOSE cursor_cabecera;
+                  RETURN v_subtotal;
+                  EXCEPTION WHEN OTHERS THEN
+                  RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    computation p7-tot-gravadas (
+        itemName: P7_TOT_GRAVADAS
+        execution {
+            sequence: 40
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: NVL(REPLACE(:P7_TOT_GRAVADAS_10,'.',''),0)+NVL(REPLACE(:P7_TOT_GRAVADAS_5,'.',''),0)
+        }
+        comments {
+            comments: "Metodo para calcular las gravadas de la factura "
+        }
+    )
+
+    computation p7-tot-gravadas-2 (
+        itemName: P7_TOT_GRAVADAS_10
+        execution {
+            sequence: 40
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    CURSOR cursor_detalle IS SELECT * FROM CMW_PEDIDOS_DETALLE
+                    WHERE :P7_ID=ID_PEDIDO_CAB;
+                    item_detalle CMW_PEDIDOS_DETALLE%rowtype;
+                    v_total_gravadas_10    CMW_COMPRAS_CABECERA.TOT_GRAVADAS%TYPE:=0;
+                BEGIN
+                  OPEN cursor_detalle;
+                  LOOP
+                    FETCH cursor_detalle INTO item_detalle;
+                    EXIT WHEN cursor_detalle%NOTFOUND;
+                    IF( item_detalle.IVA = 10 ) THEN
+                     v_total_gravadas_10:=v_total_gravadas_10+item_detalle.monto_total;
+                    END IF;
+                  END LOOP;
+                  CLOSE cursor_detalle;
+                  RETURN v_total_gravadas_10;
+                  EXCEPTION WHEN 
+                  OTHERS THEN
+                  RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    computation p7-tot-gravadas-3 (
+        itemName: P7_TOT_GRAVADAS_5
+        execution {
+            sequence: 50
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    CURSOR cursor_detalle IS SELECT * FROM CMW_PEDIDOS_DETALLE
+                    WHERE :P7_ID=ID_PEDIDO_CAB;
+                    item_detalle CMW_PEDIDOS_DETALLE%rowtype;
+                    v_total_gravadas_5    CMW_COMPRAS_CABECERA.TOT_GRAVADAS%TYPE:=0;
+                BEGIN
+                  OPEN cursor_detalle;
+                  LOOP
+                    FETCH cursor_detalle INTO item_detalle;
+                    EXIT WHEN cursor_detalle%NOTFOUND;
+                    IF( item_detalle.IVA = 5 ) THEN
+                     v_total_gravadas_5:=v_total_gravadas_5+item_detalle.monto_total;
+                    END IF;
+                  END LOOP;
+                  CLOSE cursor_detalle;
+                  RETURN v_total_gravadas_5;
+                  EXCEPTION WHEN OTHERS THEN
+                  RETURN NULL;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P7_ID
+        }
+    )
+
+    process detalles-save-interactive-grid-data (
+        name: Detalles - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                
+                
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                             
+                             
+                
+                             --SELECT REPLACE(:TOTAL_IVA,'.','') INTO :TOTAL_IVA  FROM DUAL;
+                              --SELECT REPLACE(:MONTO_TOTAL_C_IVA,'.','') INTO :MONTO_TOTAL_C_IVA  FROM DUAL;
+                              --SELECT REPLACE(:MONTO_TOTAL,'.','') INTO :MONTO_TOTAL  FROM DUAL;
+                
+                               
+                               IF :DESCUENTO_C_IVA IS NOT NULL AND :PORC_IVA IS NOT NULL 
+                               THEN 
+                                 
+                              :DESCUENTO:=(NVL(:DESCUENTO_C_IVA,0))-(NVL(REPLACE(:DESCUENTO_C_IVA,'.',''),0)*(NVL(:PORC_IVA,0)/(100+NVL(:PORC_IVA,0))));   
+                              :DESCUENTO_C_IVA:=NVL(:DESCUENTO_C_IVA,0)*NVL(:CANTIDAD,0);
+                  
+                              END IF;
+                
+                                insert into CMW_PEDIDOS_DETALLE 
+                                (ID_ARTICULO,ID_PEDIDO_CAB,CANTIDAD,ID_IVA,TOTAL_IVA,MONTO_TOTAL_C_IVA,
+                                PRECIO_UNITARIO_C_IVA,PRECIO_UNITARIO,ID_UNIDAD_MEDIDA,COD_USUARIO_AUD,MONTO_TOTAL,IVA,PORC_DESCUENTO
+                                ,DESCUENTO_C_IVA,DESCUENTO,DESC_ARTICULO,FEC_VENCIMIENTO, NRO_LOTE, COMENTARIO, ANULADO,ID_PLAZO_ENTREGA
+                                ,ID_COTIZA_ART, IND_PARA_STOCK, IND_ANULA_OCC, ID_APROBACION_LIC)
+                                values(:ID_ARTICULO,:P7_ID,:CANTIDAD,:ID_IVA,REPLACE(:TOTAL_IVA,'.',''),
+                                REPLACE(:MONTO_TOTAL_C_IVA,'.',''),REPLACE(:PRECIO_UNITARIO_C_IVA,'.',''),
+                                :PRECIO_UNITARIO,:ID_UNIDAD_MEDIDA,:COD_USUARIO_AUD,
+                                REPLACE(:MONTO_TOTAL,'.',''),:PORC_IVA,:PORC_DESCUENTO,
+                                :DESCUENTO_C_IVA,:DESCUENTO,:DESC_ARTICULO,:FEC_VENCIMIENTO,:NRO_LOTE, :COMENTARIO, :ANULADO,
+                                :ID_PLAZO_ENTREGA, :ID_COTIZA_ART, :IND_PARA_STOCK, :IND_ANULA_OCC, :ID_APROBACION_LIC);
+                            
+                            WHEN 'U' then  
+                
+                                IF :DESCUENTO_C_IVA IS NOT NULL AND :PORC_IVA IS NOT NULL 
+                               THEN   
+                             :DESCUENTO:=NVL(REPLACE(:DESCUENTO_C_IVA,'.',''),0)*(NVL(:PORC_IVA,0)/(100+NVL(:PORC_IVA,0)));   
+                              :DESCUENTO_C_IVA:=NVL(:DESCUENTO_C_IVA,0)*NVL(:CANTIDAD,0);
+                
+                              END IF;
+                                update CMW_PEDIDOS_DETALLE  d
+                                    set  ID_ARTICULO = :ID_ARTICULO,
+                                         cantidad     = :cantidad,
+                                         precio_unitario_c_iva       = REPLACE(:PRECIO_UNITARIO_C_IVA,'.',''),
+                                         id_iva     = :ID_IVA,
+                                         TOTAL_IVA    = REPLACE(:TOTAL_IVA,'.',''),
+                                         monto_total  = REPLACE(:MONTO_TOTAL,'.',''),
+                                         MONTO_TOTAL_C_IVA      = REPLACE(:MONTO_TOTAL_C_IVA,'.',''),
+                                         PRECIO_UNITARIO=REPLACE(:PRECIO_UNITARIO,'.',''),
+                                         ID_UNIDAD_MEDIDA=:ID_UNIDAD_MEDIDA,
+                                         IVA=:PORC_IVA,
+                                         PORC_DESCUENTO=:PORC_DESCUENTO,
+                                         DESCUENTO_C_IVA=:DESCUENTO_C_IVA,
+                                         DESCUENTO=:DESCUENTO,
+                                         DESC_ARTICULO=:DESC_ARTICULO,
+                                         FEC_VENCIMIENTO=:FEC_VENCIMIENTO,
+                                         NRO_LOTE=:NRO_LOTE,
+                                         COMENTARIO=:COMENTARIO,
+                                         ID_PLAZO_ENTREGA = :ID_PLAZO_ENTREGA,
+                                         ANULADO =:ANULADO,
+                                         FECHA_ANULACION = :FECHA_ANULACION,
+                                         CANTIDAD_ANULADA = :CANTIDAD_ANULADA,
+                                         COD_USUARIO_ANULA = :COD_USUARIO_ANULA,
+                                         COMENTARIO_ANULACION = :COMENTARIO_ANULACION,
+                                         ID_COTIZA_ART = :ID_COTIZA_ART,
+                                         IND_PARA_STOCK = :IND_PARA_STOCK,
+                                         IND_ANULA_OCC = :IND_ANULA_OCC,
+                                         ID_APROBACION_LIC = :ID_APROBACION_LIC
+                                where d.ID_PEDIDO_CAB = :P7_ID
+                                    and d.id = :id;
+                           when 'D' then
+                                delete CMW_PEDIDOS_DETALLE d     
+                                WHERE d.ID_PEDIDO_CAB = :ID_PEDIDO_CAB
+                                           and d.id = :id;  
+                    end case;
+                END;
+                
+                ```
+        }
+        lockRow {
+            preventLostUpdates: false
+        }
+        execution {
+            sequence: 40
+        }
+        error {
+            errorMessage:
+                ```
+                Error al actualizar el detalle: #SQLERRM_TEXT#
+                
+                ```
+        }
+        advanced {
+            executionMappingIdentifier: 59659979250867273
+        }
+        comments {
+            comments: "Proceso para guardar, actualizar, eliminar los detalles de la factura "
+        }
+    )
+
+    process eliminar-detalles (
+        name: ELIMINAR_DETALLES
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                /* Borra todas las lineas de detalle, al borrarse la cabecera  */
+                delete from CMW_PEDIDOS_DETALLE    
+                where id_PEDIDO_CAB = :P7_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 59665518271867278
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+        comments {
+            comments: "Elimina los detalles de la factura al borrase esta "
+        }
+    )
+
+    process initialize-form-factura-de-venta (
+        name: Initialize form Factura de Venta
+        type: formInitialization
+        formRegion: @orden-de-compra-proveedor-ocp
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 59640504680867259
+        }
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 40
+            point: afterRegions
+        }
+        advanced {
+            executionMappingIdentifier: 59665191929867278
+        }
+    )
+
+    process limpiar-sesion (
+        name: LIMPIAR_SESION
+        type: clearSessionState
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 59664725354867278
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: DELETE
+        }
+        comments {
+            comments: Proceso limpiar la pantalla
+        }
+    )
+
+    process poner-si-es-para-stock (
+        name: Poner si es para Stock
+        type: executeCode
+        editableRegion: @detalles
+        source {
+            plsqlCode: :IND_PARA_STOCK := 'N';
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 21702523391388232
+        }
+        serverSideCondition {
+            executionScope: allSubmittedRows
+            type: itemIsNull
+            item: IND_PARA_STOCK
+        }
+    )
+
+    process process-form-factura-de-venta (
+        name: Process form Factura de Venta
+        type: formAutoRowProcessing
+        formRegion: @orden-de-compra-proveedor-ocp
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 59640953657867259
+        }
+        comments {
+            comments: "Proceso encargado para guardar, actualizar , eliminar la cabecera de la factura "
+        }
+    )
+
+)
+

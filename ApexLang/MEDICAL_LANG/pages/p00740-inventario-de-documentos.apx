@@ -1,0 +1,737 @@
+page 740 (
+    name: Inventario de Documentos
+    alias: INVENTARIO-DE-DOCUMENTOS
+    title: Inventario de Documentos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region inventario-de-documentos (
+        name: Inventario de Documentos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                WITH TALONARIO AS (
+                    SELECT ID,
+                           SER_COMPROBANTE,
+                           TIP_COMPROBANTE,
+                           :P740_NUM_INICIAL NUM_INICIAL,
+                           :P740_NUM_FINAL NUM_FINAL
+                      FROM BSWV_TALONARIOS
+                     WHERE ID = :P740_ID_TALONARIO
+                ),
+                RANGO_TALONARIO AS (
+                    SELECT NUM_INICIAL + LEVEL - 1 AS NUMERO,
+                           TIP_COMPROBANTE TIPO,
+                           ID,
+                           SER_COMPROBANTE SERIE
+                    FROM TALONARIO
+                    CONNECT BY LEVEL <= (NUM_FINAL - NUM_INICIAL + 1)
+                    ORDER BY NUMERO
+                )
+                SELECT    CT.FEC_REGISTRO,
+                          RT.TIPO,
+                          RT.SERIE,
+                          RT.NUMERO,
+                          CT.BENEFICIARIO,
+                          CT.ID_MONEDA,
+                          CT.MONTO,
+                          CASE
+                            WHEN CT.ID IS NULL THEN
+                                'Faltante'
+                            WHEN CT.ANULADO = 'S' THEN
+                                'Anulado'
+                            ELSE
+                                'Utilizado'
+                          END ESTADO,
+                          PREPARA_URL_CARGA(:P0_ID_EMPRESA, CT.TIP_COMPROBANTE, CT.ID_REGISTRO) URL
+                  FROM    RANGO_TALONARIO   RT
+                LEFT JOIN COMPROBANTES_TALONARIO CT ON
+                          CT.ID = :P740_ID_TALONARIO AND
+                          CT.NUMERO = RT.NUMERO
+                 WHERE (CT.FEC_REGISTRO BETWEEN :P740_FEC_INI AND :P740_FEC_FIN OR :P740_FEC_INI IS NULL OR CT.FEC_REGISTRO IS NULL)
+                   
+                ```
+            pageItemsToSubmit: [
+                P740_ID_TALONARIO
+                P740_FEC_INI
+                P740_FEC_FIN
+                P740_NUM_INICIAL
+                P740_NUM_FINAL
+            ]
+            optimizerHint: WITH_PLSQL
+        }
+        layout {
+            sequence: 20
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            rowsPerPageSelector: true
+        }
+        advanced {
+            savedReportMappingIdentifier: 20715229139591944
+        }
+
+        column BENEFICIARIO (
+            type: plainText
+            heading {
+                heading: Cliente/Proveedor
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FEC_REGISTRO (
+            type: plainText
+            heading {
+                heading: Fec. Registro
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column MONTO (
+            type: plainText
+            heading {
+                heading: Monto
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column NUMERO (
+            type: link
+            heading {
+                heading: Numero
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    type: url
+                    url: #URL#
+                }
+                linkText: #NUMERO#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column SERIE (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column TIPO (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column URL (
+            type: hidden
+            heading {
+                heading: Url
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Inventario de Documentos
+        }
+
+        savedReport 212752 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn BENEFICIARIO (
+                sequence: 5
+            )
+
+            displayColumn ESTADO (
+                sequence: 8
+            )
+
+            displayColumn FEC_REGISTRO (
+                sequence: 1
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 6
+            )
+
+            displayColumn MONTO (
+                sequence: 7
+            )
+
+            displayColumn NUMERO (
+                sequence: 4
+            )
+
+            displayColumn SERIE (
+                sequence: 3
+            )
+
+            displayColumn TIPO (
+                sequence: 2
+            )
+
+            sort (
+                column: NUMERO
+                sort {
+                    sequence: 1
+                }
+            )
+
+            highlight ir-condition (
+                name: Anulado
+                condition {
+                    column: ESTADO
+                    value: Anulado
+                }
+                colors {
+                    background: #ffd6d2
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+            highlight ir-condition-2 (
+                name: Faltante
+                condition {
+                    column: ESTADO
+                    value: Faltante
+                }
+                colors {
+                    background: #fff5ce
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P740_BANCO (
+        type: textField
+        label {
+            label: <p>Banco:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+    )
+
+    pageItem P740_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P740_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Registro:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P740_ID_TALONARIO (
+        type: popupLov
+        label {
+            label: <p>Talonario:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 800
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-talonarios-inventario
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Tipo
+        }
+    )
+
+    pageItem P740_NRO_TIMBRADO (
+        type: textField
+        label {
+            label: <p>Nro. Timbrado/Talonario:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+    )
+
+    pageItem P740_NUM_FINAL (
+        type: textField
+        label {
+            label: <p>Nro. Final:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Fin
+        }
+    )
+
+    pageItem P740_NUM_INICIAL (
+        type: textField
+        label {
+            label: <p>Rango:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+            valuePlaceholder: Inicio
+        }
+    )
+
+    pageItem P740_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Serie:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar Paginacion
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @inventario-de-documentos
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @inventario-de-documentos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-reporte (
+        name: Refrescar Reporte
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P740_ID_TALONARIO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @inventario-de-documentos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos (
+        name: Setear Datos
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P740_ID_TALONARIO
+        }
+
+        action p740-ser-comprobante-p740-nro-timbrado-p740-num-inicial-p740-num-final-p740-banco (
+            name: P740_SER_COMPROBANTE,P740_NRO_TIMBRADO,P740_NUM_INICIAL,P740_NUM_FINAL,P740_BANCO
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT SER_COMPROBANTE, NRO_TIMBRADO, NUM_INICIAL, NUM_FINAL, BANCO
+                      FROM BSWV_TALONARIOS
+                     WHERE ID = :P740_ID_TALONARIO
+                    ```
+                itemsToSubmit: P740_ID_TALONARIO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P740_SER_COMPROBANTE
+                    P740_NRO_TIMBRADO
+                    P740_NUM_INICIAL
+                    P740_NUM_FINAL
+                    P740_BANCO
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

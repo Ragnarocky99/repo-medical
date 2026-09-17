@@ -1,0 +1,5393 @@
+page 854 (
+    name: Carga de Orden de Compra - Servicio
+    alias: CARGA-DE-ORDEN-DE-COMPRA-SERVICIO
+    title: Carga de Orden de Compra - Servicio
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var i = 0;
+            function recalculaImporte(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_importe   = model.getFieldKey("MONTO_TOTAL_C_IVA");
+                var v_iva       = model.getFieldKey("TOTAL_IVA");
+                var v_porc_iva = model.getFieldKey("IVA");
+                var v_total_s_iva=model.getFieldKey('MONTO_TOTAL');
+                var v_descuento = model.getFieldKey('DESCUENTO');
+                var v_descuento_c_iva=model.getFieldKey('DESCUENTO_C_IVA');
+                var vanulado = model.getFieldKey("ANULADO");
+                var v_total_descuento =0;
+                var v_total     = 0;
+                var v_total_iva = 0;
+                var v_total_gravadas_10=0;
+                var v_total_gravadas_5=0;
+                var v_total_exentas=0;
+                var v_subtotal=0;
+                var v_iva_10=0;
+                var v_iva_5=0;
+            
+            
+            
+            
+            
+                model.forEach(function(r, index, id) {
+            
+                   if (v_iva =="") {
+                        v_iva = 0;
+                    }    
+                   
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+                         // Si el registro está anulado (ANULADO == "S") no se considera para los totales
+                         if (r[vanulado] && String(r[vanulado]).toUpperCase() === "S") {
+                             return; // continúa al siguiente registro
+                         }
+                         
+                         if (parseInt(r[v_porc_iva])==10) {
+                             let numeroIva10 = r[v_iva].replace(/\./g,'');
+            
+                             let numeroGravadas10=r[v_total_s_iva].replace(/\./g,'');
+            
+                               v_total_gravadas_10=v_total_gravadas_10+parseFloat(numeroGravadas10.replace(',','.'));
+            
+                               //v_iva_10=v_iva_10+parseFloat(r[v_iva].replace(/\./g,''));
+                               v_iva_10=v_iva_10+parseFloat(numeroIva10.replace(',','.'));
+            
+                               
+                         }else if(parseInt(r[v_porc_iva])==5){
+                             let numeroIva5=r[v_iva].replace(/\./g,'');
+            
+                             let numeroGravadas5=r[v_total_s_iva].replace(/\./g,'');
+            
+                            v_total_gravadas_5=v_total_gravadas_5+parseFloat(numeroGravadas5.replace(',','.'));
+            
+                            v_iva_5=v_iva_5+parseFloat(numeroIva5.replace(',','.'));
+                         }else{
+                             let numeroExentas=r[v_total_s_iva].replace(/\./g,'')
+                            v_total_exentas=v_total_exentas+parseFloat(numeroExentas.replace(',','.'));
+                         }
+            
+                         let numeroTotal=r[v_importe].replace(/\./g,'');
+                         let numeroTotalIVA=r[v_iva].replace(/\./g,'');
+            
+                        v_total      = v_total     + parseFloat(numeroTotal.replace(',','.'));
+                        v_total_iva  = v_total_iva + parseFloat(numeroTotalIVA.replace(',','.'));
+                        v_total_descuento=v_total_descuento+(parseFloat(r[v_descuento_c_iva].replace(/\./g,'')))-(parseFloat(r[v_descuento_c_iva].replace(/\./g,'')))*
+                        (parseFloat(r[v_porc_iva].replace(/\./g,'')))/(100+parseFloat(r[v_porc_iva].replace(/\./g,'')))
+                        
+                    }
+                    
+                });
+                  v_subtotal=v_total-v_total_iva;
+                  v_total_descuento = 0;
+            
+                  console.log(v_total_gravadas_10.toString().replace(/\./g,','))
+            
+                $s('P854_TOT_COMPROBANTE',  v_total.toString().replace(/\./g,','));
+                $s('P854_SUBTOTAL',  (v_total_gravadas_10 + v_total_gravadas_5).toString().replace(/\./g,','));
+                $s('P854_TOT_GRAVADAS_5',  v_total_gravadas_5.toString().replace(/\./g,','));
+                $s('P854_TOT_GRAVADAS_10',  v_total_gravadas_10.toString().replace(/\./g,','));
+                $s('P854_TOT_EXENTAS',  v_total_exentas.toString().replace(/\./g,','));
+                $s('P854_TOT_IVA',  v_total_iva.toString().replace(/\./g,','));
+                $s('P854_IVA_10',  v_iva_10.toString().replace(/\./g,','));
+                $s('P854_IVA_5',  v_iva_5.toString().replace(/\./g,','));
+                $s('P854_DESCUENTO_V',Math.round(parseFloat(v_total_descuento)));
+                
+            }
+            
+            function calculaTotCuotas(){
+                var model= apex.region("Cuotas").widget().interactiveGrid("getCurrentView").model;
+                var cant_registros = model.getTotalRecords();
+            
+                var v_cuota = model.getFieldKey("TOT_CUOTA") || 0;
+                
+                var v_totcuota  = 0;
+            
+                var v_saldo = model.getFieldKey("TOT_SALDO") || 0;
+                
+                var v_totsaldo  = 0;
+                
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                        let vcl_cuota = r[v_cuota].replace(/\./g,'');
+                        let vcl_saldo = r[v_saldo].replace(/\./g,'');
+            
+                        v_totcuota = v_totcuota  + parseFloat(vcl_cuota.replace(',','.'));
+                        v_totsaldo = v_totsaldo  + parseFloat(vcl_saldo.replace(',','.'));
+            
+                        console.log("----detalle  total de saldo n. " + cant_registros + ": " + vcl_saldo + " cuota: " + vcl_cuota);
+            /*
+                            vtotal   := nvl( vtotal, 0 ) + nvl( vtot_cuota, 0 );
+                            vdias    := vdias + :P392_INTERVALO_CUOTA;
+            
+                            IF nvl( vindice, 0 ) = nvl( :P392_CANT_CUOTAS, 1 ) THEN
+                                IF nvl( vtotal, 0 ) < nvl( REPLACE(:P392_TOT_COMPROBANTE,'.',''), 0 ) THEN
+                                    vtotal := round( nvl( REPLACE(:P392_TOT_COMPROBANTE,'.',''), 0 ) - nvl( vtotal, 0 ), :P392_DECIMALES );
+                                    vtot_cuota := vtot_cuota + vtotal;
+                                END IF;
+                            END IF;
+            */
+            
+                    }
+                    
+                    console.log("total saldo: " + v_totsaldo + ", total cuota: " + v_totcuota);
+                });
+            
+                $s('P854_TOT_CUOTA',v_totcuota.toString().replace(/\./g,','));
+                //$s('P392_CTOT_SALDO',v_totsaldo.toString().replace(/\./g,','));
+            
+            }
+            
+            function sumarSeleccionados() {
+              var total = 0;
+            
+              // Obtener el grid y su modelo
+              var $grid = apex.region("Detalles").widget().interactiveGrid("getViews", "grid");
+              var model = $grid.model;
+            
+              // Recorrer los registros seleccionados
+              var selectedRecords = $grid.getSelectedRecords();
+              selectedRecords.forEach(function(record) {
+                let valor = model.getValue(record, "MONTO_TOTAL_C_IVA"); // nombre de tu columna
+                let monto = parseFloat(valor.replace(/\./g,''));
+                if (!isNaN(monto)) {
+                  total += monto;
+                }
+              });
+            
+              // Mostrar el total en un item de página
+              $s("P854_TOT_CUOTA", total);
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P854_TOT_COMPROBANTE").readOnly = true;
+            document.getElementById("P854_TOT_EXENTAS").readOnly = true;
+            document.getElementById("P854_TOT_IVA").readOnly = true;
+            document.getElementById("P854_TOT_GRAVADAS_10").readOnly = true;
+            document.getElementById("P854_TOT_GRAVADAS_5").readOnly = true;
+            document.getElementById("P854_IVA_10").readOnly = true;
+            document.getElementById("P854_IVA_5").readOnly = true;
+            document.getElementById("P854_DESCUENTO_V").readOnly = true;
+            document.getElementById("P854_SUBTOTAL").readOnly = true;
+            document.getElementById("P854_TOT_CUOTA").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-orden-de-compra-servicio (
+        name: Carga de Orden de Compra - Servicio
+        type: form
+        source {
+            location: localDatabase
+            tableName: CMW_PEDIDOS_CABECERA
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    region cuotas (
+        name: Cuotas
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            tableName: CMW_CUOTAS_PED
+            whereClause: ID_PEDIDO_CAB = :P854_ID
+            pageItemsToSubmit: P854_ID
+        }
+        layout {
+            sequence: 10
+            parentRegion: @generacion-cuotas
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @detalles
+        }
+        advanced {
+            htmlDomId: Cuotas
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 95828029433635637
+        }
+
+        savedReport 959014 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_CAB
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NUM_CUOTA
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @TOT_CUOTA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @TOT_SALDO
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @IMPRIMIR
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @NUM_COMPROBANTE_REF
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @IMPRIME_REPORTE
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_EN_OP
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_EXTRACTO_INICIAL
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ORIGEN
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @FEC_CARGA
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @PERIODO_DIAS
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 0
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_DET
+                layout {
+                    sequence: 25
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: COD_USUARIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_CARGA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: FEC_CARGA
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ORIGEN (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: FEC_ORIGEN
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EXTRACTO_INICIAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: ID_EXTRACTO_INICIAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_CAB (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_PEDIDO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: ID_PEDIDO_DET
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IMPRIME_REPORTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: IMPRIME_REPORTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IMPRIMIR (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: IMPRIMIR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_EN_OP (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: MONTO_EN_OP
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_COMPROBANTE_REF (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: NUM_COMPROBANTE_REF
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Nro. Cuota</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NUM_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PERIODO_DIAS (
+            type: numberField
+            heading {
+                heading: <p>Periodo Dias</p>
+                alignment: center
+            }
+            layout {
+                sequence: 260
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: PERIODO_DIAS
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Total Cuota</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TOT_SALDO (
+            type: numberField
+            heading {
+                heading: <p>Total Saldo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Cuotas
+        }
+    )
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            tableName: CMW_PEDIDOS_DETALLE_CP
+            whereClause: ID_PEDIDO_CAB = :P854_ID
+            pageItemsToSubmit: P854_ID
+        }
+        layout {
+            sequence: 190
+            parentRegion: @carga-de-orden-de-compra-servicio
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        componentAppearance {
+            fixedRowHeight: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 95482763937291639
+        }
+
+        savedReport 958304 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_CAB
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO_COMPRA
+                layout {
+                    width: 201
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 73
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_CONFIRMADA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @SE_PRORRATEA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ULTIMO_COSTO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 97
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_IVA
+                layout {
+                    width: 88
+                    sequence: 34
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_FINAL
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @ANULADO
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADICIONAL
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_UB
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @IND_STOCK
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_DET
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_INGRESADA
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_C_IVA
+                layout {
+                    width: 110
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_C_IVA
+                layout {
+                    width: 95
+                    sequence: 35
+                }
+            )
+
+            displayColumn (
+                column: @PORC_GRAVADA
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @IVA
+                layout {
+                    width: 59
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @EXENTO
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @GRAVADA
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_EXENTO
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_GRAVADA
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ORDEN
+                layout {
+                    width: 59
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    width: 127
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @PORC_DESCUENTO
+                layout {
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO_C_IVA
+                layout {
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO
+                layout {
+                    sequence: 33
+                }
+            )
+
+            displayColumn (
+                column: @ID_IVA
+                layout {
+                    width: 109
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    sequence: 36
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    sequence: 37
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_M3
+                layout {
+                    sequence: 38
+                }
+            )
+
+            displayColumn (
+                column: @ID_CENTRO_COSTO
+                layout {
+                    width: 102
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column ANULADO (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ANULADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            settings {
+                enableMultiSelect: false
+            }
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 1
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_CONFIRMADA (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: CANTIDAD_CONFIRMADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANTIDAD_INGRESADA (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: CANTIDAD_INGRESADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANTIDAD_M3 (
+            type: hidden
+            layout {
+                sequence: 380
+            }
+            source {
+                databaseColumn: CANTIDAD_M3
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANTIDAD_UB (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: CANTIDAD_UB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COMENTARIO (
+            type: textarea
+            heading {
+                heading: <p>Comentario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            layout {
+                sequence: 340
+            }
+            source {
+                databaseColumn: DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCUENTO_C_IVA (
+            type: hidden
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: DESCUENTO_C_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column EXENTO (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: EXENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ADICIONAL (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: FEC_ADICIONAL
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column GRAVADA (
+            type: hidden
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: popupLov
+            heading {
+                heading: <p>Centro Costo</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 390
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_CENTRO_COSTO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_CONCEPTO_COMPRA (
+            type: popupLov
+            heading {
+                heading: <p>Concepto</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-conceptos-compras-desc
+                displayNullValue: false
+            }
+            layout {
+                sequence: 50
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_CONCEPTO_COMPRA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_IVA (
+            type: selectList
+            heading {
+                heading: <p>I.V.A</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-iva
+                displayNullValue: false
+            }
+            layout {
+                sequence: 350
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_IVA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: W_BUSCA_PARAMETRO('VT', 'COD_IVA_GRAVADA_10')
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_PEDIDO_CAB (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_PEDIDO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: ID_PEDIDO_DET
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_STOCK (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: IND_STOCK
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IVA (
+            type: numberField
+            heading {
+                heading: <p>% IVA</p>
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: IVA
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 10
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_TOTAL (
+            type: numberField
+            heading {
+                heading: <p>Monto Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_TOTAL_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_TOTAL_C_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 370
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_ORDEN (
+            type: numberField
+            heading {
+                heading: <p>Nro. Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 300
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NRO_ORDEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column PORC_DESCUENTO (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: PORC_DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_GRAVADA (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: PORC_GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_FINAL (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: PRECIO_FINAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_UNITARIO_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Precio Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO_C_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 360
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SE_PRORRATEA (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: SE_PRORRATEA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOTAL_EXENTO (
+            type: hidden
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: TOTAL_EXENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOTAL_GRAVADA (
+            type: hidden
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: TOTAL_GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOTAL_IVA (
+            type: numberField
+            heading {
+                heading: <p>Total I.V.A</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOTAL_IVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ULTIMO_COSTO (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ULTIMO_COSTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    region generacion-cuotas (
+        name: Generacion Cuotas
+        type: staticContent
+        layout {
+            sequence: 210
+            parentRegion: @carga-de-orden-de-compra-servicio
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM CMW_PEDIDOS_DETALLE_CP
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                ```
+        }
+    )
+
+    region generacion-cuotas-2 (
+        name: Generacion Cuotas
+        type: staticContent
+        layout {
+            sequence: 20
+            parentRegion: @generacion-cuotas
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM CMW_PEDIDOS_DETALLE_CP
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                ```
+        }
+    )
+
+    region generacion-factura (
+        name: Generacion Factura
+        type: staticContent
+        layout {
+            sequence: 220
+            parentRegion: @carga-de-orden-de-compra-servicio
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            htmlDomId: gen_factura
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM CMW_CUOTAS_PED
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                HAVING SUM(TOT_SALDO) != 0
+                ```
+        }
+    )
+
+    region seleccionar-conceptos (
+        name: Seleccionar Conceptos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            tableName: CMWV_SELECCION_CUOTA_COL
+        }
+        layout {
+            sequence: 90
+            parentRegion: @generacion-factura
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        componentAppearance {
+            selectFirstRow: false
+            fixedRowHeight: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 95973497269115229
+        }
+
+        savedReport 971807 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @SEQ_ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_DET
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_CUOTA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @MONTO
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_CAB
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_IVA
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_CENTRO_COSTO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_CUENTA
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO_COMPRA
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @IVA
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @NOMB_PROVEEDOR
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @DOC_PROVEEDOR
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @DECIMALES
+                layout {
+                    sequence: 21
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COMENTARIO (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DECIMALES (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: DECIMALES
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DOC_PROVEEDOR (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: DOC_PROVEEDOR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_CENTRO_COSTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CONCEPTO_COMPRA (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: ID_CONCEPTO_COMPRA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CUENTA (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: ID_CUENTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CUOTA (
+            type: popupLov
+            heading {
+                heading: <p>Cuota</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                additionalOutputs: TOT_SALDO:MONTO
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-cuotas-ped-p
+            }
+            cascadingLov {
+                parentColumns: ID_PEDIDO_DET
+                itemsToSubmit: ID_PEDIDO_DET
+            }
+            layout {
+                sequence: 80
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: ID_CUOTA
+                dataType: varchar2
+            }
+        )
+
+        column ID_IVA (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_CAB (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_PEDIDO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_PEDIDO_DET
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IVA (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO (
+            type: numberField
+            heading {
+                heading: <p>Monto</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: MONTO
+            }
+        )
+
+        column NOMB_PROVEEDOR (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: NOMB_PROVEEDOR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SEQ_ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: SEQ_ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Seleccionar Conceptos
+        }
+    )
+
+    region selector (
+        name: Selector
+        type: regionDisplaySelector
+        layout {
+            sequence: 200
+            parentRegion: @carga-de-orden-de-compra-servicio
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        settings {
+            includeShowAll: false
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: footer
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    pageItem P854_ANULADO (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ANULADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_CAMBIO_MONEDA_PRECIO (
+        type: hidden
+        layout {
+            sequence: 290
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: CAMBIO_MONEDA_PRECIO
+            dataType: number
+        }
+    )
+
+    pageItem P854_CANT_CUOTAS (
+        type: numberField
+        label {
+            label: <p>Cuotas</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @generacion-cuotas-2
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P854_COD_USUARIO_AUD (
+        type: displayOnly
+        label {
+            label: <p>Creado Por:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 170
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    pageItem P854_COMENTARIO (
+        type: hidden
+        layout {
+            sequence: 360
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: COMENTARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_DESCUENTO_V (
+        type: numberField
+        label {
+            label: <p class="totales">DESCUENTO:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 90
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: DESCUENTO
+            dataType: number
+        }
+        comments {
+            comments: Descuento por articulo
+        }
+    )
+
+    pageItem P854_DIAS_CUOTA (
+        type: numberField
+        label {
+            label: <p>Días: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @generacion-cuotas-2
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            used: always
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P854_ESTADO (
+        type: displayOnly
+        label {
+            label: <p>Estado:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            basedOn: lov
+            sendOnPageSubmit: false
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-estado-pedido-cm
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ESTADO
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    pageItem P854_FAC_REFERENCIA (
+        type: hidden
+        layout {
+            sequence: 100
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FAC_REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_FEC_ALTA (
+        type: displayOnly
+        label {
+            label: <p>Alta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 180
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: dd/MM/yyyy HH24:MI
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_ALTA
+            dataType: date
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    pageItem P854_FEC_ANULACION (
+        type: hidden
+        layout {
+            sequence: 370
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_ANULACION
+            dataType: date
+        }
+    )
+
+    pageItem P854_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p>Fecha:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_COMPROBANTE
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P854_FEC_CONFIRMACION (
+        type: hidden
+        layout {
+            sequence: 240
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_CONFIRMACION
+            dataType: date
+        }
+    )
+
+    pageItem P854_FEC_EMBARQUE (
+        type: hidden
+        layout {
+            sequence: 230
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_EMBARQUE
+            dataType: date
+        }
+    )
+
+    pageItem P854_FEC_ESTADO (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_ESTADO
+            dataType: date
+        }
+    )
+
+    pageItem P854_FEC_POLIZA_FIN (
+        type: hidden
+        layout {
+            sequence: 460
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_POLIZA_FIN
+            dataType: date
+        }
+    )
+
+    pageItem P854_FEC_POLIZA_INI (
+        type: hidden
+        layout {
+            sequence: 450
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FEC_POLIZA_INI
+            dataType: date
+        }
+    )
+
+    pageItem P854_FEC_TIMBRADO (
+        type: datePicker
+        label {
+            label: <p>Fec. Timbrado:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @generacion-factura
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P854_FILENAME (
+        type: hidden
+        layout {
+            sequence: 390
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FILENAME
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_FOTO_COMPROBANTE (
+        type: fileUpload
+        label {
+            label: <p>Foto Comprobante:&ensp;</p>
+            alignment: left
+        }
+        storage {
+            mimeTypeColumn: MIMETYPE
+            filenameColumn: FILENAME
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 60
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: FOTO_COMPROBANTE
+            dataType: blob
+        }
+    )
+
+    pageItem P854_ID (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P854_ID_COMPROBANTE_GEN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 480
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+    )
+
+    pageItem P854_ID_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 400
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_COMPROBANTE_REF
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_CONDICION_COMPRA (
+        type: popupLov
+        label {
+            label: <p>Condicion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-condiciones-compra
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_CONDICION_COMPRA
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P854_ID_ENTSAL_CAB (
+        type: hidden
+        layout {
+            sequence: 340
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_ENTSAL_CAB
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_MONEDA (
+        type: selectList
+        label {
+            label: <p>Moneda:&ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+            displayNullValue: false
+        }
+        layout {
+            sequence: 110
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_MONEDA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('BS', 'ID_MONEDA_BASE')
+        }
+    )
+
+    pageItem P854_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            displayNullValue: false
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_PROVEEDOR
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_PROVEEDOR_REF (
+        type: hidden
+        layout {
+            sequence: 330
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_PROVEEDOR_REF
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 10
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P854_ID_SUCURSAL_CENTRAL (
+        type: hidden
+        layout {
+            sequence: 350
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_SUCURSAL_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_USUARIO (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_USUARIO
+            dataType: number
+        }
+    )
+
+    pageItem P854_ID_VIA (
+        type: hidden
+        layout {
+            sequence: 220
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: ID_VIA
+            dataType: number
+        }
+    )
+
+    pageItem P854_IND_TIPO_OC (
+        type: hidden
+        layout {
+            sequence: 470
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: IND_TIPO_OC
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: SE
+        }
+    )
+
+    pageItem P854_INTERVALO_CUOTA (
+        type: numberField
+        label {
+            label: <p>Inter. e/cuo.</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @generacion-cuotas-2
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            used: always
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P854_IVA_10 (
+        type: numberField
+        label {
+            label: <p class="totales">IVA 10:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 60
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P854_IVA_5 (
+        type: numberField
+        label {
+            label: <p class="totales">IVA 5:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P854_IVA_INCLUIDO_FAC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            region: @generacion-factura
+            slot: regionBody
+        }
+    )
+
+    pageItem P854_JSON_CUOTA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @generacion-cuotas-2
+            slot: regionBody
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P854_LIBRO_IVA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            region: @generacion-factura
+            slot: regionBody
+        }
+    )
+
+    pageItem P854_MIMETYPE (
+        type: hidden
+        layout {
+            sequence: 380
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: MIMETYPE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_MODALIDAD_ENVIO (
+        type: hidden
+        layout {
+            sequence: 420
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: MODALIDAD_ENVIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_NRO_COMPROBANTE (
+        type: displayOnly
+        label {
+            label: Nro Comprobante
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P854_NRO_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: NRO_COMPROBANTE_REF
+            dataType: number
+        }
+    )
+
+    pageItem P854_NRO_POLIZA (
+        type: hidden
+        layout {
+            sequence: 440
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: NRO_POLIZA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_NRO_TIMBRADO (
+        type: numberField
+        label {
+            label: <p>Nro. Timbrado:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @generacion-factura
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P854_PLAZO_ENTREGA_CAB (
+        type: hidden
+        layout {
+            sequence: 430
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: PLAZO_ENTREGA_CAB
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_PROFORMA (
+        type: hidden
+        layout {
+            sequence: 410
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: PROFORMA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Referencia:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_REFERENCIA_FAC (
+        type: textField
+        label {
+            label: <p>Nro. Factura:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @generacion-factura
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P854_SER_COMPROBANTE (
+        type: displayOnly
+        label {
+            label: <p>Numero:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: B
+        }
+    )
+
+    pageItem P854_SER_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: SER_COMPROBANTE_REF
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_SUBTOTAL (
+        type: numberField
+        label {
+            label: <p class="totales">SUBTOTAL:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 100
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 19
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TOT_GRAVADAS
+            dataType: number
+        }
+    )
+
+    pageItem P854_TIPO (
+        type: radioGroup
+        label {
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Local;LOC,Importacion;IMP
+            displayNullValue: false
+        }
+        layout {
+            sequence: 160
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TIPO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: LOC
+        }
+    )
+
+    pageItem P854_TIPO_COMPROBANTE (
+        type: radioGroup
+        label {
+            label: <p>Tipo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC2:Electronica;FE,Virtual;VI,Otros;O
+            displayNullValue: false
+        }
+        layout {
+            sequence: 70
+            region: @generacion-factura
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P854_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Cambio:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TIP_CAMBIO
+            dataType: number
+        }
+        default {
+            type: static
+            staticValue: 1
+        }
+    )
+
+    pageItem P854_TIP_CAMBIO_FAC (
+        type: numberField
+        label {
+            label: <p>Cambio Factura:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @generacion-factura
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                FTIPOS_CAMBIO(P_COD_MONEDA => :P854_ID_MONEDA,
+                              P_FECHA      => SYSDATE,
+                              P_TIPO       => 'C',
+                              P_CAMBIO     => 'V')
+                ```
+        }
+    )
+
+    pageItem P854_TIP_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('CM', 'PEDIDOS_COMPRAS')
+        }
+    )
+
+    pageItem P854_TIP_COMPROBANTE_FAC (
+        type: popupLov
+        label {
+            label: <p>Tipo Comprobante:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            additionalOutputs: LIBRO_IVA:P854_IVA_INCLUIDO_FAC
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tip-comprobantes-cp
+        }
+        layout {
+            sequence: 10
+            region: @generacion-factura
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P854_TIP_COMPROBANTE_REF (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TIP_COMPROBANTE_REF
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_TOT_COMPROBANTE (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 30
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 100
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TOT_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P854_TOT_CUOTA (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL CUOTA</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 60
+            region: @generacion-cuotas-2
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 100
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+    )
+
+    pageItem P854_TOT_EXENTAS (
+        type: numberField
+        label {
+            label: <p class="totales">EXENTAS:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 80
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TOT_EXENTAS
+            dataType: number
+        }
+    )
+
+    pageItem P854_TOT_GRAVADAS_10 (
+        type: numberField
+        label {
+            label: <p class="totales">GRAVADAS 10:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P854_TOT_GRAVADAS_5 (
+        type: numberField
+        label {
+            label: <p class="totales">GRAVADAS 5:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 50
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P854_TOT_IVA (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL IVA:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 70
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TOT_IVA
+            dataType: number
+        }
+    )
+
+    pageItem P854_TRANSPORTE (
+        type: hidden
+        layout {
+            sequence: 210
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: TRANSPORTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P854_VERIFICADORA (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @carga-de-orden-de-compra-servicio
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-orden-de-compra-servicio
+            column: VERIFICADORA
+            dataType: varchar2
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @carga-de-orden-de-compra-servicio
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 851
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 40
+            region: @carga-de-orden-de-compra-servicio
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P854_ID
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @carga-de-orden-de-compra-servicio
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--danger
+                t-Button--iconLeft
+            ]
+            icon: fa-trash-o
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    button generar-cuota (
+        buttonName: GENERAR_CUOTA
+        label: Generar Cuota
+        layout {
+            sequence: 10
+            region: @generacion-cuotas-2
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: Se generarán las cuotas.
+            style: warning
+        }
+    )
+
+    button generar-factura (
+        buttonName: GENERAR_FACTURA
+        label: Generar Factura
+        layout {
+            sequence: 10
+            region: @generacion-factura
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-file
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @carga-de-orden-de-compra-servicio
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    dynamicAction generar-cuota-accion (
+        name: GENERAR_CUOTA_ACCION
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @generar-cuota
+        }
+
+        action borrar-regi-det (
+            name: BORRAR_REGI_DET
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Cuotas").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $model.clearChanges();
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action borrar-regi-det-2 (
+            name: BORRAR_REGI_DET
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Cuotas").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $model.clearChanges();
+                    ```
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action calc-totales-cuotas (
+            name: CALC_TOTALES_CUOTAS
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotCuotas();
+            }
+            execution {
+                sequence: 80
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action generar-json (
+            name: GENERAR_JSON
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :P854_TOT_CUOTA IS NOT NULL THEN
+                      
+                            DECLARE
+                              TMP_CUOTAS_CP_PRO CONSTANT VARCHAR2(255) :='CUOTAS_PED';
+                              
+                              vdias      NUMBER(18) := 0;
+                              vindice    NUMBER(13);
+                              vtot_cuota NUMBER(20,3);
+                              vtotal     NUMBER(20,3);
+                              vfec_venc  DATE;
+                              vdia_sem   VARCHAR2(12);
+                              v1er_reg   VARCHAR2(11) := 'S';
+                              vperiodo   VARCHAR2(5);
+                              vTotParcial      number(18,3);
+                              v_id_prove NUMBER(10)   := :P854_ID_PROVEEDOR;
+                              vdecimales bsw_monedas.decimales%type := moneda_decimales(:P854_ID_MONEDA);
+                              
+                            BEGIN
+                          
+                                vfec_venc := TO_DATE(:P854_FEC_COMPROBANTE, 'DD/MM/YYYY') + :P854_DIAS_CUOTA;
+                                vtot_cuota := round( nvl( REPLACE(:P854_TOT_CUOTA,'.',''), 0 ) /
+                                               nvl( :P854_CANT_CUOTAS, 1 ), vdecimales);
+                                
+                                IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_CUOTAS_CP_PRO) THEN
+                                    APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_CUOTAS_CP_PRO);
+                                END IF;
+                    
+                                APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_CUOTAS_CP_PRO);
+                                --:P854_CTOT_SALDO := 0;  
+                               -- :P854_CTOT_CUOTA := 0;  
+                    
+                                FOR vindice IN 1..:P854_CANT_CUOTAS LOOP
+                               
+                                    IF NVL(:P854_INTERVALO_CUOTA,0) = 30 THEN
+                                       vfec_venc := add_months(TO_DATE(:P854_FEC_COMPROBANTE, 'DD/MM/YYYY'), vindice );
+                                    ELSE
+                                       vfec_venc := vfec_venc + :P854_INTERVALO_CUOTA;
+                                    END IF;
+                    
+                                    vperiodo := :P854_INTERVALO_CUOTA;
+                                    vdia_sem := TO_CHAR( TO_DATE( vfec_venc ),'DAY' );
+                                    vtotal   := nvl( vtotal, 0 ) + nvl( vtot_cuota, 0 );
+                                    vdias    := vdias + :P854_INTERVALO_CUOTA;
+                    
+                                    IF nvl( vindice, 0 ) = nvl( :P854_CANT_CUOTAS, 1 ) THEN
+                                    --    IF nvl( vtotal, 0 ) < nvl( REPLACE(:P854_TOT_CUOTA,'.',''), 0 ) THEN
+                                              vTotParcial :=  round((REPLACE(:P854_TOT_CUOTA,'.','')/:P854_CANT_CUOTAS),vdecimales);
+                                              vtotal := round(REPLACE(:P854_TOT_CUOTA,'.','')-(vTotParcial * (:P854_CANT_CUOTAS-1)) ,vdecimales);
+                                          vtot_cuota:=vtotal;
+                                      --  END IF;
+                                    END IF;
+                    
+                             
+                                    APEX_COLLECTION.ADD_MEMBER(
+                                        p_collection_name => TMP_CUOTAS_CP_PRO,
+                                        p_c001 => vindice,      --num_cuota
+                                        p_c002 => vperiodo,     --periodo
+                                        p_c003 => vfec_venc,    --fec_venc
+                                        p_c004 => vdia_sem,     --dias
+                                        p_N001 => vtot_cuota,   --total_cuota
+                                        p_N002 => vtot_cuota,   
+                                        p_c007 => v_id_prove    
+                                    );
+                    
+                                END LOOP;
+                            END;
+                        
+                        --END IF;
+                    ELSE
+                        RAISE_APPLICATION_ERROR(-20000,'Para generar la cuota debe cargar el comprobante.');    
+                    END IF;
+                    
+                    DECLARE
+                      l_cursor SYS_REFCURSOR;
+                      json_detalle CLOB;
+                    BEGIN
+                      
+                        OPEN l_cursor FOR
+                        SELECT  C001 AS NRO_CUOTA,
+                                C002 AS PERIODO,
+                                C003 AS VENCIMIENTO,
+                                C004 AS DIAS,
+                                N001 AS TOT_CUOTA,
+                                N002 AS TOT_SALDO,
+                                C007 AS ID_PROVEEDOR
+                        FROM APEX_COLLECTIONS
+                        WHERE COLLECTION_NAME = 'CUOTAS_PED'
+                        ORDER BY TO_NUMBER(C001) DESC;
+                    
+                      APEX_JSON.initialize_clob_output;
+                      APEX_JSON.open_object;
+                      APEX_JSON.write('DETALLE', l_cursor);
+                      APEX_JSON.close_object;
+                      JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                      :P854_JSON_CUOTA:=JSON_DETALLE;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P854_CANT_CUOTAS
+                    P854_DIAS_CUOTA
+                    P854_JSON_CUOTA
+                    P854_INTERVALO_CUOTA
+                    P854_TIP_COMPROBANTE
+                    P854_FEC_COMPROBANTE
+                    P854_DECIMALES
+                    P854_TIP_SALDO
+                    P854_ID_MONEDA
+                    P854_TOT_COMPROBANTE
+                    P854_TOT_CUOTA
+                ]
+                itemsToReturn: P854_JSON_CUOTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action insert-json-det (
+            name: INSERT_JSON_DET
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var orden =0;
+                    var json_detalle = JSON.parse($v('P854_JSON_CUOTA'));
+                    
+                    console.log(json_detalle);
+                    if ((Object.keys(json_detalle.DETALLE).length)!=0){
+                    
+                        var grid = apex.region("Cuotas").call("getViews").grid;
+                        //grid.view$.grid("option", "editable", true);
+                        //editable true
+                        grid.model.setOption("editable", true);
+                        grid.setEditMode(true);
+                    
+                        for(let i=0;i<json_detalle.DETALLE.length;i++){
+                    
+                            //Con este codigo podemos insertar una nueva fila en el detalle de cuotas 
+                    
+                            var $widget = apex.region("Cuotas").widget();
+                            var $grid   = $widget.interactiveGrid("getViews", "grid");
+                            var $model  = $grid.model;
+                                //$grid.setEditMode(true);
+                    
+                                //grid.model.setOption("editable", false);
+                                //grid.setEditMode(false);
+                                
+                            //insert new record on a model
+                            var newRecordId = $model.insertNewRecord();
+                    
+                            //continuation of above code
+                            //get the new record
+                    
+                            var $newRecord = $model.getRecord(newRecordId);
+                            orden=orden+1;
+                            
+                            $model.setValue($newRecord, "NUM_CUOTA",(json_detalle.DETALLE[i].NRO_CUOTA).toString());
+                            $model.setValue($newRecord, "PERIODO_DIAS",(json_detalle.DETALLE[i].PERIODO).toString());
+                            $model.setValue($newRecord, "FEC_VENCIMIENTO",(json_detalle.DETALLE[i].VENCIMIENTO).toString());
+                            //$model.setValue($newRecord, "DIAS",(json_detalle.DETALLE[i].DIAS).toString());
+                            $model.setValue($newRecord, "TOT_CUOTA",(json_detalle.DETALLE[i].TOT_CUOTA).toString().replace(/\./g,','));
+                            $model.setValue($newRecord, "TOT_SALDO",(json_detalle.DETALLE[i].TOT_SALDO).toString().replace(/\./g,','));
+                            //$model.setValue($newRecord, "ID_PROVEEDOR",(json_detalle.DETALLE[i].ID_PROVEEDOR).toString()); //Alguien agregó esto, por eso daba error.
+                        }
+                        //grid.model.setOption("editable", false);
+                        //grid.setEditMode(true);
+                        
+                    }
+                    ```
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: sumarSeleccionados();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar-fila (
+        name: Inicializar Fila
+        execution {
+            sequence: 80
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalles
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: i = apex.region("Detalles").widget().interactiveGrid("getViews", "grid").model.getTotalRecords();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action nro-orden (
+            name: NRO_ORDEN
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: i
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NRO_ORDEN
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: NRO_ORDEN
+            }
+        )
+
+    )
+
+    dynamicAction setea-datos-del-tipo-comprobante (
+        name: Setea Datos del Tipo Comprobante
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: items
+            items: P854_TIP_COMPROBANTE_FAC
+        }
+
+        action p854-libro-iva (
+            name: P854_LIBRO_IVA
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT NVL(LIBRO_IVA, 'N')
+                      FROM BSW_TIPOS_COMPROBANTES
+                     WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                       AND TIP_COMPROBANTE = :P854_TIP_COMPROBANTE_FAC
+                    ```
+                itemsToSubmit: P854_TIP_COMPROBANTE_FAC
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P854_LIBRO_IVA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setea-datos-timbrado (
+        name: Setea Datos Timbrado
+        execution {
+            sequence: 100
+        }
+        when {
+            selectionType: items
+            items: P854_LIBRO_IVA
+        }
+
+        action p854-fec-timbrado (
+            name: P854_FEC_TIMBRADO
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: CMWK_OC_SERVICIO.trae_ult_fec_timbrado_prov(p_id_proveedor => :P854_ID_PROVEEDOR)
+                itemsToSubmit: P854_ID_PROVEEDOR
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P854_FEC_TIMBRADO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P854_LIBRO_IVA
+                value: S
+            }
+        )
+
+        action p854-nro-timbrado (
+            name: P854_NRO_TIMBRADO
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: CMWK_OC_SERVICIO.trae_ult_num_timbrado_prov(p_id_proveedor => :P854_ID_PROVEEDOR)
+                itemsToSubmit: P854_ID_PROVEEDOR
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P854_NRO_TIMBRADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P854_LIBRO_IVA
+                value: S
+            }
+        )
+
+        action p854-tipo-comprobante (
+            name: P854_TIPO_COMPROBANTE
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: CMWK_OC_SERVICIO.trae_ult_tipo_comprobante_prov(p_id_proveedor => :P854_ID_PROVEEDOR)
+                itemsToSubmit: P854_ID_PROVEEDOR
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P854_TIPO_COMPROBANTE
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P854_LIBRO_IVA
+                value: S
+            }
+        )
+
+        action timbrado (
+            name: Timbrado
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: [
+                    P854_NRO_TIMBRADO
+                    P854_FEC_TIMBRADO
+                ]
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P854_LIBRO_IVA
+                value: N
+            }
+        )
+
+        action tipo-comprobante-def (
+            name: Tipo Comprobante Def.
+            action: setValue
+            settings {
+                value: O
+            }
+            affectedElements {
+                selectionType: items
+                items: P854_TIPO_COMPROBANTE
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P854_LIBRO_IVA
+                value: N
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambio (
+        name: Setear Cambio
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: [
+                P854_ID_MONEDA
+                P854_FEC_COMPROBANTE
+            ]
+        }
+
+        action p854-tip-cambio (
+            name: P854_TIP_CAMBIO
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    FTIPOS_CAMBIO(P_COD_MONEDA => :P854_ID_MONEDA,
+                                  P_FECHA      => :P854_FEC_COMPROBANTE,
+                                  P_TIPO       => 'C',
+                                  P_CAMBIO     => 'V')
+                    ```
+                itemsToSubmit: [
+                    P854_ID_MONEDA
+                    P854_FEC_COMPROBANTE
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P854_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P854_ID_MONEDA
+            }
+        )
+
+    )
+
+    dynamicAction setear-iva (
+        name: Setear % IVA
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_IVA
+        }
+
+        action iva (
+            name: IVA
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT PORC_IVA_COMPRA
+                      FROM STW_IVA
+                     WHERE ID = :ID_IVA
+                    ```
+                itemsToSubmit: ID_IVA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: IVA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-montos (
+        name: Setear Montos
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: [
+                CANTIDAD
+                PRECIO_UNITARIO_C_IVA
+                IVA
+            ]
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare
+                      vprecio_unitario cmw_pedidos_detalle_cp.precio_unitario_c_iva%type;
+                      vcantidad        cmw_pedidos_detalle_cp.cantidad%type;
+                      vtotal           cmw_pedidos_detalle_cp.monto_total_c_iva%type;
+                      vdecimales       bsw_monedas.decimales%type;
+                    begin
+                      vprecio_unitario   := replace(:precio_unitario_c_iva, '.', '');
+                      vcantidad          := :cantidad;
+                      vtotal             := vprecio_unitario * vcantidad;
+                      vdecimales         := moneda_decimales(:P854_ID_MONEDA);
+                    
+                      :monto_total       := round(vtotal / (1 + :IVA / 100), vdecimales);
+                      :total_iva         := vtotal - :monto_total;
+                      :monto_total_c_iva := vtotal;
+                    end;
+                    ```
+                itemsToSubmit: [
+                    CANTIDAD
+                    PRECIO_UNITARIO_C_IVA
+                    P854_ID_MONEDA
+                    IVA
+                ]
+                itemsToReturn: [
+                    MONTO_TOTAL
+                    TOTAL_IVA
+                    MONTO_TOTAL_C_IVA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: recalculaImporte();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction submit-generar-factura (
+        name: Submit - GENERAR_FACTURA
+        execution {
+            sequence: 60
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @generar-factura
+        }
+
+        action native-submit-page (
+            action: submitPage
+            settings {
+                requestButtonName: GENERAR_FACTURA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction valida-referencia (
+        name: Valida Referencia
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: P854_REFERENCIA_FAC
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fact varchar2(20);
+                    
+                    begin
+                        if :P854_TIP_COMPROBANTE_FAC is not null AND :P854_TIP_COMPROBANTE_FAC <> 'FEX' then
+                            if (length(:P854_REFERENCIA_FAC) > 6 and length(:P854_REFERENCIA_FAC) < 14) 
+                                and (nvl(:P854_IVA_INCLUIDO_FAC,'N') = 'S' or :P854_TIP_COMPROBANTE_FAC IN  ('RTI'))  then
+                    
+                                conv_fact := replace(:P854_REFERENCIA_FAC,'-','');
+                                conv_fact := substr(:P854_REFERENCIA_FAC,1,3)||'-'||
+                                                          substr(:P854_REFERENCIA_FAC,4,3)||'-'||
+                                                          lpad(substr(:P854_REFERENCIA_FAC,7,7),7,'0');
+                    
+                                if ( ( SUBSTR(conv_fact,4,1) != '-' or  SUBSTR(conv_fact, 8,1) != '-' )  and (nvl(:P854_IVA_INCLUIDO_FAC,'N') = 'S'  or
+                                    :P854_TIP_COMPROBANTE_FAC IN ('RTI'))  AND :P854_TIP_COMPROBANTE_FAC != 'IDE' AND :P854_TIP_COMPROBANTE_FAC != 'DES' )   then
+                    
+                                    raise_application_error(-20000,'El nro. de factura debe tener el siguiente formato 999-999-9999999');
+                    
+                                end if;
+                            
+                            elsif NVL(:P854_IVA_INCLUIDO_FAC,'N') = 'N' OR :P854_TIP_COMPROBANTE_FAC = 'IDE' OR :P854_TIP_COMPROBANTE_FAC = 'DES' THEN
+                    
+                                conv_fact := :P854_REFERENCIA_FAC;
+                    
+                            else
+                                raise_application_error(-20000,'Cargar el nro. de factura solo con números');
+                            end if;
+                    
+                        elsif :P854_TIP_COMPROBANTE_FAC = 'FEX' THEN
+                    
+                            conv_fact := :P854_REFERENCIA_FAC;
+                            
+                        else
+                            raise_application_error(-20000,'Completar el tipo de comprobante para continuar con el nro. factura.');
+                        end if;
+                        :P854_REFERENCIA_FAC := conv_fact;
+                    end;
+                    ```
+                itemsToSubmit: [
+                    P854_REFERENCIA_FAC
+                    P854_IVA_INCLUIDO_FAC
+                ]
+                itemsToReturn: P854_REFERENCIA_FAC
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p854-iva (
+        itemName: P854_IVA_5
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(SUM(TOTAL_IVA), 0)
+                  FROM CMW_PEDIDOS_DETALLE_CP
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                   AND IVA= 5
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    computation p854-iva-2 (
+        itemName: P854_IVA_10
+        execution {
+            sequence: 40
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(SUM(TOTAL_IVA), 0)
+                  FROM CMW_PEDIDOS_DETALLE_CP
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                   AND IVA= 10
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    computation p854-nro-comprobante (
+        itemName: P854_NRO_COMPROBANTE
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                TRAE_ULTIMO_NUMERO_REGISTRO(P_ID_EMPRESA => :P0_ID_EMPRESA,
+                                            P_NOMB_TABLA => 'CMW_PEDIDOS_CABECERA',
+                                            P_COLUMNA    => 'NRO_COMPROBANTE',
+                                            P_SERIE      => 'SER_COMPROBANTE|B')
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P854_ID
+        }
+    )
+
+    computation p854-tot-cuota (
+        itemName: P854_TOT_CUOTA
+        execution {
+            sequence: 50
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(TOT_CUOTA, 0)
+                  FROM (
+                      SELECT SUM(TOT_CUOTA) TOT_CUOTA
+                        FROM CMW_CUOTAS_PED
+                       WHERE ID_PEDIDO_CAB = :P854_ID
+                  ) T
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    computation p854-tot-gravadas (
+        itemName: P854_TOT_GRAVADAS_10
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(SUM(MONTO_TOTAL), 0)
+                  FROM CMW_PEDIDOS_DETALLE_CP
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                   AND IVA= 10
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    computation p854-tot-gravadas-2 (
+        itemName: P854_TOT_GRAVADAS_5
+        execution {
+            sequence: 30
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(SUM(MONTO_TOTAL), 0)
+                  FROM CMW_PEDIDOS_DETALLE_CP
+                 WHERE ID_PEDIDO_CAB = :P854_ID
+                   AND IVA= 5
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P854_ID
+        }
+    )
+
+    process cuotas-save-interactive-grid-data (
+        name: Cuotas - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @cuotas
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 95895193660868014
+        }
+    )
+
+    process detalles-save-interactive-grid-data (
+        name: Detalles - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 95827207691635629
+        }
+    )
+
+    process genera-factura (
+        name: Genera Factura
+        type: invokeApi
+        invoke {
+            package: CMWK_OC_SERVICIO
+            procedureOrFunction: GENERA_FACTURA_CP
+        }
+        execution {
+            sequence: 90
+        }
+        advanced {
+            executionMappingIdentifier: 95975504331115250
+        }
+        serverSideCondition {
+            type: request=Value
+            value: GENERAR_FACTURA
+        }
+
+        parameter in_fec_timbrado (
+            parameter {
+                dataType: date
+            }
+            value {
+                type: item
+                item: P854_FEC_TIMBRADO
+            }
+            advanced {
+                displaySequence: 90
+            }
+        )
+
+        parameter in_id_empresa (
+            parameter {
+                dataType: number
+            }
+            value {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            advanced {
+                displaySequence: 10
+            }
+        )
+
+        parameter in_id_moneda (
+            parameter {
+                dataType: number
+            }
+            value {
+                type: item
+                item: P854_ID_MONEDA
+            }
+            advanced {
+                displaySequence: 50
+            }
+        )
+
+        parameter in_nro_timbrado (
+            parameter {
+                dataType: number
+            }
+            value {
+                type: item
+                item: P854_NRO_TIMBRADO
+            }
+            advanced {
+                displaySequence: 80
+            }
+        )
+
+        parameter in_referencia (
+            value {
+                type: item
+                item: P854_REFERENCIA_FAC
+            }
+            advanced {
+                displaySequence: 40
+            }
+        )
+
+        parameter in_ser_comprobante (
+            parameter {
+                hasDefault: true
+            }
+            value {
+                type: apiDefault
+            }
+            advanced {
+                displaySequence: 30
+            }
+        )
+
+        parameter in_tip_cambio (
+            parameter {
+                dataType: number
+            }
+            value {
+                type: item
+                item: P854_TIP_CAMBIO_FAC
+            }
+            advanced {
+                displaySequence: 60
+            }
+        )
+
+        parameter in_tip_comprobante (
+            value {
+                type: item
+                item: P854_TIP_COMPROBANTE_FAC
+            }
+            advanced {
+                displaySequence: 20
+            }
+        )
+
+        parameter in_tipo_comprobante (
+            value {
+                type: item
+                item: P854_TIPO_COMPROBANTE
+            }
+            advanced {
+                displaySequence: 100
+            }
+        )
+
+        parameter out_id_comprobante (
+            parameter {
+                direction: out
+                dataType: number
+            }
+            value {
+                item: P854_ID_COMPROBANTE_GEN
+            }
+            advanced {
+                displaySequence: 70
+            }
+        )
+
+    )
+
+    process initialize-form-carga-de-orden-de-compra-servicio (
+        name: Initialize form Carga de Orden de Compra - Servicio
+        type: formInitialization
+        formRegion: @carga-de-orden-de-compra-servicio
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 95728773932317593
+        }
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 100
+        }
+        advanced {
+            executionMappingIdentifier: 95972485759115219
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process process-form-carga-de-orden-de-compra-servicio (
+        name: Process form Carga de Orden de Compra - Servicio
+        type: formAutoRowProcessing
+        formRegion: @carga-de-orden-de-compra-servicio
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 95729125545317593
+        }
+    )
+
+    process seleccionar-conceptos-save-interactive-grid-data (
+        name: Seleccionar Conceptos - Save Interactive Grid Data
+        type: executeCode
+        editableRegion: @seleccionar-conceptos
+        source {
+            plsqlCode:
+                ```plsql
+                CMWK_OC_SERVICIO.dml_cuota_col(in_seq_id        => :SEQ_ID,
+                                               in_row_status    => :APEX$ROW_STATUS,
+                                               in_id_pedido_det => :ID_PEDIDO_DET,
+                                               in_id_cuota      => :ID_CUOTA,
+                                               in_monto         => REPLACE(:MONTO, '.', ''));
+                ```
+        }
+        execution {
+            sequence: 80
+        }
+        advanced {
+            executionMappingIdentifier: 95973941540115234
+        }
+        serverSideCondition {
+            type: request=Value
+            value: GENERAR_FACTURA
+        }
+    )
+
+    process unir-cab-det-cuotas (
+        name: Unir Cab/Det - Cuotas
+        type: executeCode
+        editableRegion: @cuotas
+        source {
+            plsqlCode:
+                ```plsql
+                :ID_PEDIDO_CAB   := :P854_ID;
+                :ID_SUCURSAL     := :P854_ID_SUCURSAL;
+                :ID_PROVEEDOR    := :P854_ID_PROVEEDOR;
+                :ID_MONEDA       := :P854_ID_MONEDA;
+                :TIP_COMPROBANTE := :P854_TIP_COMPROBANTE;
+                :SER_COMPROBANTE := :P854_SER_COMPROBANTE;
+                :NRO_COMPROBANTE := :P854_NRO_COMPROBANTE;
+                :FEC_ORIGEN      := :P854_FEC_COMPROBANTE;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 95895237999868015
+        }
+    )
+
+    process unir-cab-det-detalles (
+        name: Unir Cab/Det - Detalles
+        type: executeCode
+        editableRegion: @detalles
+        source {
+            plsqlCode: :ID_PEDIDO_CAB := :P854_ID;
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 95827314191635630
+        }
+    )
+
+    branch (
+        name: Go To Page 392
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 392
+                items: {
+                    P392_ID: &P854_ID_COMPROBANTE_GEN.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @generar-factura
+        }
+    )
+
+)
+

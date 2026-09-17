@@ -1,0 +1,923 @@
+page 737 (
+    name: Generacion de Asientos de Apertura/Cierre
+    alias: GENERACION-DE-ASIENTOS-DE-APERTURA-CIERRE
+    title: Generacion de Asientos de Apertura/Cierre
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region asientos-apertura-cierre (
+        name: Asientos Apertura/Cierre
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT CASE
+                        WHEN NVL(IND_ASIENTO_APERTURA, 'N') = 'S' THEN 'APERTURA'
+                        WHEN NVL(IND_ASIENTO_CIERRE, 'N')   = 'S' THEN 'CIERRE'
+                        ELSE ''
+                       END TIPO,
+                       NUM_ASIENTO,
+                       ID
+                  FROM COW_DIARIO_CABECERAS_PROV
+                 WHERE ID_EJERCICIO = :P737_ID_EJERCICIO
+                   AND (NVL(IND_ASIENTO_APERTURA, 'N') = 'S' OR NVL(IND_ASIENTO_CIERRE, 'N') = 'S')
+                ```
+            pageItemsToSubmit: P737_ID_EJERCICIO
+        }
+        layout {
+            sequence: 20
+            slot: fullWidthContent
+            startNewRow: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        componentAppearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--stretch
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column ID (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 30
+            }
+        )
+
+        column NUM_ASIENTO (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            type: link
+            heading {
+                heading: Número Asiento
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ID#
+                    }
+                }
+                linkText: #NUM_ASIENTO#
+            }
+        )
+
+        column TIPO (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+        )
+
+    )
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @generador
+            slot: subRegions
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--slimPadding
+                t-ButtonRegion--noUI
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region definiciones-plan-cuentas (
+        name: Definiciones Plan Cuentas
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT 
+                    CASE 
+                        WHEN P.TIPO_CUENTA = 'P' AND SUBSTR(P.COD_CUENTA, 1, 1) = '3' THEN 'PN'
+                        ELSE P.TIPO_CUENTA
+                    END AS TIPO_CUENTA,
+                    SUBSTR(P.COD_CUENTA, 1, 1) AS CUENTA
+                FROM COW_PLAN_CUENTAS P
+                GROUP BY 
+                    CASE 
+                        WHEN P.TIPO_CUENTA = 'P' AND SUBSTR(P.COD_CUENTA, 1, 1) = '3' THEN 'PN'
+                        ELSE P.TIPO_CUENTA
+                    END,
+                    SUBSTR(P.COD_CUENTA, 1, 1)
+                ORDER BY 2;
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @asientos-apertura-cierre
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        componentAppearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--stretch
+                t-Report--altRowsDefault
+                t-Report--rowHighlight
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+
+        column CUENTA (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+        column TIPO_CUENTA (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            heading {
+                heading: Tipo Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            sorting {
+                sortable: false
+            }
+        )
+
+    )
+
+    region generador (
+        name: Generador
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P737_DESC_ASIENTO (
+        type: textField
+        label {
+            label: <p>Descripcion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @generador
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P737_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @generador
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        readOnly {
+            type: always
+        }
+    )
+
+    pageItem P737_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @generador
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        readOnly {
+            type: always
+        }
+    )
+
+    pageItem P737_ID_EJERCICIO (
+        type: popupLov
+        label {
+            label: <p>Ejercicio:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT COD_EJERCICIO D, ID R
+                  FROM COW_EJERCICIOS
+                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 10
+            region: @generador
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P737_MENSAJE_PROC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            region: @generador
+            slot: regionBody
+        }
+    )
+
+    button apertura (
+        buttonName: APERTURA
+        label: Apertura
+        layout {
+            sequence: 10
+            region: @botones
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-folder-open
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button cierre (
+        buttonName: CIERRE
+        label: Cierre
+        layout {
+            sequence: 20
+            region: @botones
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-folder
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction generar-apertura (
+        name: Generar Apertura
+        execution {
+            sequence: 70
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @apertura
+        }
+
+        action alerta-de-asiento-de-apertura-existente (
+            name: Alerta de Asiento de Apertura existente
+            action: alert
+            settings {
+                message: &P737_MENSAJE_PROC.
+                style: warning
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P737_MENSAJE_PROC
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        vMensaje      VARCHAR2(500);
+                        vExiste       VARCHAR2(1);
+                        vCodEjercicio COW_EJERCICIOS.COD_EJERCICIO%TYPE;
+                        vNumAsiento   COW_DIARIO_CABECERAS_PROV.NUM_ASIENTO%TYPE;
+                    BEGIN
+                        BEGIN
+                            SELECT 'S', EJ.COD_EJERCICIO, DC.NUM_ASIENTO
+                              INTO vExiste, vCodEjercicio, vNumAsiento
+                              FROM COW_DIARIO_CABECERAS_PROV DC
+                              JOIN COW_EJERCICIOS            EJ ON EJ.ID = DC.ID_EJERCICIO
+                             WHERE ID_EJERCICIO = :P737_ID_EJERCICIO
+                               AND NVL(IND_ASIENTO_APERTURA, 'N') = 'S'
+                               AND ROWNUM = 1;
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                vExiste := 'N';
+                        END;
+                    
+                        IF vExiste = 'S' THEN
+                         :P737_MENSAJE_PROC := 'Ya existe el asiento de apertura numero '||vNumAsiento||' para el ejercicio '||vCodEjercicio;
+                        END IF;
+                        
+                        IF vExiste = 'N' THEN
+                          -- Call the procedure
+                            vMensaje := NULL;
+                    
+                            COWP_GENERA_CIERRE_APERTURA(p_id_empresa   => :P0_ID_EMPRESA,
+                                               p_id_ejercicio => :P737_ID_EJERCICIO,
+                                               p_fec_inicio   => :P737_FEC_INI,
+                                               p_fec_final    => :P737_FEC_FIN,
+                                               p_descripcion  => :P737_DESC_ASIENTO,
+                                               p_mensaje      => vMensaje,
+                                               p_tipo         => 'A');
+                    
+                            :P737_MENSAJE_PROC := vMensaje;
+                        END IF;
+                    END;
+                    
+                    ```
+                itemsToSubmit: [
+                    P737_ID_EJERCICIO
+                    P737_FEC_INI
+                    P737_FEC_FIN
+                    P737_DESC_ASIENTO
+                ]
+                itemsToReturn: P737_MENSAJE_PROC
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction generar-cierre (
+        name: Generar Cierre
+        execution {
+            sequence: 80
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cierre
+        }
+
+        action alerta-de-asiento-de-apertura-existente (
+            name: Alerta de Asiento de Apertura existente
+            action: alert
+            settings {
+                message: &P737_MENSAJE_PROC.
+                style: warning
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P737_MENSAJE_PROC
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        vMensaje      VARCHAR2(500);
+                        vExiste       VARCHAR2(1);
+                        vCodEjercicio COW_EJERCICIOS.COD_EJERCICIO%TYPE;
+                        vNumAsiento   COW_DIARIO_CABECERAS_PROV.NUM_ASIENTO%TYPE;
+                    BEGIN
+                        BEGIN
+                            SELECT 'S', EJ.COD_EJERCICIO, DC.NUM_ASIENTO
+                              INTO vExiste, vCodEjercicio, vNumAsiento
+                              FROM COW_DIARIO_CABECERAS_PROV DC
+                              JOIN COW_EJERCICIOS            EJ ON EJ.ID = DC.ID_EJERCICIO
+                             WHERE ID_EJERCICIO = :P737_ID_EJERCICIO
+                               AND NVL(IND_ASIENTO_CIERRE, 'N') = 'S'
+                               AND ROWNUM = 1;
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                vExiste := 'N';
+                        END;
+                    
+                        IF vExiste = 'S' THEN
+                         :P737_MENSAJE_PROC := 'Ya existe el asiento de cierre numero '||vNumAsiento||' para el ejercicio '||vCodEjercicio;
+                        END IF;
+                        
+                        IF vExiste = 'N' THEN
+                          -- Call the procedure
+                            vMensaje := NULL;
+                    
+                            COWP_GENERA_CIERRE_APERTURA(p_id_empresa   => :P0_ID_EMPRESA,
+                                               p_id_ejercicio => :P737_ID_EJERCICIO,
+                                               p_fec_inicio   => :P737_FEC_INI,
+                                               p_fec_final    => :P737_FEC_FIN,
+                                               p_descripcion  => :P737_DESC_ASIENTO,
+                                               p_mensaje      => vMensaje,
+                                               p_tipo         => 'C');
+                    
+                            :P737_MENSAJE_PROC := vMensaje;
+                        END IF;
+                    END;
+                    
+                    ```
+                itemsToSubmit: [
+                    P737_ID_EJERCICIO
+                    P737_FEC_INI
+                    P737_FEC_FIN
+                    P737_DESC_ASIENTO
+                ]
+                itemsToReturn: P737_MENSAJE_PROC
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @asientos-apertura-cierre
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction ocultar-habilitar-botones-apertura (
+        name: Ocultar/Habilitar Botones Apertura
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P737_IND_ASIENTO_APERTURA
+        }
+
+        action apertura (
+            name: APERTURA
+            action: hide
+            affectedElements {
+                selectionType: button
+                button: @apertura
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P737_IND_ASIENTO_APERTURA
+                value: S
+            }
+        )
+
+        action apertura-2 (
+            name: APERTURA
+            action: show
+            affectedElements {
+                selectionType: button
+                button: @apertura
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item!=value
+                item: P737_IND_ASIENTO_APERTURA
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction ocultar-habilitar-botones-cierre (
+        name: Ocultar/Habilitar Botones Cierre
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P737_IND_ASIENTO_CIERRE
+        }
+
+        action cierre (
+            name: CIERRE
+            action: hide
+            affectedElements {
+                selectionType: button
+                button: @cierre
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P737_IND_ASIENTO_CIERRE
+                value: S
+            }
+        )
+
+        action cierre-2 (
+            name: CIERRE
+            action: show
+            affectedElements {
+                selectionType: button
+                button: @cierre
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item!=value
+                item: P737_IND_ASIENTO_CIERRE
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-lista (
+        name: Refrescar Lista
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P737_ID_EJERCICIO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @asientos-apertura-cierre
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-apertura-cierre (
+        name: Setear Apertura/Cierre
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P737_ID_EJERCICIO
+        }
+
+        action p737-ind-asiento-apertura (
+            name: P737_IND_ASIENTO_APERTURA
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT 'S'
+                      FROM COW_DIARIO_CABECERAS_PROV
+                     WHERE ID_EJERCICIO = :P737_ID_EJERCICIO
+                       AND NVL(IND_ASIENTO_APERTURA, 'N') = 'S'
+                       AND ROWNUM = 1
+                    ```
+                itemsToSubmit: P737_ID_EJERCICIO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P737_IND_ASIENTO_APERTURA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action p737-ind-asiento-cierre (
+            name: P737_IND_ASIENTO_CIERRE
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT 'S'
+                      FROM COW_DIARIO_CABECERAS_PROV
+                     WHERE ID_EJERCICIO = :P737_ID_EJERCICIO
+                       AND NVL(IND_ASIENTO_CIERRE, 'N') = 'S'
+                       AND ROWNUM = 1
+                    ```
+                itemsToSubmit: P737_ID_EJERCICIO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P737_IND_ASIENTO_CIERRE
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-periodo (
+        name: Setear Periodo
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P737_ID_EJERCICIO
+        }
+
+        action p737-fec-fin (
+            name: P737_FEC_FIN
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT TO_DATE('31/12/'||COD_EJERCICIO, 'dd/MM/yyyy')
+                      FROM COW_EJERCICIOS
+                     WHERE ID = :P737_ID_EJERCICIO
+                    ```
+                itemsToSubmit: P737_ID_EJERCICIO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P737_FEC_FIN
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action p737-fec-ini (
+            name: P737_FEC_INI
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT TO_DATE('01/01/'||COD_EJERCICIO, 'dd/MM/yyyy')
+                      FROM COW_EJERCICIOS
+                     WHERE ID = :P737_ID_EJERCICIO
+                    ```
+                itemsToSubmit: P737_ID_EJERCICIO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P737_FEC_INI
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p737-id-ejercicio (
+        itemName: P737_ID_EJERCICIO
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT ID
+                  FROM COW_EJERCICIOS
+                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                   AND COD_EJERCICIO = :P0_COD_EJERCICIO
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P737_ID_EJERCICIO
+        }
+    )
+
+)
+

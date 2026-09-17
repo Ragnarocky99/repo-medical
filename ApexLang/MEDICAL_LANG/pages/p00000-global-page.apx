@@ -1,0 +1,289 @@
+page 0 (
+    name: Página Global
+
+    region variables-globales (
+        name: Variables Globales
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P0_API_SECRET (
+        type: textField
+        label {
+            label: Api Secret
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: static
+            staticValue: 941293760c0a5433a83292b9f8aade2e36d3916e
+        }
+    )
+
+    pageItem P0_CASA_CAMBIO (
+        type: textField
+        label {
+            label: Casa Cambio
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P0_CIUDAD_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @variables-globales
+            slot: regionBody
+        }
+        default {
+            type: static
+            staticValue: Asuncion
+        }
+    )
+
+    pageItem P0_COD_EJERCICIO (
+        type: textField
+        label {
+            label: Cod Ejercicio
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P0_COD_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    pageItem P0_COD_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    pageItem P0_DESC_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    pageItem P0_DESC_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    pageItem P0_FEC_FINAL_EJERCICIO (
+        type: textField
+        label {
+            label: Fec Final Ejercicio
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P0_FEC_INICIAL_EJERCICIO (
+        type: textField
+        label {
+            label: Fec Inicial Ejercicio
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P0_GRUPO_USUARIO (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    pageItem P0_ID_EMPRESA (
+        type: textField
+        label {
+            label: Id Empresa
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P0_ID_SUCURSAL (
+        type: textField
+        label {
+            label: Id Sucursal
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @variables-globales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P0_LOGIN_TIMESTAMP (
+        type: hidden
+        layout {
+            sequence: 120
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    pageItem P0_PAGE_TIMESTAMP (
+        type: hidden
+        layout {
+            sequence: 130
+            region: @variables-globales
+            slot: regionBody
+        }
+    )
+
+    dynamicAction buscador (
+        name: Buscador
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-de-danielh-apexspotlight (
+            action: plugin/apexSpotlightSearch
+            settings {
+                enableKeyboardShortcuts: true
+                dataSourceSql:
+                    ```sql
+                    SELECT aap.page_id||' - '||aap.page_title AS title
+                          ,M.DESCRIPCION || '  >' || aap.page_name AS description
+                          ,apex_page.get_url(p_page => aap.page_id) AS link
+                          --,'fa-arrow-right' AS icon
+                          ,f.icon_IMG AS icon
+                      FROM apex_application_pages aap,bsw_acceso_por_grupos_apex a,bsw_formas_paginas f,bsw_modulos m
+                     WHERE aap.application_id = :app_id
+                       AND aap.page_mode = 'Normal'
+                       AND aap.page_requires_authentication = 'Yes'
+                       AND aap.page_id != 0
+                       AND F.PAGE_NO=aap.page_id
+                       AND A.ID_GRUPO=:P0_GRUPO_USUARIO
+                       AND F.NAV_ID IN (SELECT PAGINA_ID
+                                                FROM BSW_ACCESO_POR_GRUPOS_APEX
+                                               WHERE ID_GRUPO = :P0_GRUPO_USUARIO)
+                       AND A.PAGINA_ID=F.NAV_ID
+                       AND F.MOSTRAR_MENU='S'
+                       AND F.ID_MODULO=M.ID
+                     ORDER BY aap.page_id
+                    
+                    ```
+                enableInPageSearch: false
+            }
+            execution {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: currentPageNotInList
+                pages: 9999
+            }
+        )
+
+    )
+
+)
+

@@ -1,0 +1,1012 @@
+page 421 (
+    name: Carga de Rutas de Embarque
+    alias: RUTAS-DE-EMBARQUE
+    title: Carga de Rutas de Embarque
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            
+            
+            .a-danger{
+                background-color: #f44336;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            
+            #Detalles_ig_toolbar_m1{
+                display: none;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region embarque (
+        name: Embarque
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select em.id, em.nro_embarque, em.fec_embarque, em.id_proforma,
+                pc.nro_comprobante as nro_proforma,
+                 ped.nro_comprobante as nro_pedido, pc.ser_comprobante, em.id_puerto,
+                  pu.descripcion des_puerto, pr.cod_proveedor, ltrim(pe.nombre) nom_transporte ,PC.FEC_COMPROBANTE AS FEC_PROFORMA,pu.cod_puerto,V.DESCRIPCION
+                from cmw_embarques em,
+                 cmw_proformas_cabecera pc
+                 , cmw_puertos pu, 
+                 cmw_proveedores pr, 
+                 bsw_personas pe,
+                  bsw_parametros_generales pg ,
+                  cmw_pedidos_cabecera ped,
+                  CMW_VIAS V 
+                  where em.id_empresa = :P0_ID_EMPRESA and em.id_empresa 
+                  = pc.id_empresa and pg.id_modulo = w_busca_parametro('CM','ID_MODULO_CM') and
+                   pg.parametro = 'TIPO_PROFORMA' and pc.tip_comprobante 
+                   = ltrim(rtrim(pg.valor)) and
+                    pc.id=em.id_proforma and 
+                     pu.id = em.id_puerto and 
+                     pr.id_empresa = em.id_empresa
+                      and pr.id = em.transporte 
+                      and pr.id_persona = pe.id 
+                      and ped.id=pc.referencia
+                      AND EM.ID_VIA=V.ID(+)
+                      order by em.fec_embarque desc, em.nro_embarque desc
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        readOnly {
+            type: never
+        }
+    )
+
+    region rutas-de-embarque (
+        name: Rutas de Embarque
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            tableName: CMW_RUTAS_EMBARQUES
+            whereClause: " ID_EMBARQUE=:P421_ID"
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 25304041687431723
+        }
+
+        savedReport 258416 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMBARQUE
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @FEC_RUTA
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_PUERTO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_VIA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @PORCENTAJE
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_PUERTO_PROXIMO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @FEC_PROB_LLEGADA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 0
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCRIPCION (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_PROB_LLEGADA (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Llegada</p>
+                alignment: center
+                alternativeLabel: Fecha Llegada
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_PROB_LLEGADA
+                dataType: date
+            }
+        )
+
+        column FEC_RUTA (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Salida</p>
+                alignment: center
+                alternativeLabel: Fecha Salida
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_RUTA
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMBARQUE (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_EMBARQUE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PUERTO (
+            type: popupLov
+            heading {
+                heading: <p>Puerto Salida</p>
+                alternativeLabel: Puerto Salda
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-puertos
+            }
+            layout {
+                sequence: 70
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_PUERTO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_PUERTO_PROXIMO (
+            type: popupLov
+            heading {
+                heading: <p>Puerto Llegada</p>
+                alternativeLabel: Puerto Llegada
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-puertos
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_PUERTO_PROXIMO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_VIA (
+            type: popupLov
+            heading {
+                heading: <p>Via</p>
+                alternativeLabel: Via
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-vias
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_VIA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column PORCENTAJE (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: PORCENTAJE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Rutas de Embarque
+        }
+    )
+
+    pageItem P421_COD_PROVEEDOR (
+        type: textField
+        label {
+            label: <p>Transporte:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: COD_PROVEEDOR
+            dataType: varchar2
+        }
+    )
+
+    pageItem P421_COD_PUERTO (
+        type: textField
+        label {
+            label: <p>Puerto:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 5
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: COD_PUERTO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P421_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Vía:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P421_DES_PUERTO (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 4
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: DES_PUERTO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P421_FEC_EMBARQUE (
+        type: textField
+        label {
+            label: <p>Fecha Embarque:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @embarque
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: FEC_EMBARQUE
+            dataType: date
+        }
+    )
+
+    pageItem P421_FEC_PROFORMA (
+        type: textField
+        label {
+            label: <p>Fecha Proforma:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: FEC_PROFORMA
+            dataType: date
+        }
+    )
+
+    pageItem P421_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @embarque
+            slot: regionBody
+        }
+        source {
+            formRegion: @embarque
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P421_ID_PROFORMA (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @embarque
+            slot: regionBody
+        }
+        source {
+            formRegion: @embarque
+            column: ID_PROFORMA
+            dataType: number
+        }
+    )
+
+    pageItem P421_ID_PUERTO (
+        type: hidden
+        layout {
+            sequence: 140
+            region: @embarque
+            slot: regionBody
+        }
+        source {
+            formRegion: @embarque
+            column: ID_PUERTO
+            dataType: number
+        }
+    )
+
+    pageItem P421_NOM_TRANSPORTE (
+        type: textField
+        label {
+            label: <p>Transporte</p>
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 4
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        validation {
+            maxLength: 200
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: NOM_TRANSPORTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P421_NRO_EMBARQUE (
+        type: numberField
+        label {
+            label: <p>Numero:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @embarque
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: NRO_EMBARQUE
+            dataType: number
+        }
+    )
+
+    pageItem P421_NRO_PEDIDO (
+        type: numberField
+        label {
+            label: <p>Referencia:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @embarque
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: NRO_PEDIDO
+            dataType: number
+        }
+    )
+
+    pageItem P421_NRO_PROFORMA (
+        type: numberField
+        label {
+            label: <p>Nro Proforma:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @embarque
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @embarque
+            column: NRO_PROFORMA
+            dataType: number
+        }
+    )
+
+    pageItem P421_SER_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 130
+            region: @embarque
+            slot: regionBody
+        }
+        source {
+            formRegion: @embarque
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 20
+            region: @embarque
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 349
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction validar-fecha-llegada (
+        name: Validar Fecha Llegada
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @rutas-de-embarque
+            columns: FEC_PROB_LLEGADA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :FEC_PROB_LLEGADA <= :FEC_RUTA THEN 
+                    :FEC_PROB_LLEGADA:=NULL;
+                    RAISE_APPLICATION_ERROR(-20000,'La fecha de probable llegada debe ser mayor que la fecha de embarque');
+                    END IF;
+                    
+                    
+                    
+                    ```
+                itemsToSubmit: [
+                    FEC_RUTA
+                    FEC_PROB_LLEGADA
+                ]
+                itemsToReturn: FEC_PROB_LLEGADA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process id-embarque (
+        name: ID_EMBARQUE
+        type: executeCode
+        editableRegion: @rutas-de-embarque
+        source {
+            plsqlCode: :ID_EMBARQUE:=:P421_ID;
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 25305638163431739
+        }
+    )
+
+    process initialize-form-carga-de-rutas-de-embarque (
+        name: Initialize form Carga de Rutas de Embarque
+        type: formInitialization
+        formRegion: @embarque
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 26264792334807409
+        }
+    )
+
+    process rutas-de-embarque-save-interactive-grid-data (
+        name: Rutas de Embarque - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @rutas-de-embarque
+        target {
+            targetType: tableView
+            tableName: CMW_RUTAS_EMBARQUES
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 25305431291431737
+        }
+    )
+
+)
+

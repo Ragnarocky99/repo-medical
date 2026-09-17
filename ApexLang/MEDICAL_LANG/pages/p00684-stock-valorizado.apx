@@ -1,0 +1,1320 @@
+page 684 (
+    name: Stock Valorizado
+    alias: STOCK-VALORIZADO
+    title: Stock Valorizado
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .requerido{
+                color: red;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 50
+            parentRegion: @filtros
+            slot: regionBody
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region existencia (
+        name: Existencia
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT AR.ID,
+                       AR.ID_EMPRESA,
+                       SU.DESCRIPCION AS SUCURSAL,
+                       AR.COD_ARTICULO,
+                       AR.COD_ORIGEN_ART AS COD_FABRICANTE,
+                       AR.ID_RUBRO AS CATEGORIA_PRODUCTO,
+                       AR.DESCRIPCION,
+                       ar.id_marca,
+                       ar.id_envase,
+                       ar.id_unidad_medida,
+                       LO.NRO_LOTE,
+                       NVL(
+                           CALCULA_SALDO_STOCK(p_id_empresa  => AR.ID_EMPRESA,
+                                               p_id_articulo => AR.ID,
+                                               p_id_lote     => LO.ID,
+                                               p_id_sucursal => SU.ID,
+                                               p_fecha       => :P684_FEC_HASTA
+                           )
+                       ,0) AS CANT_DISPON_SUCURSAL,
+                       NVL(TRAE_COSTO_PROM(AR.ID_EMPRESA,AR.ID,:P684_FEC_HASTA),0) AS COSTO,
+                       NVL(
+                           ROUND(
+                               TRAE_COSTO_PROM(AR.ID_EMPRESA,AR.ID,:P684_FEC_HASTA) * 
+                               CALCULA_SALDO_STOCK(p_id_empresa  => AR.ID_EMPRESA,
+                                                   p_id_articulo => AR.ID,
+                                                   p_id_lote     => LO.ID,
+                                                   p_id_sucursal => SU.ID,
+                                                   p_fecha       => :P684_FEC_HASTA)
+                           )
+                       ,0) AS COSTO_TOTAL,
+                       (select  (SELECT LISTAGG(DISTINCT PFC.NRO_COMPROBANTE_REF,CHR(13)) WITHIN GROUP (ORDER BY PFD.ID_PROFORMA_CABECERA) AS PROFORMAS
+                                  FROM CMW_PROFORMAS_DETALLE  PFD
+                                  JOIN CMW_PROFORMAS_CABECERA PFC ON PFC.ID = PFD.ID_PROFORMA_CABECERA
+                                 WHERE PFD.NRO_OCP = PC.NRO_COMPROBANTE
+                                   AND PFD.ID_ARTICULO = PD.ID_ARTICULO) AS NRO_PROFORMA
+                                   
+                        from cmw_pedidos_cabecera PC
+                        join cmw_pedidos_detalle PD on PD.Id_Pedido_Cab = PC.ID
+                        join stw_articulos A on PD.Id_Articulo = A.ID
+                        left join vtw_pedidos_cabecera VPC on PD.Id_Pedido = VPC.ID
+                        left join cmw_cotiza_Articulos CA on CA.Id_Articulo = PD.Id_Articulo and CA.Id_Pedido = VPC.ID and pd.id_cotiza_art = ca.id--and CA.Id_Pedido_Det = pd.id_pedido_det
+                
+                        WHERE  (A.ID = ar.id)
+                          and rownum = 1) AS NRO_PROFORMA
+                
+                FROM STW_ARTICULOS AR
+                JOIN STW_LOTES LO ON LO.ID_ARTICULO = AR.ID
+                JOIN BSW_SUCURSALES SU ON SU.ID_EMPRESA = AR.ID_EMPRESA
+                WHERE AR.ID_EMPRESA  = :P0_ID_EMPRESA
+                  AND AR.COD_ARTICULO != '742' -- ARTICULO DE MIGRACION
+                  AND (AR.ID = :P684_ARTICULOS OR :P684_ARTICULOS IS NULL)
+                  AND (SU.ID = :P684_SUCURSAL  OR :P684_SUCURSAL  IS NULL)
+                  AND NVL(
+                           CALCULA_SALDO_STOCK(p_id_empresa  => AR.ID_EMPRESA,
+                                               p_id_articulo => AR.ID,
+                                               p_id_lote     => LO.ID,
+                                               p_id_sucursal => SU.ID,
+                                               p_fecha       => :P684_FEC_HASTA
+                           )
+                       ,0) > 0 --añadido para que solo me muestre los items con stock.
+                  --AND :P684_SUCURSAL IS NOT NULL
+                 -- AND (UPPER(AR.COD_ARTICULO) LIKE UPPER('%'|| :P684_ARTICULOS || '%') OR :P684_ARTICULOS IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P0_ID_EMPRESA
+                P684_SUCURSAL
+                P684_ARTICULOS
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: never
+        }
+        serverCache {
+            caching: cacheByUser
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            lazyLoading: true
+        }
+        download {
+            filename: Stock Valorizado
+        }
+        advanced {
+            savedReportMappingIdentifier: 128661074375129465
+        }
+
+        column CANT_DISPON_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Cant. Dispon.
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column CATEGORIA_PRODUCTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Categoria Producto
+                alignment: end
+            }
+            lov {
+                lov: @lv-rubros-articulos
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Artículo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: plainText
+            heading {
+                heading: Cod Fabricante
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column COSTO (
+            type: plainText
+            heading {
+                heading: Costo Unitario
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column COSTO_TOTAL (
+            type: plainText
+            heading {
+                heading: Costo Total
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+                alignment: center
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Empresa
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentación
+                alignment: end
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: end
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Unidad Medida
+                alignment: end
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column NRO_LOTE (
+            type: plainText
+            heading {
+                heading: Nro Lote
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column NRO_PROFORMA (
+            type: plainText
+            heading {
+                heading: Nro Proforma
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column SUCURSAL (
+            type: plainText
+            heading {
+                heading: Sucursal
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText:
+                ```
+                Stock Valorizado
+                A fecha hasta &P684_FEC_HASTA.
+                &P0_DESC_EMPRESA. - &P0_DESC_SUCURSAL.
+                ```
+        }
+        pageFooter {
+            pageFooterText:
+                ```
+                USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+                
+                ```
+        }
+
+        savedReport 661672 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANT_DISPON_SUCURSAL (
+                sequence: 11
+            )
+
+            displayColumn CATEGORIA_PRODUCTO (
+                sequence: 6
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn COD_FABRICANTE (
+                sequence: 3
+            )
+
+            displayColumn COSTO (
+                sequence: 12
+            )
+
+            displayColumn COSTO_TOTAL (
+                sequence: 13
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 4
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 8
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 7
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 9
+            )
+
+            displayColumn NRO_LOTE (
+                sequence: 10
+            )
+
+            displayColumn NRO_PROFORMA (
+                sequence: 5
+            )
+
+            displayColumn SUCURSAL (
+                sequence: 1
+            )
+
+            aggregate (
+                column: COSTO_TOTAL
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region stock-valorizado (
+        name: Stock Valorizado
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: STWV_STOCK_VALORIZADO_COL
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 99124548828081833
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: plainText
+            heading {
+                heading: Cod. Fabricante
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COSTO_PROM (
+            type: plainText
+            heading {
+                heading: Costo Promedio
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column COSTO_TOTAL (
+            type: plainText
+            heading {
+                heading: Costo Total
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Descripcion
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fec. Vencimiento
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_FAMILIA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Familia
+                alignment: center
+            }
+            lov {
+                lov: @lv-familias-articulos
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_RUBRO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Categoria
+                alignment: center
+            }
+            lov {
+                lov: @lv-rubros-articulos
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: U.M
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column NRO_LOTE (
+            type: plainText
+            heading {
+                heading: Nro. Lote
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Stock Valorizado
+        }
+
+        savedReport 1002294 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn COD_FABRICANTE (
+                sequence: 3
+            )
+
+            displayColumn COSTO_PROM (
+                sequence: 13
+            )
+
+            displayColumn COSTO_TOTAL (
+                sequence: 14
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 6
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 10
+            )
+
+            displayColumn ID_FAMILIA (
+                sequence: 8
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 9
+            )
+
+            displayColumn ID_RUBRO (
+                sequence: 7
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 1
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 11
+            )
+
+            displayColumn NRO_LOTE (
+                sequence: 5
+            )
+
+            displayColumn STOCK (
+                sequence: 12
+            )
+
+        )
+
+    )
+
+    pageItem P684_ARTICULOS (
+        type: popupLov
+        label {
+            label: <p>Articulo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-bottom-sm
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P684_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fec. Hasta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            appearanceBehavior: [
+                monthPicker
+                yearPicker
+                showTodayButton
+            ]
+            showOn: iconClick
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P684_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-bottom-sm
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_SUCURSAL
+        }
+    )
+
+    button refrescar (
+        buttonName: REFRESCAR
+        label: Refrescar
+        layout {
+            sequence: 20
+            region: @botones
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar paginacion
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @existencia
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction convert-fec-desde (
+        name: CONVERT_FEC_DESDE
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P684_FEC_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P684_FEC_DESDE) = 8) then
+                    
+                            conv_fecha := replace(:P684_FEC_DESDE,'/','');
+                            conv_fecha := substr(:P684_FEC_DESDE,1,2)||'/'||
+                                                      substr(:P684_FEC_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P684_FEC_DESDE,5,4),4,'0');
+                    
+                        :P684_FEC_DESDE := conv_fecha;
+                            ELSIF (length(:P684_FEC_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P684_FEC_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P684_FEC_DESDE
+                itemsToReturn: P684_FEC_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fec-hasta (
+        name: CONVERT_FEC_HASTA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P684_FEC_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P684_FEC_HASTA) = 8) then
+                    
+                            conv_fecha := replace(:P684_FEC_HASTA,'/','');
+                            conv_fecha := substr(:P684_FEC_HASTA,1,2)||'/'||
+                                                      substr(:P684_FEC_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P684_FEC_HASTA,5,4),4,'0');
+                    
+                        :P684_FEC_HASTA := conv_fecha;
+                            ELSIF (length(:P684_FEC_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P684_FEC_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P684_FEC_HASTA
+                itemsToReturn: P684_FEC_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refrescar
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    stwk_stock_valorizado.procesar(in_id_empresa  => :P0_ID_EMPRESA,
+                                                   in_id_sucursal => :P684_SUCURSAL,
+                                                   in_id_articulo => :P684_ARTICULOS,
+                                                   in_id_rubro    => NULL,
+                                                   in_id_familia  => NULL,
+                                                   in_id_marca    => NULL,
+                                                   in_fec_fin     => :P684_FEC_HASTA);
+                    ```
+                itemsToSubmit: [
+                    P684_SUCURSAL
+                    P684_ARTICULOS
+                    P684_FEC_HASTA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @stock-valorizado
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P684_SUCURSAL
+                P684_ARTICULOS
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 649
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 649
+                items: {
+                    P649_ARTICULO: &P684_ARTICULOS.
+                    P649_SUCURSAL: &P684_SUCURSAL.
+                }
+            }
+        }
+    )
+
+)
+

@@ -1,0 +1,2063 @@
+page 505 (
+    name: Carga de Movimiento de Bienes
+    alias: CARGA-DE-MOVIMIENTO-DE-BIENES
+    title: Carga de Movimiento de Bienes
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var orden = 0;
+            // Funcion  para calcular los totales de la factura cada vez que se ingresa un detalle 
+            function calculaTotalBienes(){
+                var model= apex.region("Detalle").widget().interactiveGrid("getCurrentView").model;
+                var v_monto   = model.getFieldKey("MON_COSTO_COPIA");
+                var v_total     = 0;
+                model.forEach(function(r, index, id) {
+                   
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                         let numeroTotal=r[v_monto].replace(/\./g,'');
+            
+                        v_total      = v_total  + parseFloat(numeroTotal.replace(',','.'));
+                        
+                    }
+                    
+                });
+            
+                $s('P505_MON_COSTO',  v_total.toString().replace(/\./g,','));
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            //CABECERA
+            document.getElementById("P505_TIP_COMPROBANTE").readOnly = true;
+            document.getElementById("P505_SER_COMPROBANTE").readOnly = true;
+            
+            document.getElementById("P505_MON_COSTO").readOnly = true;
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            
+            
+            .a-danger{
+                background-color: #f44336;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            
+            #Detalles_ig_toolbar_m1{
+                display: none;
+            }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-movimiento-de-bienes (
+        name: "Carga de Movimiento de Bienes "
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       TIP_COMPROBANTE,
+                       SER_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       ID_TIP_COMP,
+                       ID_SER_COMP,
+                       FEC_COMPROBANTE,
+                       MON_COSTO,
+                       ID_SUCURSAL,
+                       ID_CENTRO,
+                       ID_DEPARTAMENTO,
+                       ID_SECCION,
+                       ID_RESPONSABLE,
+                       ID_EMPRESA,
+                       REFERENCIA
+                from COW_MOV_BIENES_CAB
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region detalle (
+        name: Detalle
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select  d.id_bien,
+                        d.id_movbien_cab,
+                        d.descripcion,  
+                        b.mon_costo as costo_unitario,
+                        d.cantidad, 
+                        d.mon_costo,
+                        d.mon_costo as mon_costo_copia,
+                        d.mon_costo_ext,
+                        d.tip_comprobante, 
+                        d.ser_comprobante, 
+                        d.nro_comprobante,
+                        d.id_empresa,  
+                        d.id
+                from cow_mov_bienes_det d, 
+                     cow_bienes_uso b
+                where d.id_movbien_cab = :P505_ID 
+                  AND D.ID_BIEN = B.ID
+                ```
+            pageItemsToSubmit: P505_ID
+        }
+        layout {
+            sequence: 200
+            parentRegion: @carga-de-movimiento-de-bienes
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-sm
+            ]
+        }
+        advanced {
+            htmlDomId: Detalle
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+            ]
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        toolbar {
+            controls: actionsMenu
+            addButtonLabel: Añadir
+        }
+        enableUsersTo {
+            flashback: false
+            download: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 63928760120489534
+        }
+
+        savedReport 727622 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_BIEN
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MON_COSTO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @MON_COSTO_EXT
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @COSTO_UNITARIO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 67
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_MOVBIEN_CAB
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @MON_COSTO_COPIA
+                layout {
+                    show: false
+                    sequence: 14
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COSTO_UNITARIO (
+            type: numberField
+            heading {
+                heading: <p>Costo Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: COSTO_UNITARIO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESCRIPCION (
+            type: textarea
+            heading {
+                heading: <p>Descripcion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: COW_MOV_BIENES_DET_SEQ
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_BIEN (
+            type: popupLov
+            heading {
+                heading: <p>Bien</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                popupWidth: 700
+                popupHeight: 500
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-bienes-pg
+            }
+            cascadingLov {
+                parentColumns: P505_ID_DEPARTAMENTO
+                itemsToSubmit: P505_ID_DEPARTAMENTO
+            }
+            layout {
+                sequence: 30
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: ID_BIEN
+                dataType: number
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MOVBIEN_CAB (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_MOVBIEN_CAB
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P505_ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MON_COSTO (
+            type: numberField
+            heading {
+                heading: <p>Monto Nacional</p>
+                alignment: center
+                alternativeLabel: Monto Nacional
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MON_COSTO
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: MON_COSTO
+            }
+        )
+
+        column MON_COSTO_COPIA (
+            type: numberField
+            heading {
+                heading: Mon Costo Copia
+                alignment: end
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MON_COSTO_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MON_COSTO_EXT (
+            type: numberField
+            heading {
+                heading: <p>Monto Extranjero</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MON_COSTO_EXT
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P505_NRO_COMPROBANTE
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :P505_SER_COMPROBANTE
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :P505_TIP_COMPROBANTE
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+    )
+
+    pageItem P505_BANDERA_TIP_COMP (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 220
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+        }
+    )
+
+    pageItem P505_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. Comp.:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: FEC_COMPROBANTE
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P505_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: COW_MOV_BIENES_CAB_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P505_ID_CENTRO (
+        type: popupLov
+        label {
+            label: <p>Centro:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_CENTRO
+            dataType: number
+        }
+    )
+
+    pageItem P505_ID_DEPARTAMENTO (
+        type: popupLov
+        label {
+            label: <p><b style="color:red;">*</b>Departamento:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-departamentos-rrhh
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_DEPARTAMENTO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P505_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P505_ID_RESPONSABLE (
+        type: popupLov
+        label {
+            label: <p>Responsable:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-responsables-bien
+        }
+        layout {
+            sequence: 170
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 10
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_RESPONSABLE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P505_ID_SECCION (
+        type: popupLov
+        label {
+            label: <p><b style="color:red;">*</b>Sección:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-secciones-pg
+        }
+        cascadingLov {
+            parentItems: P505_ID_DEPARTAMENTO
+            itemsToSubmit: P505_ID_DEPARTAMENTO
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_SECCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P505_ID_SER_COMP (
+        type: hidden
+        layout {
+            sequence: 140
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_SER_COMP
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: TRAE_ID_SERIE_COMPROBANTE(:P505_TIP_COMPROBANTE,:P505_SER_COMPROBANTE)
+        }
+    )
+
+    pageItem P505_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    pageItem P505_ID_TIP_COMP (
+        type: hidden
+        layout {
+            sequence: 110
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: ID_TIP_COMP
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: TRAE_ID_TIPO_COMPROBANTE(W_BUSCA_PARAMETRO('AF','TIP_COMP_MOVBIEN'))
+        }
+    )
+
+    pageItem P505_MON_COSTO (
+        type: numberField
+        label {
+            label: <p class="totales">Total:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: MON_COSTO
+            dataType: number
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P505_NRO_COMPROBANTE (
+        type: numberField
+        label {
+            label: Nro Comprobante
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P505_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Referencia:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 18
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P505_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Serie:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 7
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                
+                SELECT SER_COMPROBANTE 
+                FROM BSW_SERIES_COMPROB 
+                WHERE TIP_COMPROBANTE = :P505_TIP_COMPROBANTE
+                ```
+        }
+    )
+
+    pageItem P505_TIP_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Tip Comp.:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 6
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-movimiento-de-bienes
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('AF','TIP_COMP_MOVBIEN')
+        }
+    )
+
+    button b505-close (
+        buttonName: B505_CLOSE
+        label: Volver
+        layout {
+            sequence: 20
+            region: @carga-de-movimiento-de-bienes
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 517
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button b505-create (
+        buttonName: B505_CREATE
+        label: Guardar
+        layout {
+            sequence: 30
+            region: @carga-de-movimiento-de-bienes
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P505_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button b505-delete (
+        buttonName: B505_DELETE
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @carga-de-movimiento-de-bienes
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P505_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button b505-update (
+        buttonName: B505_UPDATE
+        label: Aplicar Cambios
+        layout {
+            sequence: 10
+            region: @carga-de-movimiento-de-bienes
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P505_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button centro (
+        buttonName: CENTRO
+        label: Centro
+        layout {
+            sequence: 90
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 82
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button departamento (
+        buttonName: DEPARTAMENTO
+        label: Departamento
+        layout {
+            sequence: 130
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 324
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button responsable (
+        buttonName: RESPONSABLE
+        label: Responsable
+        layout {
+            sequence: 180
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 493
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button seccion (
+        buttonName: SECCION
+        label: Seccion
+        layout {
+            sequence: 160
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 311
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button sucursal (
+        buttonName: SUCURSAL
+        label: Sucursal
+        layout {
+            sequence: 60
+            region: @carga-de-movimiento-de-bienes
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 35
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction calc-total (
+        name: CALC_TOTAL
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: MON_COSTO
+        }
+
+        action calcular-totales (
+            name: Calcular Totales
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotalBienes();
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :MON_COSTO
+                itemsToSubmit: MON_COSTO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MON_COSTO_COPIA
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calcular-monto (
+        name: CALCULAR_MONTO
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: CANTIDAD
+        }
+        comments {
+            comments: Aqui se va calculando el total correspondiente (Monto total)
+        }
+
+        action monto-total (
+            name: Monto Total
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :CANTIDAD IS NOT NULL AND :COSTO_UNITARIO IS NOT NULL THEN
+                        :MON_COSTO := ROUND(replace(:CANTIDAD, '.', '') * replace(:COSTO_UNITARIO, '.', ''));
+                    --:MONTO_TOTAL_C_IVA:=:CANTIDAD * :PRECIO_UNITARIO_C_IVA;
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    COSTO_UNITARIO
+                    CANTIDAD
+                ]
+                itemsToReturn: [
+                    MON_COSTO
+                    COSTO_UNITARIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction carga-datos-costo-unitario (
+        name: Carga Datos Costo Unitario
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: ID_BIEN
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    v_monto_unitario  COW_BIENES_USO.MON_COSTO%TYPE;
+                    BEGIN
+                        select ltrim(B.MON_COSTO) MON_COSTO
+                           INTO v_monto_unitario
+                        from COW_BIENES_USO B
+                        where B.id = :ID_BIEN
+                          and B.id_empresa = :P0_ID_EMPRESA;
+                        RETURN v_monto_unitario;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN 
+                            return null;
+                        when others then
+                            raise_application_error(-20000,'Error en la tabla de bienes'||sqlerrm);
+                            return null;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    ID_BIEN
+                    P0_ID_EMPRESA
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COSTO_UNITARIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 120
+        }
+        when {
+            selectionType: items
+            items: P505_FEC_COMPROBANTE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P505_FEC_COMPROBANTE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P505_FEC_COMPROBANTE,'/','');
+                            conv_fecha := substr(:P505_FEC_COMPROBANTE,1,2)||'/'||
+                                                      substr(:P505_FEC_COMPROBANTE,3,2)||'/'||
+                                                      lpad(substr(:P505_FEC_COMPROBANTE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P505_FEC_COMPROBANTE := conv_fecha;
+                            ELSIF (length(:P505_FEC_COMPROBANTE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P505_FEC_COMPROBANTE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P505_FEC_COMPROBANTE
+                itemsToReturn: P505_FEC_COMPROBANTE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-ref-fact (
+        name: CONVERT_REF_FACT
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: items
+            items: P505_REFERENCIA
+        }
+
+        action convierte-fact-nro (
+            name: CONVIERTE_FACT_NRO
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fact varchar2(20);
+                    
+                    begin
+                        if :P505_TIP_COMPROBANTE is not null then
+                            if (length(:P505_REFERENCIA) > 6 and length(:P505_REFERENCIA) < 14) 
+                                /*and :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                                conv_fact := replace(:P505_REFERENCIA,'-','');
+                                conv_fact := substr(:P505_REFERENCIA,1,3)||'-'||
+                                                          substr(:P505_REFERENCIA,4,3)||'-'||
+                                                          lpad(substr(:P505_REFERENCIA,7,7),7,'0');
+                    
+                                /*if ( ( SUBSTR(conv_fact,4,1) != '-' or  SUBSTR(conv_fact, 8,1) != '-' )  and (nvl(:P392_IVA_INCLUIDO,'N') = 'S'  or
+                                    :P392_TIP_COMPROBANTE IN ('RTI'))  AND :P392_TIP_COMPROBANTE != 'IDE')  then
+                    
+                                    raise_application_error(-20000,'El nro. de factura debe tener el siguiente formato 999-999-9999999');
+                    
+                                end if;*/
+                                
+                            else
+                                raise_application_error(-20000,'Cargar el nro. de factura solo con números');
+                            end if;
+                        end if;
+                        :P505_REFERENCIA := conv_fact;
+                    
+                        
+                    end;
+                    ```
+                itemsToSubmit: [
+                    P505_REFERENCIA
+                    P505_TIP_COMPROBANTE
+                ]
+                itemsToReturn: P505_REFERENCIA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction d505-inicializar (
+        name: D505_INICIALIZAR
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                IF :P505_ID IS NOT NULL THEN
+                RETURN TRUE;
+                ELSE
+                RETURN FALSE;
+                END IF;
+                ```
+        }
+
+        action inicia-detalle (
+            name: INICIA_DETALLE
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalle").call("getViews").grid;
+                    //grid.view$.grid("option", "editable", true);
+                    //editable true
+                    grid.model.setOption("editable", true);
+                    grid.setEditMode(true);
+                    //editable false
+                    //grid.model.setOption("editable", false);
+                    grid.setEditMode(false);
+                    
+                    let actions = apex.region("Detalle").call("getActions");
+                    //actions.hide("selection-duplicate");
+                    //actions.hide("selection-delete");
+                    //actions.hide("selection-copy-down");
+                    //actions.hide("selection-copy");
+                    //actions.hide("selection-refresh"); 
+                    //actions.hide("selection-revert"); 
+                    actions.hide("selection-add-row");
+                    actions.hide("selection-fill"); 
+                    //actions.hide("selection-clear"); 
+                    actions.hide("single-row-view");
+                    //actions.hide("row-add-row");
+                    actions.hide("row-duplicate");
+                    //actions.hide("row-delete"); 
+                    actions.hide("row-refresh");  
+                    actions.hide("row-revert");
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-centro (
+        name: Refrescar Centro
+        execution {
+            sequence: 70
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @centro
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P505_ID_CENTRO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-departamento (
+        name: Refrescar departamento
+        execution {
+            sequence: 80
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @departamento
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P505_ID_DEPARTAMENTO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-responsable (
+        name: Refrescar Responsable
+        execution {
+            sequence: 100
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @responsable
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P505_ID_RESPONSABLE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-seccion (
+        name: Refrescar Seccion
+        execution {
+            sequence: 90
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @seccion
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P505_ID_SECCION
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-sucursal (
+        name: Refrescar Sucursal
+        execution {
+            sequence: 60
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @sucursal
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P505_ID_SUCURSAL
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation validar-total (
+        name: VALIDAR_TOTAL
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                IF REPLACE(:P505_MON_COSTO, '.', '') IS NULL OR REPLACE(:P505_MON_COSTO, '.', '') = 0 THEN
+                RETURN FALSE;
+                ELSE
+                RETURN TRUE; 
+                END IF;
+                ```
+        }
+        error {
+            errorMessage: "No se pueden cargar movimientos vacios. "
+            displayLocation: onErrorPage
+            associatedItem: @P505_MON_COSTO
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: B505_UPDATE, B505_CREATE
+        }
+    )
+
+    computation p505-nro-comprobante (
+        itemName: P505_NRO_COMPROBANTE
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    v_num_comp_cp  COW_MOV_BIENES_CAB.NRO_COMPROBANTE%TYPE;
+                BEGIN
+                    IF :P505_NRO_COMPROBANTE IS  NULL THEN 
+                    BEGIN
+                        SELECT to_number(MAX(nvl(C.NRO_COMPROBANTE,0)))+1
+                          INTO v_num_comp_cp
+                        FROM COW_MOV_BIENES_CAB C
+                        WHERE TIP_COMPROBANTE = :P505_TIP_COMPROBANTE
+                          AND SER_COMPROBANTE = :P505_SER_COMPROBANTE
+                          AND ID_EMPRESA = :P0_ID_EMPRESA;
+                        EXCEPTION
+                        WHEN NO_DATA_FOUND THEN 
+                        raise_application_error(-20000,'No se ha encontrado comprobantes creados con '||:P505_TIP_COMPROBANTE||' '||:P505_SER_COMPROBANTE);
+                    END;
+                        IF v_num_comp_cp is null then
+                            
+                            v_num_comp_cp:=1;
+                        END IF;
+                    END IF;
+                    RETURN v_num_comp_cp;
+                    exception
+                        WHEN NO_DATA_FOUND THEN
+                            v_num_comp_cp:=1;
+                            return v_num_comp_cp;
+                        WHEN OTHERS THEN
+                            RAISE_APPLICATION_ERROR(-20000,'Error al generar el nro. de comprobante'||sqlerrm);
+                            v_num_comp_cp:=1;
+                            return v_num_comp_cp;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P505_ID
+        }
+    )
+
+    computation p505-ser-comprobante (
+        itemName: P505_SER_COMPROBANTE
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery: SELECT SER_COMPROBANTE FROM BSW_SERIES_COMPROB WHERE TIP_COMPROBANTE = :P505_TIP_COMPROBANTE
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    computation p505-tip-comprobante (
+        itemName: P505_TIP_COMPROBANTE
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('AF','TIP_COMP_MOVBIEN')
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process detalle-save-interactive-grid (
+        name: Detalle - Save Interactive Grid
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle
+        target {
+            targetType: tableView
+            tableName: COW_MOV_BIENES_DET
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 75409244913051419
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: B505_CREATE, B505_UPDATE, B505_DELETE
+        }
+        comments {
+            comments: "Proceso para guardar, actualizar, eliminar los detalles de la factura "
+        }
+    )
+
+    process eliminar-detalle (
+        name: Eliminar Detalle
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DELETE COW_MOV_BIENES_DET
+                WHERE ID_MOVBIEN_CAB = :P505_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 97076417009450305
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: B505_DELETE
+        }
+    )
+
+    process guardar-form (
+        name: Guardar form
+        type: formAutoRowProcessing
+        formRegion: @carga-de-movimiento-de-bienes
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 63929770691489544
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: B505_UPDATE,B505_CREATE,B505_DELETE
+        }
+        comments {
+            comments: Proceso para guardar, actualizar y eliminar la cabecera del movimeinto
+        }
+    )
+
+    process initialize-form-movimiento-de-bienes (
+        name: Initialize form Movimiento de Bienes
+        type: formInitialization
+        formRegion: @carga-de-movimiento-de-bienes
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 63927071482489517
+        }
+    )
+
+    process limpiar (
+        name: LIMPIAR
+        type: clearSessionState
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 75409430964051421
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: B505_CREATE,B505_DELETE
+        }
+    )
+
+    process relacionar-cabecera-con-detalle (
+        name: Relacionar cabecera con detalle
+        type: executeCode
+        editableRegion: @detalle
+        source {
+            plsqlCode: :ID_MOVBIEN_CAB := :P505_ID;
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 74856576224960647
+        }
+    )
+
+)
+

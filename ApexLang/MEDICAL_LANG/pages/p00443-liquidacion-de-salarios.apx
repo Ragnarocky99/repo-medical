@@ -1,0 +1,2251 @@
+page 443 (
+    name: Liquidacion de Salarios
+    alias: LIQUIDACION-DE-SALARIOS
+    title: Liquidación de Salarios
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function calculaTotales(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cant_debe    = model.getFieldKey("BENEFICIOS") || 0;
+                var v_cant_haber   = model.getFieldKey("DEDUCCIONES") || 0;
+                var v_mon_debe     = 0;
+                var v_mon_haber    = 0;
+                var v_cambio_haber = 0;
+                var v_cambio_debe  = 0;
+              
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+            
+                          
+                        v_mon_debe     = v_mon_debe     + parseFloat(r[v_cant_debe].replace(/\./g,''));
+                        v_mon_haber    = v_mon_haber    + parseFloat(r[v_cant_haber].replace(/\./g,''));
+                       
+                    }
+                    
+                    
+                });
+            
+                //v_cambio_debe = ( v_mon_debe * parseFloat(v_cambio.replace(/\./g,'')) );
+                //v_cambio_haber = ( v_mon_haber * parseFloat(v_cambio.replace(/\./g,'')));
+            
+                 $s('P443_TOT_DEBE',v_mon_debe.toString().replace('.', ''));
+                 $s('P443_TOT_HABER',v_mon_haber.toString().replace('.', ''));
+            
+                 //console.log('cambio es '+ v_cambio_debe + " | " + v_cambio_haber);
+            
+            }
+            
+            
+            function calcDiferencia() {
+                var v_tot_debe, v_tot_haber, v_mon_dif;
+                
+                v_tot_debe = parseFloat($v("P443_TOT_DEBE").replace(/\./g,''))  || 0;
+                
+                v_tot_haber = parseFloat($v("P443_TOT_HABER").replace(/\./g,'')) || 0; 
+                
+                v_mon_dif = ( v_tot_debe - v_tot_haber ) * 1;  
+            
+                //valida si es negativo
+                if( v_mon_dif < 0 ){
+            
+                    v_mon_dif = v_mon_dif * -1;  
+            
+                }
+                
+                $s("P443_DIFERENCIA", parseInt(v_mon_dif));
+            
+            }
+            
+            
+            /*function validarDifNegativo(num){
+                if(num<0){
+                    return (num * (-1));
+            
+                }
+                
+                return num;
+            }*/
+            
+            // PRUEBA
+            /*function calcCambio(){
+                var v_final_haber, v_final_debe, v_final_dif;
+                var v_cambio_moneda, v_cambio_haber, v_cambio_debe, v_cambio_dif
+            
+                v_cambio_moneda = parseFloat($v("P235_TIPO_CAMBIO").replace(/\./g,'')); 
+                v_cambio_haber  = parseFloat($v("P235_TOT_HABER").replace(/\./g,'')); 
+                v_cambio_debe   = parseFloat($v("P235_TOT_DEBE").replace(/\./g,''));
+                v_cambio_dif    = parseFloat($v("P235_DIFERENCIA").replace(/\./g,''));
+            
+            
+            
+                v_final_debe    = v_cambio_debe  * v_cambio_moneda;
+                v_final_haber   = v_cambio_haber * v_cambio_moneda;
+                v_final_dif     = v_cambio_dif   * v_cambio_moneda;
+            
+                $s("P235_TOT_DEBE", parseInt(v_final_debe));
+                $s("P235_TOT_HABER", parseInt(v_final_haber));
+                $s("P235_DIFERENCIA", parseInt(v_final_dif));
+            
+                console.log("valores: " + v_final_debe + v_final_haber + "diferencia:" + v_final_dif)
+            }*/
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            //Script para evitar que se pueda escribir en los campos de Tot. Haber y deber.
+            document.getElementById("P443_TOT_DEBE").readOnly = true;
+            document.getElementById("P443_TOT_HABER").readOnly = true;
+            document.getElementById("P443_DIFERENCIA").readOnly = true;
+            document.getElementById("P443_ASIENTOS").readOnly = true;
+            document.getElementById("P443_SER_LIQUID").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: right;
+              height: 26px;
+            }
+            
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 190px;
+                height: 25px;
+                pointer-events: none;
+              
+                vertical-align: text-bottom;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: left;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID_EMPRESA,
+                       ID_EMPLEADO,
+                       ID_CONCEPTO,
+                       TIPO,
+                       MONTO,
+                       CANTIDAD,
+                       COD_USUARIO_AUD,
+                       ID_CAB_LIQUID,
+                       ID,
+                       ID_PROGRAMA,
+                       NRO_CUOTA,
+                       ID_SUCURSAL,
+                       ANIO,
+                       MES,
+                       NRO_ORDEN,
+                       OBSERVACION,
+                       MONTO_REAL,
+                       TIP_PROGRAMA,
+                       FEC_VENCIMIENTO,
+                       CANT_AUS,
+                       DIRECCION_IP,
+                       DECODE(TIPO,'H',MONTO,'D',0) AS BENEFICIOS,
+                       DECODE(TIPO,'D',MONTO,'H',0) AS DEDUCCIONES,
+                       DECODE(TIPO,'D',MONTO,'D',0) AS DEBE_COPIA,
+                       DECODE(TIPO,'H',MONTO,'H',0) AS HABER_COPIA
+                  from RHW_DETALLE_LIQ
+                  WHERE ID_CAB_LIQUID=:P443_ID;
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @liquidación-de-salarios
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: add
+        }
+        toolbar {
+            show: false
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 43585909983799540
+        }
+
+        savedReport 436406 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPLEADO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO
+                layout {
+                    width: 187.64100000000002
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    width: 84
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MONTO
+                layout {
+                    width: 132.14100000000002
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_CAB_LIQUID
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROGRAMA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_CUOTA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ANIO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MES
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ORDEN
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_REAL
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @TIP_PROGRAMA
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @CANT_AUS
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @DIRECCION_IP
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @BENEFICIOS
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @DEDUCCIONES
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @DEBE_COPIA
+                layout {
+                    show: false
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @HABER_COPIA
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 0
+                }
+            )
+
+        )
+
+        column ANIO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ANIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column APEX$ROW_ACTION (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                type: none
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                type: none
+            }
+        )
+
+        column BENEFICIOS (
+            type: numberField
+            heading {
+                heading: <p>Beneficios</p>
+                alignment: end
+            }
+            layout {
+                sequence: 240
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: BENEFICIOS
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_AUS (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: CANT_AUS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DEBE_COPIA (
+            type: textField
+            heading {
+                heading: Debe Copia
+            }
+            layout {
+                sequence: 260
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            validation {
+                maxLength: 0
+            }
+            source {
+                databaseColumn: DEBE_COPIA
+                dataType: number
+                queryOnly: true
+            }
+        )
+
+        column DEDUCCIONES (
+            type: numberField
+            heading {
+                heading: <p>Deducciones</p>
+                alignment: end
+            }
+            layout {
+                sequence: 250
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: DEDUCCIONES
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DIRECCION_IP (
+            type: hidden
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: DIRECCION_IP
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column HABER_COPIA (
+            type: textField
+            heading {
+                heading: Haber Copia
+            }
+            layout {
+                sequence: 270
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            validation {
+                maxLength: 0
+            }
+            source {
+                databaseColumn: HABER_COPIA
+                dataType: number
+                queryOnly: true
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CAB_LIQUID (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_CAB_LIQUID
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CONCEPTO (
+            type: popupLov
+            heading {
+                heading: <p>Concepto</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-conceptos
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_CONCEPTO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPLEADO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPLEADO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PROGRAMA (
+            type: numberField
+            heading {
+                heading: <p>Programa</p>
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_PROGRAMA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MES (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: MES
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO (
+            type: numberField
+            heading {
+                heading: <p>Monto</p>
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_REAL (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: MONTO_REAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Cuota</p>
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_CUOTA
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_ORDEN (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: NRO_ORDEN
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO (
+            type: selectList
+            heading {
+                heading: <p>Tipo</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-tipos-cuentas-2
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column TIP_PROGRAMA (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: TIP_PROGRAMA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    region liquidación-de-salarios (
+        name: Liquidación de Salarios
+        type: form
+        source {
+            location: localDatabase
+            tableName: RHW_CABECERA_LIQ
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+    )
+
+    region new (
+        name: New
+        type: staticContent
+        layout {
+            sequence: 20
+            parentRegion: @liquidación-de-salarios
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--textContent
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P443_ANIO (
+        type: textField
+        label {
+            label: <p>Año: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ANIO
+            dataType: number
+        }
+    )
+
+    pageItem P443_ASIENTOS (
+        type: textField
+        label {
+            label: <p>Asiento: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 300
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: asientolink
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ASIENTOS
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_ASIENTOS_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 450
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+    )
+
+    pageItem P443_CI (
+        type: hidden
+        layout {
+            sequence: 360
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: CI
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 140
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_COMPENSACION (
+        type: hidden
+        layout {
+            sequence: 290
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: COMPENSACION
+            dataType: number
+        }
+    )
+
+    pageItem P443_DIAS (
+        type: hidden
+        layout {
+            sequence: 330
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: DIAS
+            dataType: number
+        }
+    )
+
+    pageItem P443_DIAS_VACACIONES (
+        type: hidden
+        layout {
+            sequence: 210
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: DIAS_VACACIONES
+            dataType: number
+        }
+    )
+
+    pageItem P443_DIFERENCIA (
+        type: numberField
+        label {
+            label: <p class="totales">Diferencia: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @new
+            slot: regionBody
+            alignment: left
+            column: 8
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P443_DIRECCION_IP (
+        type: hidden
+        layout {
+            sequence: 400
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: DIRECCION_IP
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_FECHA_RENUNCIA (
+        type: hidden
+        layout {
+            sequence: 420
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: FECHA_RENUNCIA
+            dataType: date
+        }
+    )
+
+    pageItem P443_FECHA_SALIDA (
+        type: hidden
+        layout {
+            sequence: 430
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: FECHA_SALIDA
+            dataType: date
+        }
+    )
+
+    pageItem P443_FEC_CARGA (
+        type: hidden
+        layout {
+            sequence: 410
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: FEC_CARGA
+            dataType: date
+        }
+    )
+
+    pageItem P443_FEC_LIQUID (
+        type: textField
+        label {
+            label: <p>Fec Liquid: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: FEC_LIQUID
+            dataType: date
+        }
+    )
+
+    pageItem P443_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P443_ID_CAB_HABILITACION (
+        type: hidden
+        layout {
+            sequence: 370
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_CAB_HABILITACION
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_CENTRO (
+        type: popupLov
+        label {
+            label: <p>Centro de Costo: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+        }
+        layout {
+            sequence: 110
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_CENTRO
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_CENTRO_PAGO (
+        type: popupLov
+        label {
+            label: <p>Centro Pago: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centros-pagos
+        }
+        layout {
+            sequence: 130
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_CENTRO_PAGO
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_DEPARTAMENTO (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_DEPARTAMENTO
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_EMPLEADO (
+        type: popupLov
+        label {
+            label: <p>Empleado: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados-activos
+        }
+        layout {
+            sequence: 100
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_EMPLEADO
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_EMPRESA
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_ESTADO (
+        type: popupLov
+        label {
+            label: <p>Estado: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @rhw-estados-ips
+        }
+        layout {
+            sequence: 120
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_ESTADO
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_MOTIVO_CALIDA (
+        type: hidden
+        layout {
+            sequence: 340
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_MOTIVO_CALIDA
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_MOTIVO_SALIDA (
+        type: hidden
+        layout {
+            sequence: 350
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_MOTIVO_SALIDA
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_SECTOR_EMP (
+        type: hidden
+        layout {
+            sequence: 250
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_SECTOR_EMP
+            dataType: number
+        }
+    )
+
+    pageItem P443_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 150
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    pageItem P443_IND_CIERRE_MES (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: IND_CIERRE_MES
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_IND_LIQ_FINAL (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: IND_LIQ_FINAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_IND_VACACIONES (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: IND_VACACIONES
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_JORNAL_BASE (
+        type: hidden
+        layout {
+            sequence: 230
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: JORNAL_BASE
+            dataType: number
+        }
+    )
+
+    pageItem P443_MES (
+        type: textField
+        label {
+            label: <p>Mes: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: MES
+            dataType: number
+        }
+    )
+
+    pageItem P443_MONTO (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: MONTO
+            dataType: number
+        }
+    )
+
+    pageItem P443_NRO_LIQUID (
+        type: textField
+        label {
+            label: <p>Número: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: NRO_LIQUID
+            dataType: number
+        }
+    )
+
+    pageItem P443_NRO_PATRONAL (
+        type: hidden
+        layout {
+            sequence: 390
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: NRO_PATRONAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_PROV_AGUINALDO (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: PROV_AGUINALDO
+            dataType: number
+        }
+    )
+
+    pageItem P443_PROV_AGUINALDO_LEGAL (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: PROV_AGUINALDO_LEGAL
+            dataType: number
+        }
+    )
+
+    pageItem P443_SALARIO_MINIMO (
+        type: hidden
+        layout {
+            sequence: 240
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: SALARIO_MINIMO
+            dataType: number
+        }
+    )
+
+    pageItem P443_SALDO_ROJO (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: SALDO_ROJO
+            dataType: number
+        }
+    )
+
+    pageItem P443_SER_LIQUID (
+        type: textField
+        label {
+            label: <p>Serie: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: SER_LIQUID
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_SUELDO_BASE (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: SUELDO_BASE
+            dataType: number
+        }
+    )
+
+    pageItem P443_SUELDO_FINAL (
+        type: hidden
+        layout {
+            sequence: 220
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: SUELDO_FINAL
+            dataType: number
+        }
+    )
+
+    pageItem P443_SUELDO_PROMEDIO (
+        type: hidden
+        layout {
+            sequence: 380
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: SUELDO_PROMEDIO
+            dataType: number
+        }
+    )
+
+    pageItem P443_TIPO_LIQ (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: TIPO_LIQ
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_TIP_LIQUID (
+        type: popupLov
+        label {
+            label: <p>Tip Liquid: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tip-liquidacion
+        }
+        layout {
+            sequence: 90
+            region: @liquidación-de-salarios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @liquidación-de-salarios
+            column: TIP_LIQUID
+            dataType: varchar2
+        }
+    )
+
+    pageItem P443_TOT_DEBE (
+        type: numberField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @new
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 11
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P443_TOT_HABER (
+        type: numberField
+        label {
+            label: <p class="totales">Totales:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @new
+            slot: regionBody
+            alignment: left
+            column: 8
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: [
+                totales
+                totalespp
+            ]
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P443_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 440
+            region: @liquidación-de-salarios
+            slot: regionBody
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @liquidación-de-salarios
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @liquidación-de-salarios
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 433
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction asiento-click (
+        name: ASIENTO_CLICK
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P443_ASIENTOS
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        l_app number := v('APP_ID');
+                        l_session number := v('APP_SESSION');
+                    BEGIN
+                        :P443_URL:= APEX_UTIL.PREPARE_URL(
+                            p_url => 'f?p=100:235:'||l_session||'::NO::P235_ID:&P443_ASIENTOS_ID.',
+                            p_checksum_type => 'SESSION');
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P443_URL
+                    P443_ASIENTOS_ID
+                ]
+                itemsToReturn: P443_URL
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: javascript: window.location.href = apex.item('P443_URL').getValue();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calc-diferencia (
+        name: CALC_DIFERENCIA
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: [
+                P443_TOT_HABER
+                P443_TOT_DEBE
+            ]
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calcDiferencia();
+            }
+            affectedElements {
+                selectionType: items
+                items: P443_DIFERENCIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: INICIALIZAR
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    //grid.view$.grid("option", "editable", true);
+                    //editable true
+                        grid.model.setOption("editable", true);
+                        //grid.setEditMode(true);
+                    //editable false
+                    //grid.model.setOption("editable", false);
+                        grid.setEditMode(true);
+                        grid.setEditMode(false);
+                    
+                    /*var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                        $grid.setEditMode(false);*/
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-beneficios-deducciones (
+        name: SETEAR_BENEFICIOS_DEDUCCIONES
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: [
+                TIPO
+                MONTO
+            ]
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE 
+                        v_beneficio NUMBER(10);
+                        v_deducciones NUMBER(10);
+                    BEGIN
+                        IF :TIPO = 'D' THEN
+                            v_beneficio := 0;
+                            v_deducciones := :MONTO;
+                    
+                        ELSE IF :TIPO = 'H' THEN 
+                                v_beneficio := :MONTO;
+                                v_deducciones := 0;
+                             ELSE
+                                RAISE_APPLICATION_ERROR(-20000, 'ERROR AL CALCULAR BENEFICIOS Y DEDUCCIONES');
+                             END IF;
+                        END IF;
+                        :BENEFICIOS := v_beneficio;
+                        :DEDUCCIONES := v_deducciones;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    TIPO
+                    MONTO
+                ]
+                itemsToReturn: [
+                    BENEFICIOS
+                    DEDUCCIONES
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-copias (
+        name: SETEAR_COPIAS
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: [
+                BENEFICIOS
+                DEDUCCIONES
+            ]
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P443_TOT_HABER
+                    P443_TOT_DEBE
+                ]
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :BENEFICIOS
+                itemsToSubmit: BENEFICIOS
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: HABER_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :DEDUCCIONES
+                itemsToSubmit: DEDUCCIONES
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DEBE_COPIA
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p443-asientos-id (
+        itemName: P443_ASIENTOS_ID
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select id 
+                from cow_diario_cabeceras_prov
+                where num_asiento  = :P135_ASIENTOS
+                  and id_empresa   = :P0_ID_EMPRESA
+                  and id_ejercicio = trae_id_ejercicio(:P443_FEC_LIQUID);
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P443_ASIENTOS
+        }
+    )
+
+    computation p443-tot-haber (
+        itemName: P443_TOT_HABER
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT SUM(DECODE(TIPO,'H',MONTO,0)) FROM RHW_DETALLE_LIQ D WHERE
+                D.ID_CAB_LIQUID=:P414_ID;
+                ```
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process detalles-save-interactive-grid-data (
+        name: Detalles - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 49533713342443303
+        }
+    )
+
+    process initialize-form-detalle-de-liquidación (
+        name: Initialize form Detalle de Liquidación
+        type: formInitialization
+        formRegion: @liquidación-de-salarios
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 43633903420814764
+        }
+    )
+
+    branch (
+        execution {
+            sequence: 1
+        }
+        behavior {
+            target: {
+                page: 433
+            }
+        }
+    )
+
+    branch (
+        name: Go to Page 449
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 449
+                items: {
+                    P443_ID: &P443_ID.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

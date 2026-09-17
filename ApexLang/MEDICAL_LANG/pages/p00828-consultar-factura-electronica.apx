@@ -1,0 +1,105 @@
+page 828 (
+    name: Consultar Factura Electronica
+    alias: CONSULTAR-FACTURA-ELECTRONICA
+    title: Consultar Factura Electronica
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P828_ID_COMPROBANTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P828_TIP_COMPROBANTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    dynamicAction consultar-factura-electronica (
+        name: Consultar Factura Electronica
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 20
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    declare
+                    v_ind_aprobado varchar2(1);
+                    v_mensaje      varchar2(400);
+                    
+                    begin
+                    IF    :P828_TIP_COMPROBANTE='REM' THEN
+                    
+                    FEW_CONSULTA_REMISION(:P0_ID_EMPRESA,PKGFE.PARAMETRO(:P0_ID_EMPRESA,'AMBIENTE_SIFEN'),:P828_ID_COMPROBANTE,v_ind_aprobado,v_mensaje);
+                    
+                    ELSIF :P828_TIP_COMPROBANTE='FVE' THEN
+                    
+                    FEW_CONSULTA_FACTURA(:P0_ID_EMPRESA,PKGFE.PARAMETRO(:P0_ID_EMPRESA,'AMBIENTE_SIFEN'),:P828_ID_COMPROBANTE,v_ind_aprobado,v_mensaje);
+                    
+                    
+                    ELSIF :P828_TIP_COMPROBANTE='NCR'  THEN 
+                    
+                    FEW_CONSULTA_NOTCRED(:P0_ID_EMPRESA,PKGFE.PARAMETRO(:P0_ID_EMPRESA,'AMBIENTE_SIFEN'),:P828_ID_COMPROBANTE,v_ind_aprobado,v_mensaje);
+                    
+                    
+                    END IF;
+                    end;
+                    ```
+                itemsToSubmit: [
+                    P828_ID_COMPROBANTE
+                    P828_TIP_COMPROBANTE
+                ]
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    showErrorAsAlert
+                    showSpinnerProcessingIcon
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

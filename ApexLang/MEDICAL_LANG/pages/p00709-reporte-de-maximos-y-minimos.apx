@@ -1,0 +1,475 @@
+page 709 (
+    name: Reporte de Maximos y Minimos
+    alias: REPORTE-DE-MAXIMOS-Y-MINIMOS
+    title: Reporte de Maximos y Minimos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:15px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    htmlHeader {
+        htmlHeader: Reporte de Cotas
+    }
+    headerAndFooter {
+        headerText: Medical Química
+        footerText:
+            ```html
+            Grupo Inventiva S.A.C.I.
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region reporte-de-maximos-y-minimos (
+        name: Reporte de Maximos y Minimos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select a.cod_articulo,
+                       a.descripcion,
+                       a.cod_origen_art,
+                       a.id_marca,
+                       a.id_unidad_medida,
+                       a.id_envase,
+                       nvl(a.stock_minimo,0),
+                       nvl(a.cant_max,999999999),
+                       ex.stock
+                from stw_articulos a
+                join (
+                     select sum(nvl(e.cant_dispon,0)) as stock,
+                            e.id_articulo
+                       from stw_existencia_art e
+                       group by e.id_articulo
+                ) ex on ex.id_articulo = a.id
+                where 1 = 1
+                --and null not in (a.stock_minimo, a.cant_max)
+                and ((a.stock_minimo is not null) or (a.cant_max is not null))
+                       and(
+                       (:p709_ind_stock_menor_minimo = 'S'
+                       and ex.stock < nvl(a.stock_minimo,0))
+                       or 
+                       (:p709_ind_stock_menor_minimo = 'N'
+                       and ex.stock >= nvl(a.stock_minimo,0))
+                       or (:p709_ind_stock_menor_minimo is null)
+                       )
+                      and(
+                      (:p709_ind_stock_mayor_maximo = 'S'
+                       and ex.stock > nvl(a.cant_max,9999999999))
+                       or 
+                       (:p709_ind_stock_mayor_maximo = 'N'
+                       and ex.stock <= nvl(a.cant_max,999999999))
+                       or (:p709_ind_stock_mayor_maximo is null)
+                      )             
+                      
+                ```
+            pageItemsToSubmit: [
+                P709_IND_STOCK_MENOR_MINIMO
+                P709_IND_STOCK_MAYOR_MAXIMO
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        detailView {
+            show: true
+            beforeRows: <table>
+            forEachRow: <tr><td align="right">Cod_Art: #COD_ARTICULO#:</td><td> Stock: #STOCK#</td></tr>
+            afterRows: </table>
+        }
+        advanced {
+            savedReportMappingIdentifier: 26546950844965675
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+            }
+            layout {
+                sequence: 1
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: plainText
+            heading {
+                heading: Cod Origen Art
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+            }
+            layout {
+                sequence: 2
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Envase
+                alignment: end
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 6
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: end
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 4
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Unidad Medida
+                alignment: end
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 5
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column "NVL(A.CANT_MAX,999999999)" (
+            type: plainText
+            heading {
+                heading: Stock Maximo
+                alignment: end
+            }
+            layout {
+                sequence: 8
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column "NVL(A.STOCK_MINIMO,0)" (
+            type: plainText
+            heading {
+                heading: Stock Minimo
+                alignment: end
+            }
+            layout {
+                sequence: 7
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: end
+            }
+            layout {
+                sequence: 9
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Maximos y Minimos
+        }
+
+        savedReport 265512 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 1
+            )
+
+            displayColumn COD_ORIGEN_ART (
+                sequence: 3
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 2
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 6
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 4
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 5
+            )
+
+            displayColumn "NVL(A.CANT_MAX,999999999)" (
+                sequence: 8
+            )
+
+            displayColumn "NVL(A.STOCK_MINIMO,0)" (
+                sequence: 7
+            )
+
+            displayColumn STOCK (
+                sequence: 9
+            )
+
+        )
+
+    )
+
+    pageItem P709_IND_STOCK_MAYOR_MAXIMO (
+        type: selectList
+        label {
+            label: <p>Filtro Stock Maximo</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Stock <= Maximo;N,Stock > Maximo;S
+            nullDisplayValue: -- Sin Seleccionar --
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P709_IND_STOCK_MENOR_MINIMO (
+        type: selectList
+        label {
+            label: <p>Filtro Stock Minimo</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Stock < Minimo;S,Stock >= Minimo;N
+            nullDisplayValue: -- Sin Seleccionar --
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 10
+            region: @breadcrumb
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-arrow-left
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 172
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction refresca (
+        name: Refresca
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P709_IND_STOCK_MENOR_MINIMO
+                P709_IND_STOCK_MAYOR_MAXIMO
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-maximos-y-minimos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

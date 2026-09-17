@@ -1,0 +1,1365 @@
+page 422 (
+    name: Ranking de Ventas
+    alias: RANKING-DE-VENTAS
+    title: Ranking de Ventas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            $("#P422_PRIMEROS").keypress(function(event){
+            event = (event) ? event : window.event;
+            var charCode = (event.which) ? event.which : event.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+            }
+            return true;
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:12.5px;
+            color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region parametros (
+        name: Parametros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region ranking-de-articulos (
+        name: Ranking de Articulos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select art.cod_articulo,
+                       TRAE_ULT_COD_BARRA(ART.ID_EMPRESA, ART.ID) AS COD_BARRA,
+                       art.descripcion,
+                       art.id_unidad_medida,
+                       sum(decode(tc.saldos,'R',nvl(d.cantidad,0)*-1,nvl(d.cantidad,0))) cantidad,
+                       
+                       /*sum( decode( ltrim( rtrim(  m.cod_moneda ) ), ltrim( rtrim( pg.valor ) ),
+                            decode( tc.saldos, 'R', nvl( d.monto_total+total_iva, 0 ) * -1, nvl( d.monto_total+total_iva, 0 ) ),
+                            round( decode( tc.saldos, 'R', ( nvl( d.monto_total+total_iva, 0 ) ) * -1
+                            * ( nvl( c.tip_cambio, 1 ) / nvl( c.cambio_moneda_precio, 1 ) ),
+                            nvl( d.monto_total+total_iva, 0 ) * nvl( c.tip_cambio, 1 ) / nvl( c.cambio_moneda_precio, 1 ) ), nvl( m.decimales, 0 ) ) ) )  totales*/
+                /*sum( decode( ltrim( rtrim(  c.cod_moneda ) ), ltrim( rtrim( pg.valor ) ),
+                            decode( tc.saldos, 'R', nvl( d.descuento, 0 ) * -1, nvl( d.descuento ,0 )  ),
+                            round( decode( tc.saldos, 'R', ( nvl( d.descuento, 0 ) ) * -1
+                            * ( nvl( c.tip_cambio, 1 ) / nvl( c.cambio_moneda_precio, 1 ) ),
+                            nvl( d.descuento, 0 )  *  nvl( c.tip_cambio, 1 ) / nvl( c.cambio_moneda_precio, 1 ) ), nvl( m.decimales, 0 ) ) ) ) descuento,
+                            count( distinct( decode( tc.saldos, 'R', null, c.tip_comprobante || c.ser_comprobante || to_char( c.nro_comprobante ) ) ) ) cantidad  */
+                            SUM((NVL(D.MONTO_TOTAL,0)+NVL(D.TOTAL_IVA,0)) * DECODE(TC.SALDOS,'R',-1,1)) totales,
+                            ga.descripcion descripcion_grupo,
+                            ru.descripcion descripcion_rubro,
+                            fa.descripcion descripcion_familia
+                             
+                   from  vtw_comprobantes_cabecera c,
+                         vtw_comprobantes_detalle  d,
+                         bsw_tipos_comprobantes       tc,
+                         bsw_parametros_generales     pg, --Moneda de Precio
+                         bsw_monedas                  m,
+                         stw_articulos             art,
+                         bsw_personas                 p,
+                         ccw_clientes              cc,
+                         bsw_empresas e,
+                         STW_GRUPOS_ART ga,
+                         STW_RUBRO      ru,
+                         STW_FAMILIA    fa
+                   where c.id_empresa         = :P0_ID_EMPRESA
+                     and ( c.id_sucursal      = :P422_ID_SUCURSAL or :P422_ID_SUCURSAL  is null        )
+                     and ( c.id_vendedor      =  :P422_ID_VENDEDOR or   :P422_ID_VENDEDOR is null        )
+                     and (:P422_ID_RUBRO     is null or art.id_rubro     =  :P422_ID_RUBRO         )
+                     and ( :P422_ID_FAMILIA      is null or art.id_familia   = :P422_ID_FAMILIA          )
+                     and ( :P422_GRUPO      is null or art.id_grupo_art   = :P422_GRUPO          )
+                     and ( :P422_ID_LINEA          is null or art.id_linea     = :P422_ID_LINEA            )
+                     and ( :P422_ID_MARCA         is null or art.id_marca     = :P422_ID_MARCA            )
+                     and ( :P422_COD_ARTICULO_DES   is null or art.cod_articulo    >= :P422_COD_ARTICULO_DES    )
+                     and (  :P422_COD_ARTICULO_HAS is null or art.cod_articulo    <=  :P422_COD_ARTICULO_HAS  )
+                     and (  :P422_FEC_INICIAL      is null or c.fec_comprobante >= :P422_FEC_INICIAL        )
+                     and ( :P422_FEC_FINAL         is null or c.fec_comprobante <= :P422_FEC_FINAL         )
+                     and (cc.id       = :P422_ID_CLIENTE  or :P422_ID_CLIENTE  is null)
+                     and (cc.id_corporacion = :P422_ID_CORPORACION  or   :P422_ID_CORPORACION is null)
+                     and c.id_empresa     = cc.id_empresa
+                     and c.id_cliente     = cc.id
+                     and cc.id_persona    = p.id(+)
+                     and c.id_empresa     = tc.id_empresa
+                     and c.tip_comprobante = tc.tip_comprobante
+                     and ( c.estado is null or c.estado <> 'A' )
+                     and c.id_empresa     = d.id_empresa
+                     and c.id=d.id_comprobante_cabecera
+                     and ga.id = art.id_grupo_art
+                     and ru.id = art.id_rubro
+                     and fa.id = art.id_familia
+                     /*
+                     and c.tip_comprobante = d.tip_comprobante
+                     and c.ser_comprobante = d.ser_comprobante
+                     and c.nro_comprobante = d.nro_comprobante
+                     */
+                     and d.id_empresa     = art.id_empresa
+                     and d.id_articulo    = art.id
+                    and pg.parametro      = 'COD_MONEDA_PREC'
+                     and ltrim( rtrim( pg.valor ) ) = ltrim( rtrim( m.cod_moneda ) )
+                --    and (:p_ind_socio = nvl(cc.ind_socio,'N') or :p_ind_socio = 'N')
+                   and c.id_empresa=e.id
+                   having SUM((NVL(D.MONTO_TOTAL,0)+NVL(D.TOTAL_IVA,0)) * DECODE(TC.SALDOS,'R',-1,1))!=0 and
+                          sum(decode(tc.saldos,'R',nvl(d.cantidad,0)*-1,nvl(d.cantidad,0))) > 0
+                   group by  art.cod_articulo,
+                             ART.ID_EMPRESA,
+                             ART.ID,
+                             art.descripcion,
+                             art.id_unidad_medida,
+                             ga.descripcion,
+                             art.id_rubro,
+                             ru.descripcion,
+                             fa.descripcion,
+                             e.titulo_reportes,
+                             C.ID_EMPRESA
+                     order by 6  desc
+                     
+                ```
+            pageItemsToSubmit: [
+                P422_TIPO
+                P422_ID_SUCURSAL
+                P422_ID_LINEA
+                P422_ID_CLIENTE
+                P422_ID_MARCA
+                P422_ID_CORPORACION
+                P422_COD_ARTICULO_DES
+                P422_ID_VENDEDOR
+                P422_COD_ARTICULO_HAS
+                P422_ID_RUBRO
+                P422_FEC_INICIAL
+                P422_FEC_FINAL
+                P422_ID_FAMILIA
+                P422_TIPO_REPORTE
+                P422_PRIMEROS
+                P422_GRUPO
+            ]
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 68250221397580521
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column COD_BARRA (
+            type: plainText
+            heading {
+                heading: Cod Barra
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESCRIPCION_FAMILIA (
+            type: plainText
+            heading {
+                heading: Descripcion Familia
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column DESCRIPCION_GRUPO (
+            type: plainText
+            heading {
+                heading: Descripcion Grupo
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column DESCRIPCION_RUBRO (
+            type: plainText
+            heading {
+                heading: Descripcion Rubro
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Unidad Medida
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TOTALES (
+            type: plainText
+            heading {
+                heading: Totales
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Ranking de Articulos
+        }
+
+        savedReport 682852 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 4
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 1
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 2
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 3
+            )
+
+            displayColumn TOTALES (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region ranking-de-clientes (
+        name: Ranking de Clientes
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT CC.COD_CLIENTE,
+                       P.NOMBRE,
+                       M.DECIMALES,
+                       CL.DESCRIPCION AS TIP_CLIENTE,
+                SUM(DECODE(TC.SALDOS, 'R', NVL(D.CANTIDAD,0)*-1, NVL(D.CANTIDAD,0))) CANTIDAD,
+                
+                CL.DESCRIPCION DESC_TIP_CLIENTE,
+                
+                       /*SUM( DECODE( LTRIM( RTRIM(  M.COD_MONEDA ) ), LTRIM( RTRIM( PG.VALOR ) ),
+                            DECODE( TC.SALDOS, 'R', NVL( D.MONTO_TOTAL+TOTAL_IVA, 0 ) * -1, NVL( D.MONTO_TOTAL+TOTAL_IVA, 0 ) ),
+                            ROUND( DECODE( TC.SALDOS, 'R', ( NVL( D.MONTO_TOTAL+TOTAL_IVA, 0 ) ) * -1
+                            * ( NVL( C.TIP_CAMBIO, 1 ) / NVL( C.CAMBIO_MONEDA_PRECIO, 1 ) ),
+                            NVL( D.MONTO_TOTAL+TOTAL_IVA, 0 ) * NVL( C.TIP_CAMBIO, 1 ) / NVL( C.CAMBIO_MONEDA_PRECIO, 1 ) ), NVL( M.DECIMALES, 0 ) ) ) )  TOTALES*/
+                     /*  SUM( DECODE( LTRIM( RTRIM(  C.COD_MONEDA ) ), LTRIM( RTRIM( PG.VALOR ) ),
+                            DECODE( TC.SALDOS, 'R', NVL( D.DESCUENTO, 0 ) * -1, NVL( D.DESCUENTO ,0 )  ),
+                            ROUND( DECODE( TC.SALDOS, 'R', ( NVL( D.DESCUENTO, 0 ) ) * -1
+                            * ( NVL( C.TIP_CAMBIO, 1 ) / NVL( C.CAMBIO_MONEDA_PRECIO, 1 ) ),
+                            NVL( D.DESCUENTO, 0 )  *  NVL( C.TIP_CAMBIO, 1 ) / NVL( C.CAMBIO_MONEDA_PRECIO, 1 ) ), NVL( M.DECIMALES, 0 ) ) ) ) DESCUENTO,
+                            COUNT( DISTINCT( DECODE( TC.SALDOS, 'R', NULL, C.TIP_COMPROBANTE || C.SER_COMPROBANTE || TO_CHAR( C.NRO_COMPROBANTE ) ) ) ) CANTIDAD*/
+                        SUM((NVL(D.MONTO_TOTAL,0)+NVL(D.TOTAL_IVA,0)) * DECODE(TC.SALDOS,'R',-1,1)) totales
+                   
+                   FROM VTW_COMPROBANTES_CABECERA C,
+                        BSW_TIPOS_COMPROBANTES TC,
+                        BSW_PARAMETROS_GENERALES PG,
+                        BSW_MONEDAS M,
+                        VTW_COMPROBANTES_DETALLE D,
+                        STW_ARTICULOS ART,
+                        BSW_PERSONAS P,
+                        CCW_CLIENTES CC,
+                        CCW_TIPO_CLIENTE CL,
+                        BSW_EMPRESAS E
+                   WHERE C.ID_EMPRESA         = :P0_ID_EMPRESA
+                     AND ( C.ID_SUCURSAL      = :P422_ID_SUCURSAL OR :P422_ID_SUCURSAL IS NULL        )
+                     AND ( C.ID_VENDEDOR      = :P422_ID_VENDEDOR OR :P422_ID_VENDEDOR IS NULL        )
+                     AND ( :P422_ID_RUBRO        IS NULL OR ART.ID_RUBRO     = :P422_ID_RUBRO      )
+                     AND ( :P422_ID_FAMILIA      IS NULL OR ART.ID_FAMILIA   = :P422_ID_FAMILIA       )
+                     AND ( :P422_ID_LINEA       IS NULL OR ART.ID_LINEA     = :P422_ID_LINEA       )
+                     AND ( :P422_ID_MARCA        IS NULL OR ART.ID_MARCA     = :P422_ID_MARCA         )
+                     AND ( :P422_COD_ARTICULO_DES IS NULL OR ART.COD_ARTICULO    >= :P422_COD_ARTICULO_DES )
+                     AND ( :P422_COD_ARTICULO_HAS IS NULL OR ART.COD_ARTICULO    <= :P422_COD_ARTICULO_HAS)
+                     AND ( :P422_FEC_INICIAL      IS NULL OR C.FEC_COMPROBANTE >= :P422_FEC_INICIAL      )
+                     AND ( :P422_FEC_FINAL        IS NULL OR C.FEC_COMPROBANTE <= :P422_FEC_FINAL     )
+                     AND C.ID_EMPRESA     = CC.ID_EMPRESA
+                     AND C.ID_CLIENTE     = CC.ID
+                     AND CC.ID_TIP_CLIENTE    =CL.ID(+)
+                     -- AGREGADO --
+                     AND (CC.ID = :P422_ID_CLIENTE OR :P422_ID_CLIENTE IS NULL)
+                     AND (CC.ID_CORPORACION = :P422_ID_CORPORACION OR :P422_ID_CORPORACION IS NULL)
+                     ---------------------
+                     AND CC.ID_PERSONA    = P.ID(+)
+                     AND C.ID_EMPRESA     = TC.ID_EMPRESA
+                     AND C.TIP_COMPROBANTE = TC.TIP_COMPROBANTE
+                     AND ( C.ESTADO IS NULL OR C.ESTADO <> 'A' )
+                     AND C.ID_EMPRESA     = D.ID_EMPRESA
+                     AND C.ID=D.ID_COMPROBANTE_CABECERA
+                     /*
+                     AND C.TIP_COMPROBANTE = D.TIP_COMPROBANTE
+                     AND C.SER_COMPROBANTE = D.SER_COMPROBANTE
+                     AND C.NRO_COMPROBANTE = D.NRO_COMPROBANTE
+                     */
+                     AND D.ID_EMPRESA     = ART.ID_EMPRESA
+                     AND D.ID_ARTICULO    = ART.ID
+                     AND PG.PARAMETRO      = 'COD_MONEDA_PREC'
+                     AND LTRIM( RTRIM( PG.VALOR ) ) = LTRIM( RTRIM( M.COD_MONEDA ) )
+                     AND C.ID_EMPRESA=E.ID
+                   having SUM((NVL(D.MONTO_TOTAL,0)+NVL(D.TOTAL_IVA,0)) * DECODE(TC.SALDOS,'R',-1,1))!=0
+                   GROUP BY CC.COD_CLIENTE, P.NOMBRE, M.DECIMALES,CC.ID_TIP_CLIENTE, CL.COD_TIP_CLIENTE, CL.DESCRIPCION,C.ID_EMPRESA,E.TITULO_REPORTES
+                   ORDER BY 7  desc
+                ```
+            pageItemsToSubmit: [
+                P422_ID_SUCURSAL
+                P422_ID_LINEA
+                P422_ID_CLIENTE
+                P422_ID_MARCA
+                P422_ID_CORPORACION
+                P422_COD_ARTICULO_DES
+                P422_ID_VENDEDOR
+                P422_COD_ARTICULO_HAS
+                P422_ID_RUBRO
+                P422_FEC_INICIAL
+                P422_FEC_FINAL
+                P422_ID_FAMILIA
+                P422_TIPO_REPORTE
+                P422_PRIMEROS
+                P422_TIPO
+            ]
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 68339385478110506
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column COD_CLIENTE (
+            type: plainText
+            heading {
+                heading: Cod Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column DECIMALES (
+            type: hidden
+            heading {
+                heading: Decimales
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESC_TIP_CLIENTE (
+            type: plainText
+            heading {
+                heading: Desc Tip Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column NOMBRE (
+            type: plainText
+            heading {
+                heading: Nombre
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TIP_CLIENTE (
+            type: hidden
+            heading {
+                heading: Tip Cliente
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TOTALES (
+            type: plainText
+            heading {
+                heading: Totales
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Ranking de Clientes
+        }
+
+        savedReport 691900 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 4
+            )
+
+            displayColumn COD_CLIENTE (
+                sequence: 1
+            )
+
+            displayColumn DESC_TIP_CLIENTE (
+                sequence: 3
+            )
+
+            displayColumn NOMBRE (
+                sequence: 2
+            )
+
+            displayColumn TOTALES (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region reportes (
+        name: Reportes
+        type: regionDisplaySelector
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        settings {
+            includeShowAll: false
+            rememberSelection: bySession
+        }
+    )
+
+    pageItem P422_COD_ARTICULO_DES (
+        type: textField
+        label {
+            label: <p>Articulo desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_COD_ARTICULO_HAS (
+        type: textField
+        label {
+            label: <p>Articulo hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_FEC_FINAL (
+        type: datePicker
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P422_FEC_INICIAL (
+        type: datePicker
+        label {
+            label: <p>Periodo:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/'||to_char(sysdate,'MM')||'/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P422_GRUPO (
+        type: popupLov
+        label {
+            label: <p>Merchandise Collection - Grupo:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+            popupWidth: 450
+            popupHeight: 450
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-grupos-art
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 140
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 950
+            popupHeight: 950
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_CORPORACION (
+        type: popupLov
+        label {
+            label: <p>Corporacion:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-corporaciones
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 50
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_FAMILIA (
+        type: popupLov
+        label {
+            label: <p>Familia:</p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 450
+            popupHeight: 450
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-familias-articulos
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 120
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_LINEA (
+        type: popupLov
+        label {
+            label: <p> Linea:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-lineas
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 20
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_MARCA (
+        type: popupLov
+        label {
+            label: <p>Marca:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-marcas
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 40
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_RUBRO (
+        type: popupLov
+        label {
+            label: <p>Rubro:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-rubros-articulos
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 90
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 10
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_ID_VENDEDOR (
+        type: popupLov
+        label {
+            label: <p>Vendedor:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vendedores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P422_PRIMEROS (
+        type: numberField
+        label {
+            label: <p>Los Primeros:</p>
+            alignment: left
+        }
+        settings {
+            minValue: 0
+            maxValue: 1000000
+        }
+        layout {
+            sequence: 160
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            columnSpan: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: static
+            staticValue: 100
+        }
+    )
+
+    pageItem P422_TIPO (
+        type: radioGroup
+        label {
+            label: <p>Tipo</p>
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Cantidad;Cantidad,Total;Totales
+            displayNullValue: false
+        }
+        layout {
+            sequence: 190
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            column: 3
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: Totales
+        }
+    )
+
+    pageItem P422_TIPO_REPORTE (
+        type: selectList
+        label {
+            label: <p>Tipo Reporte:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Por Articulos;A,Por Clientes;C
+            displayNullValue: false
+        }
+        layout {
+            sequence: 130
+            region: @parametros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: A
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 180
+            region: @parametros
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button refrescar (
+        buttonName: Refrescar
+        label: Refrescar
+        layout {
+            sequence: 170
+            region: @parametros
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--stretch
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P422_FEC_FINAL
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P422_FEC_FINAL) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P422_FEC_FINAL,'/','');
+                            conv_fecha := substr(:P422_FEC_FINAL,1,2)||'/'||
+                                                      substr(:P422_FEC_FINAL,3,2)||'/'||
+                                                      lpad(substr(:P422_FEC_FINAL,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P422_FEC_FINAL := conv_fecha;
+                            ELSIF (length(:P422_FEC_FINAL) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P422_FEC_FINAL) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P422_FEC_FINAL
+                itemsToReturn: P422_FEC_FINAL
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P422_FEC_INICIAL
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P422_FEC_INICIAL) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P422_FEC_INICIAL,'/','');
+                            conv_fecha := substr(:P422_FEC_INICIAL,1,2)||'/'||
+                                                      substr(:P422_FEC_INICIAL,3,2)||'/'||
+                                                      lpad(substr(:P422_FEC_INICIAL,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P422_FEC_INICIAL := conv_fecha;
+                            ELSIF (length(:P422_FEC_INICIAL) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P422_FEC_INICIAL) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P422_FEC_INICIAL
+                itemsToReturn: P422_FEC_INICIAL
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-reporte (
+        name: Refrescar Reporte
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refrescar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ranking-de-articulos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ranking-de-clientes
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 499
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

@@ -1,0 +1,156 @@
+page 108 (
+    name: Cambiar Estilo
+    alias: CAMBIAR-ESTILO
+    title: Cambiar Estilo
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region cambiar-estilo (
+        name: Cambiar Estilo
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P108_ESTILO (
+        type: selectList
+        label {
+            label: Estilo
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select s.name d,
+                       s.theme_style_id r
+                  from apex_application_theme_styles s,
+                       apex_application_themes t
+                 where s.application_id = :app_id
+                   and t.application_id = s.application_id
+                   and t.theme_number   = s.theme_number
+                   and t.ui_type_name   = 'DESKTOP'
+                   and t.is_current     = 'Yes'
+                 order by 1
+                ```
+        }
+        layout {
+            sequence: 10
+            region: @cambiar-estilo
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            type: sqlQuerySingleValue
+            sqlQuery:
+                ```sql
+                select s.theme_style_id
+                from apex_application_theme_styles s,
+                    apex_application_themes t
+                where s.application_id = t.application_id
+                    and s.theme_number = t.theme_number
+                    and s.application_id = :app_id
+                    and t.ui_type_name   = 'DESKTOP'
+                    and s.is_current = 'Yes'
+                ```
+            used: always
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                select null
+                  from apex_application_theme_styles s,
+                       apex_application_themes t
+                 where s.application_id = t.application_id
+                   and s.theme_number   = t.theme_number
+                   and s.application_id = :app_id
+                   and t.ui_type_name   = 'DESKTOP'
+                ```
+        }
+    )
+
+    button ejecutar (
+        buttonName: Ejecutar
+        label: Ejecutar
+        layout {
+            sequence: 20
+            region: @cambiar-estilo
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    process new (
+        name: New
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                if :P108_ESTILO is not null then
+                    for l_theme in (select theme_number
+                                      from apex_application_themes
+                                     where application_id = :app_id
+                                       and ui_type_name   = 'DESKTOP'
+                                       and is_current     = 'Yes')
+                    loop
+                        apex_util.set_current_theme_style (
+                            p_theme_number   => l_theme.theme_number,
+                            p_theme_style_id => :P10020_DESKTOP_THEME_STYLE_ID
+                            );
+                    end loop;
+                end if;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 12850646874266050
+        }
+        serverSideCondition {
+            whenButtonPressed: @ejecutar
+        }
+    )
+
+)
+

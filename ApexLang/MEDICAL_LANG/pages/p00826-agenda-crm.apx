@@ -1,0 +1,838 @@
+page 826 (
+    name: AGENDA CRM
+    alias: AGENDA-CRM
+    title: AGENDA CRM
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region agenda-crm (
+        name: Agenda CRM
+        type: calendar
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT AG.ID,
+                       AG.FECHA,
+                       AG.DISPLAY,
+                       PREPARA_URL_CARGA(P_ID_EMPRESA      => AG.ID_EMPRESA,
+                                         P_TIP_COMPROBANTE => AG.TIPO,
+                                         P_ID              => AG.ID) URL,
+                       AG.COLOR
+                  FROM AGENDAS AG
+                 WHERE AG.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND (AG.COD_USUARIO = :APP_USER OR
+                        TRAE_COD_GRUPO_USUARIO(:P0_ID_EMPRESA, :APP_USER) IN ('DIR', 'ADMIN') OR
+                        TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER) MEMBER OF APEX_STRING.SPLIT_NUMBERS(AG.ID_INVOLUCTADOS, ':'))
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        settings {
+            displayColumn: DISPLAY
+            startDateColumn: FECHA
+            pkColumn: ID
+            additionalCalendarViews: [
+                list
+                navigation
+            ]
+            createLink: {
+                page: 809
+                items: {
+                    P809_FECHA: &APEX$NEW_START_DATE.
+                }
+                clearCache: Y
+            }
+            viewEditLink: {
+                type: url
+                url: &URL.
+            }
+            cssClass: COLOR
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region selector (
+        name: Selector
+        type: regionDisplaySelector
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        settings {
+            includeShowAll: false
+        }
+    )
+
+    region tareas-pendientes (
+        name: Tareas Pendientes
+        type: cards
+        source {
+            location: localDatabase
+            tableName: BSWV_TAREAS_PENDIENTES_GESTOR
+            whereClause:
+                ```sql
+                ID_EMPRESA = :P0_ID_EMPRESA AND
+                COD_USUARIO = :APP_USER
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        card {
+            cssClasses: &COLOR!ATTR.
+        }
+        title {
+            column: TITULO
+        }
+        body {
+            advancedFormatting: true
+            htmlExpression: &HTML_BODY!RAW.
+        }
+        performance {
+            lazyLoading: true
+        }
+        messages {
+            whenNoDataFound: No hay tareas pendientes
+        }
+    )
+
+    region tareas-vencidas (
+        name: Tareas Vencidas
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT NRO_PEDIDO,
+                       COD_ARTICULO,
+                       DESC_ARTICULO,
+                       ID_ENVASE,
+                       ID_UNIDAD_MEDIDA,
+                       ID_MARCA,
+                       DEFINICION,
+                       FEC_PROX_EVENTO,
+                       PRECIO_UNITARIO,
+                       PRECIO_TOTAL,
+                       ESTADO_OCC,
+                       ID_PEDIDO,
+                       ID_PEDIDO_DET,
+                       ID_CLIENTE,
+                       ID_COTIZA_ART,
+                       ID_ARTICULO,
+                       RESPONSABLE,
+                       FECHA_PLAZO,
+                       ESTADO_PRODUCTO,
+                       CLIENTE,
+                       NRO_OCC,
+                       NRO_OCP,
+                       TIP_COMPROBANTE,
+                       ID_OFERTA,
+                       ID_APROBACION_LIC,
+                       (SELECT SUM(EA.CANT_DISPON)
+                          FROM STW_EXISTENCIA_ART EA
+                         WHERE EA.ID_ARTICULO = TV.ID_ARTICULO
+                           AND EA.CANT_DISPON > 0) STOCK,
+                        TV.NIVEL,
+                        TV.OBS_SEGUIMIENTO
+                  FROM CMWV_TAREAS_VENCIDAS TV
+                 WHERE COD_USUARIO_RESPONSABLE = :APP_USER
+                   AND ID_EMPRESA = :P0_ID_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 638
+                items: {
+                    P638_ID_COTIZA_ART: #ID_COTIZA_ART#
+                    P638_IND_VARIOS: N
+                    P638_ID_APROBACION_LIC: #ID_APROBACION_LIC#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            lazyLoading: true
+            maxRowsToProcess: 1000000
+        }
+        messages {
+            whenNoDataFound: No hay tareas vencidas
+        }
+        advanced {
+            savedReportMappingIdentifier: 100115070590977193
+        }
+
+        column CLIENTE (
+            type: hidden
+            heading {
+                heading: Cliente
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cód. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DEFINICION (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Definicion
+                alignment: center
+            }
+            lov {
+                lov: @lv-definicion-crm
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ESTADO_OCC (
+            type: plainText
+            heading {
+                heading: Estado OCC
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ESTADO_PRODUCTO (
+            type: plainText
+            heading {
+                heading: Estado Producto
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column FECHA_PLAZO (
+            type: plainText
+            heading {
+                heading: Fecha Plazo
+                alignment: center
+            }
+            layout {
+                sequence: 260
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column FEC_PROX_EVENTO (
+            type: plainText
+            heading {
+                heading: Fecha Prox. Evento
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_APROBACION_LIC (
+            type: hidden
+            heading {
+                heading: Id Aprobacion Lic
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            heading {
+                heading: Id Articulo
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_COTIZA_ART (
+            type: hidden
+            heading {
+                heading: Id Cotiza Art
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 190
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column ID_OFERTA (
+            type: hidden
+            heading {
+                heading: Id Oferta
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column ID_PEDIDO (
+            type: hidden
+            heading {
+                heading: Id Pedido
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            heading {
+                heading: Id Pedido Det
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Unidad Medida
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column NIVEL (
+            type: plainText
+            heading {
+                heading: Nivel
+                alignment: center
+            }
+            layout {
+                sequence: 340
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column NRO_OCC (
+            type: hidden
+            heading {
+                heading: Nro Occ
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column NRO_OCP (
+            type: hidden
+            heading {
+                heading: Nro Ocp
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column NRO_PEDIDO (
+            type: plainText
+            heading {
+                heading: Nro. PED/LIC
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column OBS_SEGUIMIENTO (
+            type: plainText
+            heading {
+                heading: Obs. Tarea
+                alignment: center
+            }
+            layout {
+                sequence: 350
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column PRECIO_TOTAL (
+            type: plainText
+            heading {
+                heading: Precio Total
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: plainText
+            heading {
+                heading: Precio Unitario
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column RESPONSABLE (
+            type: hidden
+            heading {
+                heading: Responsable
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: center
+            }
+            layout {
+                sequence: 330
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 300
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Tareas Vencidas
+        }
+
+        savedReport 356029 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn DEFINICION (
+                sequence: 10
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn ESTADO_OCC (
+                sequence: 17
+            )
+
+            displayColumn ESTADO_PRODUCTO (
+                sequence: 18
+            )
+
+            displayColumn FECHA_PLAZO (
+                sequence: 14
+            )
+
+            displayColumn FEC_PROX_EVENTO (
+                sequence: 13
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 7
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 5
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 9
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 6
+            )
+
+            displayColumn NIVEL (
+                sequence: 8
+            )
+
+            displayColumn NRO_PEDIDO (
+                sequence: 2
+            )
+
+            displayColumn OBS_SEGUIMIENTO (
+                sequence: 11
+            )
+
+            displayColumn PRECIO_TOTAL (
+                sequence: 16
+            )
+
+            displayColumn PRECIO_UNITARIO (
+                sequence: 15
+            )
+
+            displayColumn STOCK (
+                sequence: 12
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+)
+

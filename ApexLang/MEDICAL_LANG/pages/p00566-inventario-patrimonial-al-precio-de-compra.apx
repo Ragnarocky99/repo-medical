@@ -1,0 +1,901 @@
+page 566 (
+    name: Inventario Patrimonial al Precio de Compra
+    alias: INVENTARIO-PATRIMONIAL-AL-PRECIO-DE-COMPRA
+    title: Inventario Patrimonial al Precio de Compra
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: "Botones "
+        type: staticContent
+        layout {
+            sequence: 90
+            parentRegion: @filtros
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--noUI
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region inventario-patrimonial-al-precio-de-compra (
+        name: Inventario Patrimonial al Precio de Compra
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT MC.ID_SUCURSAL, 
+                       MC.ID_CENTRO, 
+                       MC.ID_DEPARTAMENTO, 
+                       MC.ID_SECCION, 
+                       MC.ID_RESPONSABLE, 
+                       MD.MON_COSTO, 
+                       MD.ID_BIEN, 
+                       B.DESCRIPCION AS BIEN, 
+                       B.ID_TIPO_BIEN,
+                       T.DESCRIPCION AS TIPO_BIEN, 
+                       MD.MON_COSTO_EXT AS MONTO_EXTRANJERO,
+                       MC.FEC_COMPROBANTE
+                       FROM  COW_MOV_BIENES_CAB MC, COW_MOV_BIENES_DET MD, COW_BIENES_USO B, COW_TIPOS_BIENES T
+                       WHERE MC.ID = MD.ID_MOVBIEN_CAB
+                             AND B.ID_TIPO_BIEN = T.ID
+                             and B.id_empresa = MD.id_empresa
+                             and B.id = MD.id_bien
+                             and MD.MON_COSTO = (select max(MD2.MON_COSTO)
+                                 from cow_mov_bienes_cab mc2, cow_mov_bienes_det md2, cow_bienes_uso bu2,
+                                 cow_tipos_bienes tb2
+                                 where mc2.id_empresa = B.id_empresa
+                                 and bu2.id = B.id  
+                                 and mc2.id_empresa = md2.id_empresa
+                                 and mc2.id = md2.id_movbien_cab
+                                 and bu2.id_empresa = md2.id_empresa
+                                 and bu2.id = md2.id_bien
+                                 and bu2.id_tipo_bien = tb2.id)
+                             and (MC.ID_SUCURSAL = :P566_SUCURSAL OR :P566_SUCURSAL IS NULL)  
+                             and (MC.ID_CENTRO = :P566_CENTRO OR :P566_CENTRO IS NULL)
+                             and (MC.ID_DEPARTAMENTO = :P566_DEPARTAMENTO OR :P566_DEPARTAMENTO IS NULL) 
+                             AND (MC.ID_SECCION = :P566_SECCION OR :P566_SECCION IS NULL) 
+                             AND (B.ID_TIPO_BIEN = :P566_TIPO_BIEN OR :P566_TIPO_BIEN IS NULL)
+                             AND (MC.FEC_COMPROBANTE BETWEEN :P566_FEC_INI AND :P566_FEC_FIN)
+                             AND MC.TIP_COMPROBANTE = 'INV'
+                order by B.ID_TIPO_BIEN
+                ```
+            pageItemsToSubmit: [
+                P566_TIPO_BIEN
+                P566_SUCURSAL
+                P566_DEPARTAMENTO
+                P566_CENTRO
+                P566_SECCION
+                P566_FEC_INI
+                P566_FEC_FIN
+            ]
+        }
+        layout {
+            sequence: 20
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 92988615505405460
+        }
+
+        column BIEN (
+            type: plainText
+            heading {
+                heading: <p>Bien</p>
+                alignment: center
+            }
+            layout {
+                sequence: 8
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: <p>Fec Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 12
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ID_BIEN (
+            type: hidden
+            heading {
+                heading: <p>Id Bien</p>
+            }
+            layout {
+                sequence: 7
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID_CENTRO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Centro</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 2
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_DEPARTAMENTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p> Departamento</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-departamentos-rrhh
+            }
+            layout {
+                sequence: 3
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_RESPONSABLE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Responsable</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-responsables-bien
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID_SECCION (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Seccion</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-secciones
+            }
+            layout {
+                sequence: 4
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p> Sucursal</P>
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 1
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_TIPO_BIEN (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Tipo Bien</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-tipo-bien
+            }
+            layout {
+                sequence: 9
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column MONTO_EXTRANJERO (
+            type: plainText
+            heading {
+                heading: <p>Monto Extranjero</p>
+                alignment: center
+            }
+            layout {
+                sequence: 11
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column MON_COSTO (
+            type: plainText
+            heading {
+                heading: <p>Monto Nacional</p>
+                alignment: center
+            }
+            layout {
+                sequence: 6
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column TIPO_BIEN (
+            type: hidden
+            heading {
+                heading: <p>Tipo de Bien</p>
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Inventario Patrimonial al Precio de Compra
+        }
+
+        savedReport 930098 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn BIEN (
+                sequence: 8
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn ID_CENTRO (
+                sequence: 4
+            )
+
+            displayColumn ID_DEPARTAMENTO (
+                sequence: 5
+            )
+
+            displayColumn ID_RESPONSABLE (
+                sequence: 7
+            )
+
+            displayColumn ID_SECCION (
+                sequence: 6
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 3
+            )
+
+            displayColumn ID_TIPO_BIEN (
+                sequence: 2
+            )
+
+            displayColumn MONTO_EXTRANJERO (
+                sequence: 10
+            )
+
+            displayColumn MON_COSTO (
+                sequence: 9
+            )
+
+        )
+
+    )
+
+    pageItem P566_CENTRO (
+        type: popupLov
+        label {
+            label: <p> Centro: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P566_DEPARTAMENTO (
+        type: popupLov
+        label {
+            label: <p>Departamento: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-departamentos-rrhh
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P566_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. Hasta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/'||TO_CHAR(SYSDATE,'MM/YYYY') FROM DUAL;
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P566_FEC_INI (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. Desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/'||TO_CHAR(SYSDATE,'MM/YYYY') FROM DUAL;
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P566_SECCION (
+        type: popupLov
+        label {
+            label: <p> Seccion: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-secciones
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P566_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p> Sucursal: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P566_TIPO_BIEN (
+        type: popupLov
+        label {
+            label: <p> Tipo de Bien: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tipo-bien
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 5
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @botones
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P566_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P566_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P566_FEC_FIN,'/','');
+                            conv_fecha := substr(:P566_FEC_FIN,1,2)||'/'||
+                                                      substr(:P566_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:P566_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P566_FEC_FIN := conv_fecha;
+                            ELSIF (length(:P566_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P566_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P566_FEC_FIN
+                itemsToReturn: P566_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P566_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P566_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P566_FEC_INI,'/','');
+                            conv_fecha := substr(:P566_FEC_INI,1,2)||'/'||
+                                                      substr(:P566_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:P566_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P566_FEC_INI := conv_fecha;
+                            ELSIF (length(:P566_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P566_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P566_FEC_INI
+                itemsToReturn: P566_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P566_TIPO_BIEN
+                P566_SUCURSAL
+                P566_DEPARTAMENTO
+                P566_CENTRO
+                P566_SECCION
+                P566_FEC_INI
+                P566_FEC_FIN
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @inventario-patrimonial-al-precio-de-compra
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go to page 574
+        execution {
+            sequence: 10
+            point: processing
+        }
+        behavior {
+            target: {
+                page: 574
+                items: {
+                    P566_TIPO_BIEN: &P566_TIPO_BIEN.
+                    P566_SUCURSAL: &P566_SUCURSAL.
+                    P566_DEPARTAMENTO: &P566_DEPARTAMENTO.
+                    P566_CENTRO: &P566_CENTRO.
+                    P566_SECCION: &P566_SECCION.
+                    P566_FEC_INI: &P566_FEC_INI.
+                    P566_FEC_FIN: &P566_FEC_FIN.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

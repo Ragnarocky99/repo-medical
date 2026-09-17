@@ -1,0 +1,2162 @@
+page 735 (
+    name: Resumen Ped. Pendientes
+    alias: RESUMEN-PED-PENDIENTES
+    title: Resumen Ped. Pendientes
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        width: 1600
+        height: 450
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            try {
+              var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+              var v_nro_occ = model.getFieldKey("NRO_OCC");
+               
+              
+              var numeroIngre = $v('P628_NRO_OCC');
+            
+              model.forEach(function(r, index, id) {
+                var meta = model.getRecordMetadata(id);
+                if ((meta.fields !== undefined) && (!meta.deleted)) {
+            
+                  model.setValue(r, v_nro_occ, numeroIngre);
+                }
+              });
+            
+            } catch (e) {
+              // Manejar errores aquí
+              console.error("Se produjo un error:", e);
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            ///document.getElementById("P632_NUM_SOLICITUD_COMPRA").readOnly = true;
+            //document.getElementById("P628_ID_CLIENTE").readOnly = true;
+            //document.getElementById("P628_ID_PEDIDO").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .apex-item-display-only{
+             display: inline-block;
+              padding: 6px 12px;
+              font-size: 14px;
+              width: 250px;
+              line-height: 1.42857143;
+              color: #555;
+              background-color: #fff;
+              background-image: none;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+              box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+              cursor: not-allowed;
+            }
+            
+            .apex-item {
+              display: block;
+              padding: 6px 12px;
+              font-size: 14px;
+              width: 300px;
+              line-height: 1.42857143;
+              color: #555;
+              background-color: #fff;
+              background-image: none;
+              cursor: not-allowed;
+            }
+            
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    region resumen-de-orden-de-compra (
+        name: Resumen de Orden de Compra
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                with function estado_occ_f(
+                        p_cant_aprobada in number,
+                        p_cant_anulada in number,
+                        p_cant_entregada in number,
+                        p_cant_remisionada in number
+                        ) return varchar2 is
+                     l_estado varchar2(20);
+                     begin
+                       select case p_cant_aprobada
+                         when p_cant_anulada then 'Anulado'
+                         when p_cant_entregada+p_cant_anulada then 'Facturado'
+                         when p_cant_remisionada then 'Remision'
+                         else 'Pendiente'
+                        end as occ
+                       into  l_estado
+                       from dual;
+                       
+                       return l_estado;
+                     end;
+                
+                     cantidades_externas as(
+                    select greatest(OBTENER_CANTIDAD_PENDIENTE(P_ID_PEDIDO  => ca.ID_PEDIDO /*IN NUMBER*/,
+                                               P_ID_ARTICULO  => ca.ID_ARTICULO/*IN NUMBER*/,
+                                               P_ID_EMPRESA  => ca.ID_EMPRESA/*IN NUMBER*/,
+                                               P_ID  => ca.ID /*IN NUMBER*/) - nvl(ca.cant_anulada,0),0)
+                                               as pendiente,
+                             least(nvl((SELECT SUM(D1.CANTIDAD)
+                             FROM STW_ENTSAL_CAB C1,
+                                STW_ENTSAL_DET D1
+                                WHERE C1.ID_EMPRESA = D1.ID_EMPRESA
+                                AND C1.ID = D1.ID_ENTSAL_CAB
+                                AND NVL(C1.ESTADO, 'N') != 'A'
+                                AND D1.ID_ARTICULO = ca.ID_ARTICULO
+                                AND D1.ID_PEDIDO_DETALLE = ca.ID_PEDIDO_DET),0),ca.cantidad_aprobada) as remisionada,
+                                obtener_cantidad_existente(ca.id_articulo, /*vtpeca.id_sucursal*/NULL, 'S') DISPONIBILIDAD,
+                                nvl(existencia_actual(/*vtpeca.id_sucursal*/NULL,ca.id_articulo,ca.id_empresa), 0) STOCK, --stock                
+                                ca.id
+                    from cmw_cotiza_articulos ca
+                    join vtw_pedidos_cabecera vtpeca on ca.id_pedido = vtpeca.id
+                    and (vtpeca.nro_comprobante = :P735_NRO_PEDIDO or :P735_NRO_PEDIDO is null)
+                
+                ),
+                cantidades_internas as (
+                    select ca.ID,     
+                    nvl(ca.CANTIDAD_APROBADA,0) as aprobada,
+                    nvl(ca.CANT_ANULADA,0)    as anulada,
+                    /*case 
+                        when ca.cant_anulada = ca.cantidad_aprobada then 0
+                        when ce.pendiente = 0 and ce.remisionada >= 0 then nvl(ca.CANTIDAD_APROBADA,0)-nvl(ca.cant_anulada,0)
+                        -- ce.remisionada = 0  -> ce.remisionada >=0
+                        when ca.cantidad_entregada > ca.cantidad_aprobada then nvl(ca.cantidad_aprobada,0)-nvl(ca.cant_anulada,0)     
+                        else nvl(ca.CANTIDAD_ENTREGADA,0)
+                        cometado el 30/12/2024. Esto ya no sirve.
+                    end as entregada*/
+                    nvl(ca.cantidad_aprobada,0)-nvl(ce.pendiente,0)-nvl(ca.cant_anulada,0) as entregada
+                    from CMW_COTIZA_ARTICULOS ca
+                    join vtw_pedidos_cabecera c4 on ca.id_pedido = c4.id
+                    join CANTIDADes_EXTERNAS ce on ca.id = ce.id
+                    and (c4.nro_comprobante = :P735_NRO_PEDIDO or :P735_NRO_PEDIDO is null)
+                
+                )
+                SELECT
+                    C.ID AS C_ID,
+                    --test_f(c.id),
+                    C.ID_EMPRESA,
+                    C.ID_SUCURSAL,
+                    C.ID_ARTICULO,
+                    C.ID_PROVEEDOR,
+                    C.ID_MONEDA,
+                    C.PRECIO,
+                    C.PRECIO * C.CANTIDAD AS mon_costo,
+                    C.PRECIO AS mon_costo_copia,
+                    C.NRO_ITEM,
+                    A.ID_ENVASE,
+                    A.ID_UNIDAD_MEDIDA,
+                    A.ID_MARCA,
+                    A.COD_ARTICULO,
+                    A.DESCRIPCION AS DESC_ARTICULO,
+                    C.ID_TIPO_ENTREGA,
+                    C.PRECIO_UNITARIO,
+                    C.PRECIO_TOTAL,
+                    P.ID AS P_ID,
+                    P.ID_CLIENTE,
+                    P.FEC_COMPROBANTE,
+                    C.NRO_OCC,
+                    C.FEC_OCC,                
+                    A.COD_ORIGEN_ART,
+                    A.ID_GRUPO_ART,
+                    T.NRO_DIAS NRO_DIAS,
+                    C.FEC_OCC + T.NRO_DIAS AS FECHA_PLAZO,
+                    P.NRO_COMPROBANTE AS NRO_PEDIDO,
+                    ci.aprobada,
+                    ci.anulada,
+                    ci.entregada,
+                    ce.pendiente,
+                    ce.remisionada,
+                    --es.occ,
+                    estado_occ_f(nvl(ci.aprobada,0), nvl(ci.anulada,0), nvl(ci.entregada,0), nvl(ce.remisionada,0)) as occ,
+                    ce.disponibilidad,
+                    ce.stock,
+                    c.cantidad_entregada,
+                    c.cant_remision,
+                
+                    P.id as Ped_Id,
+                    A.id as Art_Id,
+                    C.Id as Cot_Id,
+                    C.id_pedido_det,
+                    P.ID_SUCURSAL ID_SUCURSAL_PEDIDO,
+                    NVL(A.IND_CONTROLADO, 'N') IND_CONTROLADO
+                
+                FROM CMW_COTIZA_ARTICULOS C
+                JOIN STW_ARTICULOS A         ON A.ID = C.ID_ARTICULO AND A.ID_EMPRESA = C.ID_EMPRESA
+                JOIN VTW_PEDIDOS_CABECERA P  ON P.ID = C.ID_PEDIDO AND P.ID_EMPRESA = C.ID_EMPRESA
+                LEFT JOIN CMW_TIPO_ENTREGA T ON T.ID = NVL(C.ID_TIPO_ENTREGA,40) AND T.ID_EMPRESA = NVL(C.ID_EMPRESA,/*:P0_ID_EMPRESA*/121)
+                JOIN CANTIDADES_INTERNAS  CI ON C.ID = CI.ID 
+                JOIN CANTIDADES_EXTERNAS  CE ON C.ID = CE.ID
+                
+                WHERE (C.NRO_OCC IS NOT NULL AND C.NRO_OCC <> '0')
+                AND (P.NRO_COMPROBANTE = :P735_NRO_PEDIDO OR :P735_NRO_PEDIDO IS NULL)   
+                AND (estado_occ_f(nvl(ci.aprobada,0), nvl(ci.anulada,0), nvl(ci.entregada,0), nvl(ce.remisionada,0)) = 'Pendiente')     
+                
+                order by c.id desc
+                ---fetch first :P677_LIMITE rows only
+                ```
+            pageItemsToSubmit: [
+                P735_LIMITE
+                P735_TODOS
+                P735_BANDERA
+                P735_NRO_PEDIDO
+            ]
+            optimizerHint: WITH_PLSQL
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: never
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 101417566612337776
+        }
+
+        column ANULADA (
+            type: plainText
+            heading {
+                heading: Cantidad Anulada
+                alignment: end
+            }
+            layout {
+                sequence: 690
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BU
+            }
+        )
+
+        column APROBADA (
+            type: plainText
+            heading {
+                heading: Cantidad Aprobada
+                alignment: end
+            }
+            layout {
+                sequence: 680
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BT
+            }
+        )
+
+        column ART_ID (
+            type: plainText
+            heading {
+                heading: Art Id
+                alignment: end
+            }
+            layout {
+                sequence: 660
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BP
+            }
+        )
+
+        column CANTIDAD_ENTREGADA (
+            type: plainText
+            heading {
+                heading: Cantidad Entregada
+                alignment: end
+            }
+            layout {
+                sequence: 770
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: CD
+            }
+        )
+
+        column CANT_REMISION (
+            type: plainText
+            heading {
+                heading: Cant Remision
+                alignment: end
+            }
+            layout {
+                sequence: 780
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: CE
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Código
+                alignment: center
+            }
+            layout {
+                sequence: 270
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: plainText
+            heading {
+                heading: Cod Fabricante
+                alignment: center
+            }
+            layout {
+                sequence: 520
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BB
+            }
+        )
+
+        column COT_ID (
+            type: plainText
+            heading {
+                heading: Cot Id
+                alignment: end
+            }
+            layout {
+                sequence: 670
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BQ
+            }
+        )
+
+        column C_ID (
+            type: plainText
+            heading {
+                heading: C Id
+                alignment: center
+            }
+            layout {
+                sequence: 420
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Descripción
+                alignment: center
+            }
+            layout {
+                sequence: 280
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column DISPONIBILIDAD (
+            type: plainText
+            heading {
+                heading: Disponibilidad
+                alignment: center
+            }
+            layout {
+                sequence: 740
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: CA
+            }
+        )
+
+        column ENTREGADA (
+            type: plainText
+            heading {
+                heading: Cantidad Facturada
+                alignment: end
+            }
+            layout {
+                sequence: 700
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BV
+            }
+        )
+
+        column FECHA_PLAZO (
+            type: plainText
+            heading {
+                heading: Fecha Plazo
+            }
+            layout {
+                sequence: 550
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: BE
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: hidden
+            heading {
+                heading: Fecha Pedido
+            }
+            layout {
+                sequence: 450
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column FEC_OCC (
+            type: plainText
+            heading {
+                heading: Fec OCC
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column ID_ARTICULO (
+            type: plainText
+            heading {
+                heading: Id Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 440
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentación
+                alignment: center
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 240
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_GRUPO_ART (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Categoria de Producto
+                alignment: center
+            }
+            lov {
+                lov: @lv-grupos-art
+            }
+            layout {
+                sequence: 530
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 260
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainText
+            heading {
+                heading: Id Moneda
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: plainText
+            heading {
+                heading: Id Pedido Det
+                alignment: end
+            }
+            layout {
+                sequence: 760
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: CC
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            heading {
+                heading: Proveedor
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Id Sucursal
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_SUCURSAL_PEDIDO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Sucursal Pedido</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 790
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            columnFilter {
+                type: namedLovWordContains
+            }
+            advanced {
+                endUserAlias: CF
+            }
+        )
+
+        column ID_TIPO_ENTREGA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Plazo Entrega
+                alignment: center
+            }
+            lov {
+                lov: @lv-plazo-entrega
+            }
+            layout {
+                sequence: 300
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Unidad Medida
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column IND_CONTROLADO (
+            type: plainText
+            heading {
+                heading: Controlado
+                alignment: center
+            }
+            layout {
+                sequence: 800
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: CG
+            }
+        )
+
+        column MON_COSTO (
+            type: plainText
+            heading {
+                heading: Mon Costo
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column MON_COSTO_COPIA (
+            type: plainText
+            heading {
+                heading: Mon Costo Copia
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column NRO_DIAS (
+            type: plainText
+            heading {
+                heading: Nro Dias
+                alignment: end
+            }
+            layout {
+                sequence: 560
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BF
+            }
+        )
+
+        column NRO_ITEM (
+            type: plainText
+            heading {
+                heading: Nro Item
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column NRO_OCC (
+            type: plainText
+            heading {
+                heading: Nro Occ
+            }
+            layout {
+                sequence: 600
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BJ
+            }
+        )
+
+        column NRO_PEDIDO (
+            type: plainText
+            heading {
+                heading: Nro Pedido
+                alignment: end
+            }
+            layout {
+                sequence: 570
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BG
+            }
+        )
+
+        column OCC (
+            type: plainText
+            heading {
+                heading: Estado Occ
+            }
+            layout {
+                sequence: 730
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BY
+            }
+        )
+
+        column PED_ID (
+            type: plainText
+            heading {
+                heading: Ped Id
+                alignment: end
+            }
+            layout {
+                sequence: 650
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BO
+            }
+        )
+
+        column PENDIENTE (
+            type: plainText
+            heading {
+                heading: Cantidad Pendiente a Facturar
+                alignment: end
+            }
+            layout {
+                sequence: 710
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BW
+            }
+        )
+
+        column PRECIO (
+            type: plainText
+            heading {
+                heading: Precio
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column PRECIO_TOTAL (
+            type: plainText
+            heading {
+                heading: Precio Total
+                alignment: center
+            }
+            layout {
+                sequence: 370
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: plainText
+            heading {
+                heading: Precio Unitario
+                alignment: center
+            }
+            layout {
+                sequence: 360
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column P_ID (
+            type: plainText
+            heading {
+                heading: P Id
+                alignment: center
+            }
+            layout {
+                sequence: 430
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column REMISIONADA (
+            type: plainText
+            heading {
+                heading: Cantidad Remisionada
+                alignment: end
+            }
+            layout {
+                sequence: 720
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BX
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: end
+            }
+            layout {
+                sequence: 750
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: CB
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Resumen de Orden de Compra
+        }
+
+        savedReport 302097 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ANULADA (
+                sequence: 17
+            )
+
+            displayColumn APROBADA (
+                sequence: 16
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn COD_ORIGEN_ART (
+                sequence: 4
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 5
+            )
+
+            displayColumn DISPONIBILIDAD (
+                sequence: 22
+            )
+
+            displayColumn ENTREGADA (
+                sequence: 18
+            )
+
+            displayColumn FECHA_PLAZO (
+                sequence: 15
+            )
+
+            displayColumn FEC_OCC (
+                sequence: 14
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 10
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 6
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 8
+            )
+
+            displayColumn ID_SUCURSAL_PEDIDO (
+                sequence: 24
+            )
+
+            displayColumn ID_TIPO_ENTREGA (
+                sequence: 9
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 7
+            )
+
+            displayColumn NRO_ITEM (
+                sequence: 2
+            )
+
+            displayColumn NRO_OCC (
+                sequence: 13
+            )
+
+            displayColumn NRO_PEDIDO (
+                sequence: 1
+            )
+
+            displayColumn OCC (
+                sequence: 21
+            )
+
+            displayColumn PENDIENTE (
+                sequence: 19
+            )
+
+            displayColumn PRECIO_TOTAL (
+                sequence: 12
+            )
+
+            displayColumn PRECIO_UNITARIO (
+                sequence: 11
+            )
+
+            displayColumn REMISIONADA (
+                sequence: 20
+            )
+
+            displayColumn STOCK (
+                sequence: 23
+            )
+
+            sort (
+                column: NRO_PEDIDO
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+            aggregate (
+                column: PRECIO_TOTAL
+            )
+
+            highlight ir-condition (
+                name: Controlado
+                condition {
+                    column: IND_CONTROLADO
+                    value: S
+                }
+                colors {
+                    background: #ffd6d2
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+        )
+
+    )
+
+    region resumen-occ-renovado (
+        name: Resumen OCC Renovado
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                WITH BLOQUEOS AS (
+                    SELECT SUM(CANT_BLOQUEO) CANT_BLOQUEO,
+                           ID_ARTICULO
+                      FROM STWV_ARTICULOS_BLOQUEO
+                     WHERE CANT_BLOQUEO > 0
+                    GROUP BY ID_ARTICULO
+                )
+                SELECT NRO_PEDIDO,
+                       NRO_ITEM,
+                       COD_ARTICULO,
+                       COD_ORIGEN_ART COD_FABRICANTE,
+                       DESC_ARTICULO,
+                       ID_ENVASE,
+                       ID_UNIDAD_MEDIDA,
+                       ID_MARCA,
+                       ID_TIPO_ENTREGA,
+                       ID_CLIENTE,
+                       PRECIO_UNITARIO,
+                       PRECIO_TOTAL,
+                       NRO_OCC,
+                       FEC_OCC,
+                       FECHA_PLAZO,
+                       APROBADA,
+                       ANULADA,
+                       ENTREGADA,
+                       REMISIONADA,
+                       OCC ESTADO_OCC,
+                       STOCK,
+                       STOCK - NVL(B.CANT_BLOQUEO, 0) DISPONIBILIDAD,
+                       ID_SUCURSAL,
+                       IND_CONTROLADO
+                  FROM CMW_RESUMEN_OCC_RENOVADO R
+                LEFT JOIN BLOQUEOS B ON R.ID_ARTICULO = B.ID_ARTICULO
+                 WHERE NRO_PEDIDO = :P735_NRO_PEDIDO
+                   AND OCC = 'Pendiente'
+                ```
+            pageItemsToSubmit: P735_NRO_PEDIDO
+            optimizerHint: WITH_PLSQL
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 64218529065365611
+        }
+
+        column ANULADA (
+            type: plainText
+            heading {
+                heading: Anulada
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column APROBADA (
+            type: plainText
+            heading {
+                heading: Aprobada
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: plainText
+            heading {
+                heading: Cod. Fabricante
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column DISPONIBILIDAD (
+            type: plainText
+            heading {
+                heading: Disponibilidad
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ENTREGADA (
+            type: plainText
+            heading {
+                heading: Entregada
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column ESTADO_OCC (
+            type: plainText
+            heading {
+                heading: Estado OCC
+                alignment: center
+            }
+            layout {
+                sequence: 200
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column FECHA_PLAZO (
+            type: plainText
+            heading {
+                heading: Fecha Plazo
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column FEC_OCC (
+            type: plainText
+            heading {
+                heading: Fec. OCC
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 220
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ID_TIPO_ENTREGA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Plazo Entrega
+                alignment: center
+            }
+            lov {
+                lov: @lv-plazo-entrega
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: U.M
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column IND_CONTROLADO (
+            type: plainText
+            heading {
+                heading: Ind Controlado
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column NRO_ITEM (
+            type: plainText
+            heading {
+                heading: Nro. Item
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column NRO_OCC (
+            type: plainText
+            heading {
+                heading: Nro. OCC
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column NRO_PEDIDO (
+            type: plainText
+            heading {
+                heading: Nro. Pedido
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column PRECIO_TOTAL (
+            type: plainText
+            heading {
+                heading: Precio Total
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: plainText
+            heading {
+                heading: Precio Unitario
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column REMISIONADA (
+            type: plainText
+            heading {
+                heading: Remisionada
+                alignment: center
+            }
+            layout {
+                sequence: 190
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Resumen OCC Renovado
+        }
+
+        savedReport 643493 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ANULADA (
+                sequence: 17
+            )
+
+            displayColumn APROBADA (
+                sequence: 16
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn COD_FABRICANTE (
+                sequence: 4
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 5
+            )
+
+            displayColumn DISPONIBILIDAD (
+                sequence: 21
+            )
+
+            displayColumn ENTREGADA (
+                sequence: 18
+            )
+
+            displayColumn ESTADO_OCC (
+                sequence: 20
+            )
+
+            displayColumn FECHA_PLAZO (
+                sequence: 15
+            )
+
+            displayColumn FEC_OCC (
+                sequence: 14
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 10
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 6
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 8
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 23
+            )
+
+            displayColumn ID_TIPO_ENTREGA (
+                sequence: 9
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 7
+            )
+
+            displayColumn NRO_ITEM (
+                sequence: 2
+            )
+
+            displayColumn NRO_OCC (
+                sequence: 13
+            )
+
+            displayColumn NRO_PEDIDO (
+                sequence: 1
+            )
+
+            displayColumn PRECIO_TOTAL (
+                sequence: 12
+            )
+
+            displayColumn PRECIO_UNITARIO (
+                sequence: 11
+            )
+
+            displayColumn REMISIONADA (
+                sequence: 19
+            )
+
+            displayColumn STOCK (
+                sequence: 22
+            )
+
+            aggregate (
+                column: PRECIO_TOTAL
+            )
+
+            highlight ir-condition (
+                name: Controlado
+                condition {
+                    column: IND_CONTROLADO
+                    value: S
+                }
+                colors {
+                    background: #ffd6d2
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P735_BANDERA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P735_DECIMALES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
+    pageItem P735_ID (
+        type: hidden
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+        sessionState {
+            storage: request
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P735_LIMITE (
+        type: textField
+        label {
+            label: <p>Limite de filas</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: static
+            staticValue: 1
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P735_MON_COSTO_COPIA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+    )
+
+    pageItem P735_NRO_PEDIDO (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P735_PROVEEDOR (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P735_TODOS (
+        type: checkbox
+        label {
+            label: <p>Mostrar Todos</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            used: always
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button filtrar (
+        buttonName: Filtrar
+        label: Filtrar
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    dynamicAction alerta (
+        name: Alerta
+        execution {
+            sequence: 160
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Aviso, se está trabajando en esta página
+                message: Se está añadiendo un(a) validación/proceso/cambio a la página, lo que puede provocar errores si está usando la página.
+                style: information
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cambio-desc-articulo (
+        name: Cambio_Desc_Articulo
+        execution {
+            sequence: 150
+        }
+        when {
+            selectionType: items
+            items: P735_ARTICULO
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select ID_ARTICULO
+                    from STWV_ARTICULOS
+                    where DESC_ARTICULO = :P735_ARTICULO
+                    ```
+            }
+            affectedElements {
+                selectionType: items
+                items: P735_ARTICULO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 170
+        }
+        when {
+            selectionType: items
+            items: P735_TODOS
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select count(1) from cmw_cotiza_articulos
+            }
+            affectedElements {
+                selectionType: items
+                items: P735_LIMITE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 140
+        }
+        when {
+            selectionType: items
+            items: P735_PROVEEDOR
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @resumen-de-orden-de-compra
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

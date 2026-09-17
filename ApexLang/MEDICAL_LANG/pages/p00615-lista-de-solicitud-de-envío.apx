@@ -1,0 +1,810 @@
+page 615 (
+    name: Lista de Solicitud de Envío
+    alias: LISTA-DE-SOLICITUD-DE-ENVÍO
+    title: Lista de Solicitud de Envío
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 190px;
+            height: 25px;
+            pointer-events: none;
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region lista-de-nota-de-envios (
+        name: Lista de Nota de Envios
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select A.ID,
+                       A.ID_EMPRESA,
+                       A.TIP_ENVIO,
+                       A.NRO_ENVIO,
+                       A.ID_SUCURSAL,
+                       A.ID_SUCURSAL_ENT,
+                       A.FECHA,
+                       A.SER_ENVIO,
+                       A.DESC_SUCUR_ENT,
+                       A.COD_USUARIO_AUD,
+                       A.ID_CLIENTE,
+                       A.REFERENCIA,
+                       --A.IND_ANULADO,
+                       
+                       CASE A.IND_ANULADO
+                         WHEN 'S' THEN
+                          'Anulado'
+                         ELSE
+                          CASE ESTADO_SOLICITUD_ENVIO(A.ID_EMPRESA, A.ID)
+                            WHEN 'P' THEN
+                             'Pendiente'
+                            WHEN 'T' THEN
+                             'En Transito'
+                            WHEN 'F' THEN
+                             'Finiquitado'
+                            WHEN 'L' THEN
+                             'Parcial'
+                            WHEN 'S' THEN
+                             'Sin Definir'
+                            ELSE
+                             ''
+                          END
+                       END AS Estado,
+                
+                       'ENVIAR',
+                       CASE
+                         WHEN (NVL((SELECT SUM(CANTIDAD)
+                                     FROM STW_ENTSAL_DET D1, STW_ENTSAL_CAB C1
+                                    WHERE ID_SOLICITUD_REF = A.ID
+                                      AND C1.ID = D1.ID_ENTSAL_CAB),
+                                   0)) < (NVL((SELECT SUM(CANTIDAD)
+                                               FROM STW_NOTAS_ENVIO_DET_SOL DS
+                                               WHERE A.ID = DS.ID_NRO_ENVIO_CAB),
+                                           0)) THEN
+                          '<span class="fa fa-send" aria-hidden="true"></span>'
+                         ELSE
+                          '<p></p>'
+                       END AS TEXTO_LINK,
+                       
+                       CASE
+                         WHEN TIENE_REMISION(A.ID) = 1 THEN
+                          '<span class="fa fa-search" aria-hidden="true"></span>'
+                         ELSE
+                          '<p> </p>'
+                       END AS VER,
+                       
+                       --  C.ID AS ID_REMISION,
+                       NVL((SELECT SUM(CANTIDAD)
+                             FROM STW_ENTSAL_DET D1, STW_ENTSAL_CAB C1
+                            WHERE ID_SOLICITUD_REF = A.ID
+                              AND C1.ID = D1.ID_ENTSAL_CAB),
+                           0) AS ENVIADO,
+                           
+                       NVL((SELECT SUM(D1.CANTIDAD)
+                             FROM STW_ENTSAL_CAB C1, STW_ENTSAL_CAB C2, STW_ENTSAL_DET D1
+                            WHERE C1.ID_SOLICITUD_REF = A.ID
+                              AND C1.ID = C2.ID_COMPROBANTE_REF
+                              AND C2.ID_SUCURSAL = A.ID_SUCURSAL_ENT
+                              AND C2.ID = D1.ID_ENTSAL_CAB),
+                           0) AS RECEPCIONADO,
+                           
+                       (NVL((SELECT SUM(CANTIDAD)
+                              FROM STW_NOTAS_ENVIO_DET_SOL DS
+                             WHERE A.ID = DS.ID_NRO_ENVIO_CAB),
+                            0)) as SOLICITADO,
+                       
+                       NVL((SELECT SUM(D1.CANTIDAD)
+                             FROM STW_ENTSAL_CAB C1, STW_ENTSAL_CAB C2, STW_ENTSAL_DET D1
+                            WHERE C1.ID_SOLICITUD_REF = A.ID
+                              AND C1.ID = C2.ID_COMPROBANTE_REF
+                              AND C2.ID_SUCURSAL <> A.ID_SUCURSAL_ENT
+                              AND C2.ID = D1.ID_ENTSAL_CAB),
+                           0) AS PERDIDO
+                
+                  from STW_NOTAS_ENVIO_CAB_SOL A
+                --LEFT JOIN STW_ENTSAL_CAB C ON A.ID=C.ID_SOLICITUD_REF
+                 WHERE A.ID_EMPRESA = :P0_COD_EMPRESA
+                   and (A.ID_SUCURSAL = :P0_COD_SUCURSAL OR
+                       A.ID_SUCURSAL_ENT = :P0_COD_SUCURSAL)
+                
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 616
+                items: {
+                    P616_ID: #ID#
+                    P616_ID_EMPRESA: #ID_EMPRESA#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 73436566030174591
+        }
+
+        column 'ENVIAR' (
+            type: link
+            heading {
+                heading: Enviar
+                alignment: center
+            }
+            layout {
+                sequence: 418
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 603
+                    items: {
+                        P_ID_SOLICITUD_ENVIO: #ID#
+                    }
+                    clearCache: Y
+                }
+                linkText: #TEXTO_LINK#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BH
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 208
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column DESC_SUCUR_ENT (
+            type: hidden
+            heading {
+                heading: Desc Sucur Ent
+            }
+            layout {
+                sequence: 138
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ENVIADO (
+            type: plainText
+            heading {
+                heading: Enviado
+                alignment: end
+            }
+            layout {
+                sequence: 458
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BL
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 408
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                htmlDomId: OPERACION
+                endUserAlias: BG
+            }
+        )
+
+        column FECHA (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CLIENTE (
+            type: hidden
+            heading {
+                heading: Id Cliente
+            }
+            layout {
+                sequence: 318
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 378
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BA
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal Salida
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 38
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BB
+            }
+        )
+
+        column ID_SUCURSAL_ENT (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal Entrada
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 48
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column NRO_ENVIO (
+            type: plainText
+            heading {
+                heading: Nro. Envío
+                alignment: center
+            }
+            layout {
+                sequence: 4
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column PERDIDO (
+            type: plainText
+            heading {
+                heading: Perdido
+                alignment: end
+            }
+            layout {
+                sequence: 488
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BO
+            }
+        )
+
+        column RECEPCIONADO (
+            type: plainText
+            heading {
+                heading: Recepcionado
+                alignment: end
+            }
+            layout {
+                sequence: 468
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BM
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 18
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AZ
+            }
+        )
+
+        column SER_ENVIO (
+            type: plainText
+            heading {
+                heading: Serie Envío
+                alignment: center
+            }
+            layout {
+                sequence: 28
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column SOLICITADO (
+            type: plainText
+            heading {
+                heading: Solicitado
+                alignment: end
+            }
+            layout {
+                sequence: 478
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BN
+            }
+        )
+
+        column TEXTO_LINK (
+            type: hidden
+            heading {
+                heading: Texto Link
+            }
+            layout {
+                sequence: 428
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BI
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column TIP_ENVIO (
+            type: hidden
+            heading {
+                heading: Tipo de Envio
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column VER (
+            type: link
+            heading {
+                heading: Ver
+            }
+            layout {
+                sequence: 438
+            }
+            link {
+                target: {
+                    page: 190
+                    items: {
+                        P190_SOLICITUDES: #ID##ID_REMISION#
+                    }
+                }
+                linkText: #VER#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BJ
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lista de Nota de Envios
+        }
+
+        savedReport 438351 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn 'ENVIAR' (
+                sequence: 11
+            )
+
+            displayColumn ENVIADO (
+                sequence: 8
+            )
+
+            displayColumn ESTADO (
+                sequence: 10
+            )
+
+            displayColumn FECHA (
+                sequence: 3
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 5
+            )
+
+            displayColumn ID_SUCURSAL_ENT (
+                sequence: 6
+            )
+
+            displayColumn NRO_ENVIO (
+                sequence: 2
+            )
+
+            displayColumn RECEPCIONADO (
+                sequence: 9
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 4
+            )
+
+            displayColumn SER_ENVIO (
+                sequence: 1
+            )
+
+            displayColumn SOLICITADO (
+                sequence: 7
+            )
+
+            displayColumn VER (
+                sequence: 12
+            )
+
+            sort (
+                column: NRO_ENVIO
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: IND_RECEPCION
+                sort {
+                    direction: desc
+                    sequence: 2
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P615_BANDERA_REDIRIGIR (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @lista-de-nota-de-envios
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 616
+                clearCache: 84
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    dynamicAction estados (
+        name: Estados
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterrefresh
+            selectionType: region
+            region: @lista-de-nota-de-envios
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    $('td[headers="OPERACION"]').each(function() {
+                      var texto = $(this).text();
+                      if (texto === 'Finiquitado') {
+                        $(this).css("color", "green");
+                      } else if (texto === 'En Transito') {
+                        $(this).css("color", '#e1ad01');
+                      } else if (texto === 'Pendiente') {
+                        $(this).css("color", "#FFFF66");
+                      } else if (texto === 'Anulado') {
+                        $(this).css("color", "red");
+                      }else if (texto === 'Parcial') {
+                        $(this).css("color", "#e1ad01");
+                      }
+                      
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-grilla (
+        name: Refrescar Grilla
+        execution {
+            sequence: 30
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: region
+            region: @lista-de-nota-de-envios
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                    V_ID_REMISION NUMBER(10):=APEX_UTIL.GET_SESSION_STATE('P_ID_REMISION');
+                    BEGIN
+                    IF    V_ID_REMISION IS NOT NULL THEN
+                        :P615_BANDERA_REDIRIGIR:='S'; 
+                    ELSIF V_ID_REMISION IS NULL THEN
+                        :P615_BANDERA_REDIRIGIR:='N';
+                    END IF;
+                    END;
+                    ```
+                itemsToReturn: P615_BANDERA_REDIRIGIR
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @lista-de-nota-de-envios
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grilla (
+        name: Refresh Grilla
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @lista-de-nota-de-envios
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

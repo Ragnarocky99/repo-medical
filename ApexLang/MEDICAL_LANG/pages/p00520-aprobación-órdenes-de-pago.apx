@@ -1,0 +1,1363 @@
+page 520 (
+    name: Aprobación Órdenes de Pago
+    alias: APROBACIÓN-ÓRDENES-DE-PAGO
+    title: Aprobación Órdenes de Pago
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region ordenes-de-pago (
+        name: Ordenes de Pago
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       SER_ORDEN_PAGO,
+                       NUM_ORDEN_PAGO,
+                       FEC_EMISION,
+                       FEC_VENCIMIENTO,
+                       ID_USUARIO_AUTORIZ,
+                       AUTORIZADO,
+                       ESTADO,
+                       RETENIDO,
+                       COD_USUARIO_AUD,
+                       PORC_RET_IVA,
+                       TOT_RET_IVA,
+                       IND_PAGO_ADELANTADO,
+                       GRAVADAS,
+                       IVA,
+                       ID_MOV_CAJ,
+                       ID_PROVEEDOR,
+                       FEC_AUTORIZADO,
+                       IND_CAJA_CHICA,
+                       ID_CUENTA_BANCARIA,
+                       ID_CONSIGNACION,
+                       ID_MONEDA,
+                       ID_SUCURSAL,
+                       TIP_CAMBIO,
+                       NRO_PLANILLA,
+                       ID_CENTRO_COSTO,
+                       SUMA_TOTAL,
+                       (SELECT LISTAGG(DISTINCT(SP.COMENTARIO), '/') FROM CPWV_SOLICITUD_PAGO SP WHERE SP.ID_ORDEN_PAGO = ID) COMENTARIO,
+                       COD_USUARIO_AUTORIZA
+                  from CPW_CABECERA_ORDEN_PAGO
+                  WHERE ID_EMPRESA=:P0_ID_EMPRESA
+                  --AND (AUTORIZADO=:P520_IND_AUTORIZADO OR :P520_IND_AUTORIZADO IS NULL) modificado pq cuando N no traía los null
+                  AND ( nvl(autorizado,'N') = :P520_IND_AUTORIZADO or :P520_IND_AUTORIZADO is NULL)
+                  AND (ID_PROVEEDOR = :P520_PROVEEDOR OR :P520_PROVEEDOR IS NULL)
+                  AND (NVL(ID_CENTRO_COSTO,0) = :P520_CENTRO_COSTO OR :P520_CENTRO_COSTO IS NULL)
+                  AND (NVL(ESTADO,'P') <> 'A')
+                ```
+            pageItemsToSubmit: [
+                P520_IND_AUTORIZADO
+                P520_PROVEEDOR
+                P520_CENTRO_COSTO
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 75195259509783223
+        }
+
+        savedReport 752317 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUTORIZA
+                layout {
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @SER_ORDEN_PAGO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NUM_ORDEN_PAGO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @FEC_EMISION
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_USUARIO_AUTORIZ
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZADO
+                layout {
+                    width: 85
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @RETENIDO
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PORC_RET_IVA
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @TOT_RET_IVA
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @IND_PAGO_ADELANTADO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @GRAVADAS
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @IVA
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_MOV_CAJ
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @FEC_AUTORIZADO
+                layout {
+                    width: 91
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @IND_CAJA_CHICA
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_CUENTA_BANCARIA
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONSIGNACION
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PLANILLA
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @SUMA_TOTAL
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @ID_CENTRO_COSTO
+                layout {
+                    sequence: 26
+                }
+            )
+
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column AUTORIZADO (
+            type: checkbox
+            heading {
+                heading: <p>Autorizado</p>
+                alignment: center
+                alternativeLabel: Autorizado
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 190
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: AUTORIZADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID_MOV_CAJ
+                execute: forEachRow
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUTORIZA (
+            type: textField
+            heading {
+                heading: <p>Autorizado Por</p>
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUTORIZA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COMENTARIO (
+            type: textarea
+            heading {
+                heading: <p>Comentario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 390
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_AUTORIZADO (
+            type: textField
+            heading {
+                heading: <p>Fec Autorizado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 200
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_AUTORIZADO
+                dataType: date
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FEC_EMISION (
+            type: datePicker
+            heading {
+                heading: <p>Fec Emision</p>
+                alignment: center
+                alternativeLabel: Fec Emision
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_EMISION
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: hidden
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column GRAVADAS (
+            type: hidden
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: GRAVADAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: popupLov
+            heading {
+                heading: <p>Centro Costo</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: ID_CENTRO_COSTO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_CONSIGNACION (
+            type: hidden
+            layout {
+                sequence: 360
+            }
+            source {
+                databaseColumn: ID_CONSIGNACION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CUENTA_BANCARIA (
+            type: hidden
+            layout {
+                sequence: 350
+            }
+            source {
+                databaseColumn: ID_CUENTA_BANCARIA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: popupLov
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+                alternativeLabel: Moneda
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_MOV_CAJ (
+            type: popupLov
+            heading {
+                heading: <p>Movimiento</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT NRO_MOV_CAJ,ID FROM CPW_CABECERA_CAJAS
+                    WHERE ID_EMPRESA=:P0_ID_EMPRESA
+                    ```
+            }
+            layout {
+                sequence: 220
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_MOV_CAJ
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: popupLov
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+                alternativeLabel: Proveedor
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: popupLov
+            heading {
+                heading: <p> Sucursal</p>
+                alignment: center
+                alternativeLabel: Sucursal
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_USUARIO_AUTORIZ (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: ID_USUARIO_AUTORIZ
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_CAJA_CHICA (
+            type: hidden
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: IND_CAJA_CHICA
+                dataType: varchar2
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_PAGO_ADELANTADO (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: IND_PAGO_ADELANTADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IVA (
+            type: hidden
+            layout {
+                sequence: 340
+            }
+            source {
+                databaseColumn: IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_PLANILLA (
+            type: hidden
+            layout {
+                sequence: 380
+            }
+            source {
+                databaseColumn: NRO_PLANILLA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_ORDEN_PAGO (
+            type: numberField
+            heading {
+                heading: <p>Número</p>
+                alignment: center
+                alternativeLabel: Número
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NUM_ORDEN_PAGO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PORC_RET_IVA (
+            type: hidden
+            layout {
+                sequence: 300
+            }
+            source {
+                databaseColumn: PORC_RET_IVA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column RETENIDO (
+            type: hidden
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: RETENIDO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SER_ORDEN_PAGO (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+                alternativeLabel: Serie
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: SER_ORDEN_PAGO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SUMA_TOTAL (
+            type: numberField
+            heading {
+                heading: <p>Suma Total</p>
+                alignment: center
+                alternativeLabel: Suma Total
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: SUMA_TOTAL
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 370
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_RET_IVA (
+            type: hidden
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: TOT_RET_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Ordenes de Pago
+        }
+    )
+
+    pageItem P520_CENTRO_COSTO (
+        type: popupLov
+        label {
+            label: <p>Centro Costo</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @ordenes-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P520_IND_AUTORIZADO (
+        type: selectList
+        label {
+            label: <p>Autorizado</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Autorizado;S,No Autorizado;N
+        }
+        layout {
+            sequence: 10
+            region: @ordenes-de-pago
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P520_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 650
+            popupHeight: 650
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 20
+            region: @ordenes-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction centro (
+        name: Centro
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P520_CENTRO_COSTO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ordenes-de-pago
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction proveedor (
+        name: Proveedor
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P520_PROVEEDOR
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ordenes-de-pago
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P520_IND_AUTORIZADO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ordenes-de-pago
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-fecha-y-usuario (
+        name: Setear Fecha y Usuario
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @ordenes-de-pago
+            columns: AUTORIZADO
+        }
+
+        action fecha (
+            name: Fecha
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_AUTORIZADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: AUTORIZADO
+                value: S
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    :FEC_AUTORIZADO:=NULL;
+                    :ID_USUARIO_AUTORIZ:=NULL;
+                    ```
+                itemsToReturn: [
+                    FEC_AUTORIZADO
+                    ID_USUARIO_AUTORIZ
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: AUTORIZADO
+                value: N
+            }
+        )
+
+        action usuario (
+            name: Usuario
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN TRAE_ID_USUARIO(:P0_ID_EMPRESA,UPPER(:APP_USER));
+                    EXCEPTION
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error '||sqlerrm);
+                    END;
+                    ```
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_USUARIO_AUTORIZ
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p520-ind-autorizado (
+        itemName: P520_IND_AUTORIZADO
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: expression
+            plsqlExpression: 'N'
+        }
+    )
+
+    process ordenes-de-pago-save-interactive-grid-data (
+        name: Ordenes de Pago - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @ordenes-de-pago
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 75265797275787504
+        }
+    )
+
+)
+

@@ -1,0 +1,754 @@
+page 274 (
+    name: Mayor Cuentas Provisorio
+    alias: MAYOR-CUENTAS-PROVISORIO
+    title: Mayor Cuentas Provisorio
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: [
+            #DEFAULT#
+            ui-dialog--stretch
+            t-Dialog--noPadding
+        ]
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P274_MAYOR_FEC_INI").readOnly = true;
+            document.getElementById("P274_MAYOR_FEC_FIN").readOnly = true;
+            document.getElementById("P274_MAYOR_COD_CUENTA_INI").readOnly = true;
+            document.getElementById("P274_M_COD_CUENTA_FIN").readOnly = true;
+            document.getElementById("P274_MAYOR_SALDO_ANTERIOR").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            .readonly{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    comments {
+        comments: Esta página se creó exclusivamente para la pág. 250 - Consola de generacion de asientos/Balance General.
+    }
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            parentRegion: @mayor-de-cuentas-provisorio
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region mayor-de-cuentas-provisorio (
+        name: Mayor de Cuentas Provisorio
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.ID,
+                       CASE
+                            WHEN C.ID IS NOT NULL THEN 'fa fa-search u-primary-text'
+                       END ASIENTO_BUSCAR,
+                       P.ID_EMPRESA,
+                       C.FEC_ASIENTO,
+                       C.NUM_ASIENTO,
+                       C.DESCRIPCION AS DESC_ASIENTO,
+                       P.COD_CUENTA,
+                       P.NOMBRE_CUENTA,
+                       SUM(NVL(D.MON_DEBE,0)) MON_DEBE,
+                       SUM(NVL(D.MON_HABER,0)) MON_HABER,         
+                        
+                       --SA.SALDO_ANT,
+                
+                       /*SUM(CASE P.TIPO_CUENTA
+                               WHEN 'A' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_debe,0)  -   NVL(D.mon_haber,0)
+                               WHEN 'H' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_haber,0) -   NVL(D.mon_debe,0)
+                               WHEN 'P' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_haber,0) -   NVL(D.mon_debe,0)
+                               WHEN 'D' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_debe,0)  -   NVL(D.mon_haber,0)
+                            END) SALDO_TIP_CUENTA,
+                        
+                        */
+                       trae_saldo_ant_co(EM.ID, P.COD_CUENTA, E.COD_EJERCICIO, D.ID, C.FEC_ASIENTO)SALDO_ANT, -- mod
+                       trae_saldo_act_co(EM.ID, P.COD_CUENTA, E.COD_EJERCICIO, D.ID, C.FEC_ASIENTO)SALDO, -- mod
+                       C.ID_SUCURSAL,
+                       S.DESCRIPCION SUCURSAL_DESC,
+                       P.TIPO_CUENTA
+                
+                
+                       
+                FROM   COW_DIARIO_DETALLES_PROV  D,
+                       COW_DIARIO_CABECERAS_PROV C,
+                       COW_PLAN_CUENTAS          P,
+                       BSW_MONEDAS               M,
+                       BSW_SUCURSALES            S,
+                       COW_EJERCICIOS            E,
+                       BSW_EMPRESAS              EM
+                       
+                       
+                WHERE EM.ID = :P0_ID_EMPRESA
+                  AND P.ID_EMPRESA = EM.ID
+                  AND (C.FEC_ASIENTO BETWEEN :P274_MAYOR_FEC_INI AND :P274_MAYOR_FEC_FIN)
+                  --AND (P.COD_CUENTA BETWEEN :P274_MAYOR_COD_CUENTA_INI AND :P274_M_COD_CUENTA_FIN OR (:P274_MAYOR_COD_CUENTA_INI IS NULL AND :P274_M_COD_CUENTA_FIN IS NULL))
+                  AND P.COD_CUENTA    = :P274_MAYOR_COD_CUENTA_INI
+                  AND E.COD_EJERCICIO = :P0_COD_EJERCICIO
+                  AND D.ID_EJERCICIO  = E.ID
+                  AND C.ID_EJERCICIO  = D.ID_EJERCICIO
+                  AND C.NUM_ASIENTO   = D.NUM_ASIENTO
+                  AND C.ID_SUCURSAL   = d.ID_SUCURSAL
+                  AND P.ID_EMPRESA    = d.ID_EMPRESA
+                  AND P.ID            = D.ID_PLAN_CUENTA
+                  AND P.ID_MONEDA     = m.ID(+)
+                  AND S.ID_EMPRESA    = c.ID_EMPRESA  
+                  AND S.ID            = c.ID_SUCURSAL
+                
+                GROUP BY
+                       D.ID,
+                       C.ID,
+                       P.ID_EMPRESA,
+                       C.FEC_ASIENTO,
+                       C.NUM_ASIENTO,
+                       C.DESCRIPCION,
+                       E.COD_EJERCICIO,
+                       P.COD_CUENTA,
+                       P.NOMBRE_CUENTA,
+                       --D.MON_DEBE,
+                       --D.MON_HABER,
+                       --SA.SALDO_ANT,
+                       C.ID_SUCURSAL,
+                       S.DESCRIPCION,
+                       P.TIPO_CUENTA
+                       
+                       
+                ORDER BY C.FEC_ASIENTO ASC, regexp_replace(
+                      regexp_replace(
+                        regexp_replace(
+                          P.COD_CUENTA,'(^|\.)(\d{3})','\1 \2'
+                          ),
+                        '(^|\.)(\d{2})','\1 0\2'
+                      ),
+                      '(^|\.)(\d)','\1 00\2'
+                    );
+                
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 65256461035258315
+        }
+
+        column ASIENTO_BUSCAR (
+            type: link
+            heading {
+                heading: Asiento
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ID#
+                    }
+                }
+                linkText: <img src="#IMAGE_PREFIX#app_ui/img/icons/apex-edit-view.png" class="apex-edit-view" alt="">
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column COD_CUENTA (
+            type: plainText
+            heading {
+                heading: Cod. Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESC_ASIENTO (
+            type: plainText
+            heading {
+                heading: Descripción
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column FEC_ASIENTO (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Empresa
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            heading {
+                heading: Id Sucursal
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column MON_DEBE (
+            type: plainText
+            heading {
+                heading: Monto Debe
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column MON_HABER (
+            type: plainText
+            heading {
+                heading: Monto Haber
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column NOMBRE_CUENTA (
+            type: plainText
+            heading {
+                heading: Nombre Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NUM_ASIENTO (
+            type: plainText
+            heading {
+                heading: Nro. de Asiento
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column SALDO (
+            type: plainText
+            heading {
+                heading: Saldo
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column SALDO_ANT (
+            type: plainText
+            heading {
+                heading: Saldo Anterior
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column SUCURSAL_DESC (
+            type: hidden
+            heading {
+                heading: Sucursal Desc
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column TIPO_CUENTA (
+            type: hidden
+            heading {
+                heading: Tipo Cuenta
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Mayor de Cuentas Provisorio
+        }
+
+        savedReport 659144 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTO_BUSCAR (
+                sequence: 1
+            )
+
+            displayColumn DESC_ASIENTO (
+                sequence: 4
+            )
+
+            displayColumn FEC_ASIENTO (
+                sequence: 2
+            )
+
+            displayColumn MON_DEBE (
+                sequence: 5
+            )
+
+            displayColumn MON_HABER (
+                sequence: 6
+            )
+
+            displayColumn NUM_ASIENTO (
+                sequence: 3
+            )
+
+            displayColumn SALDO (
+                sequence: 7
+            )
+
+        )
+
+    )
+
+    pageItem P274_MAYOR_COD_CUENTA_INI (
+        type: textField
+        label {
+            label: Cuenta:
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: readonly
+        }
+    )
+
+    pageItem P274_MAYOR_FEC_FIN (
+        type: textField
+        label {
+            label: Hasta:
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-right-none
+            ]
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        advanced {
+            cssClasses: readonly
+        }
+    )
+
+    pageItem P274_MAYOR_FEC_INI (
+        type: textField
+        label {
+            label: Desde:
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 4
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: readonly
+        }
+    )
+
+    pageItem P274_MAYOR_SALDO_ANTERIOR (
+        type: numberField
+        label {
+            label: <p>Saldo Anterior: </p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 40
+            region: @mayor-de-cuentas-provisorio
+            slot: regionBody
+            alignment: left
+            column: 10
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: readonly
+        }
+    )
+
+    pageItem P274_M_COD_CUENTA_FIN (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 4
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: readonly
+        }
+    )
+
+    button b274-imprimir (
+        buttonName: B274_IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            column: 9
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    computation p274-m-cod-cuenta-fin (
+        itemName: P274_M_COD_CUENTA_FIN
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NOMBRE_CUENTA FROM COW_PLAN_CUENTAS
+                WHERE COD_CUENTA = :P274_MAYOR_COD_CUENTA_INI
+                ```
+        }
+    )
+
+    computation p274-mayor-saldo-anterior (
+        itemName: P274_MAYOR_SALDO_ANTERIOR
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT 
+                
+                    NVL(SUM(CASE PC.TIPO_CUENTA
+                             WHEN 'A' THEN NVL(DD.MON_DEBE,0)    -   NVL(DD.MON_HABER,0)
+                             WHEN 'H' THEN NVL(DD.MON_HABER,0)   -   NVL(DD.MON_DEBE,0)
+                             WHEN 'P' THEN NVL(DD.MON_HABER,0)   -   NVL(DD.MON_DEBE,0)
+                             WHEN 'D' THEN NVL(DD.MON_DEBE,0)    -   NVL(DD.MON_HABER,0)
+                            END),0) SALDO_ANT
+                    
+                       
+                from cow_diario_detalles_prov dd, 
+                     cow_plan_cuentas         pc, 
+                     cow_ejercicios           ej, 
+                     bsw_empresas             emp
+                       
+                       
+                where emp.id                 =  :P0_COD_EMPRESA
+                        and ej.cod_ejercicio =  :P0_COD_EJERCICIO
+                        and dd.id_empresa    =  emp.id
+                        and dd.id_ejercicio  =  ej.id
+                        and pc.cod_cuenta    =  :P250_MAYOR_COD_CUENTA_INI
+                        and dd.id_plan_cuenta=  pc.id
+                        and dd.fec_asiento   < :P250_MAYOR_FEC_INI
+                        --and dd.id            <=  dd.id
+                
+                
+                ```
+        }
+    )
+
+    branch (
+        name: Go To Page 285
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 285
+            }
+        }
+    )
+
+)
+

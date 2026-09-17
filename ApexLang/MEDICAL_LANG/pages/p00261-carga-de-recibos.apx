@@ -1,0 +1,1818 @@
+page 261 (
+    name: Carga de Saldos
+    alias: CARGA-DE-RECIBOS
+    title: Cargo de Saldos
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        width: 1000
+        height: 600
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var id_saldos='';
+            function updateColorCheckbox(e) {
+            
+                e.stopPropagation();
+            
+                var region = apex.region('Detalles');      // Static ID of the Interactive Grid
+                var grid = region.call("getViews").grid;
+                var model = grid.model;
+                var totalRec = model.getTotalRecords();
+                var  selectedRec = 0;
+                var col_selected = model.getFieldKey("SELECCIONAR");      // Column Name
+                
+                model.forEach(function (record, index, id) {
+                   var n_sal = (record[col_selected]);
+                     if (!isNaN(n_sal) && n_sal == 1) {
+                        selectedRec += 1;
+                    }
+                    
+                });
+            
+            if (selectedRec == totalRec ){
+             model.forEach(function (record, index, id) {
+                        model.setValue(record, "SELECCIONAR", "S" + 1,true);
+                       id_saldos=id_saldos+model.getValue(record,'ID')+',';
+                    });
+                
+            }else{
+                 model.forEach(function (record, index, id) {
+                        model.setValue(record, "SELECCIONAR", "S",true);
+                                   console.log(model.getValue(record,'ID'));
+                                   id_saldos=id_saldos+model.getValue(record,'ID')+',';
+            
+                    });
+                
+            }
+               
+            }
+            
+            function marcarTodos(){
+                try{
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_seleccionada = model.getFieldKey("SELECCIONAR");
+                var v_total_cantidad     = 0;
+                var bandera ='N'
+                model.forEach(function(r, index, id) {
+                        
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                 
+                    if(r[v_seleccionada]=='N' || r[v_seleccionada]==null || r[v_seleccionada]==''){
+                        bandera='S'
+                       model.setValue(r,'SELECCIONAR','S');
+                       
+                    }
+               if(r[v_seleccionada]=='S' && bandera=='N'){
+                 
+                       model.setValue(r,'SELECCIONAR','N');
+                 
+                    }    
+                       
+                    }
+                    
+                });
+            }catch(e){
+                
+            }
+            
+            }
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region saldos (
+        name: Saldos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.ID_SUCURSAL,
+                       C.TIPO_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       case c.tipo_comprobante
+                        when 'ADC' then null
+                        else c.id_comprobante
+                       end as ID_COMPROBANTE, -- LE PONGO NULO, POR LA FK DE VTW_COMP
+                       --C.ID_COMPROBANTE,
+                       C.ID_CLIENTE,
+                       C.NRO_CUOTA,
+                       C.FEC_VENCIMIENTO,
+                       C.FEC_ACOBRAR,
+                       C.MONTO_CUOTA,
+                       C.ID_MONEDA_CUOTA,
+                       M.DESCRIPCION,
+                       C.SALDO_CUOTA - NVL(C.REC_PENDIENTES, 0) as SALDO,
+                       C.REC_PENDIENTES,
+                       C.FEC_ORIGEN,
+                       C.ID_USUARIO,
+                       C.FEC_CARGA,
+                       C.COD_USUARIO_AUD,
+                       C.ID_NOTAS_DEBCRED,
+                       C.SALDO_ANTERIOR,
+                       C.ID_RECIBO,
+                       C.TIP_CAMBIO,
+                       C.ID_EXTRACTO_INICIAL,
+                       C.IND_MAQUINA,
+                       C.NRO_VALOR,
+                       C.SALDO_EXENTAS,
+                       C.SALDO_GRAVADAS,
+                       C.ID_COBRADOR,
+                       C.IND_ALTO_RIESGO,
+                       C.TIP_PAGARE,
+                       C.MONTO_EXENTAS,
+                       C.ID_PER_JURIDICA,
+                       C.TIP_CAMBIO_US,
+                       C.PORC_IVA,
+                       C.TOT_IVA,
+                       C.PORC_GRAVADAS,
+                       C.MONTO_GRAVADAS,
+                       C.FACTURA,
+                       C.REFERENCIA,
+                       C.COLUMNA,
+                       C.ID_VENDEDOR,
+                       C.ID_SECTOR,
+                       C.ID_CORPORACION,
+                       C.ID_ESTADO_FORMA,
+                       C.ID_CONCEPTO,
+                       C.POR_CORPORACION,
+                       C.FEC_COBRO,
+                       C.TIP_COMPR_ANT
+                  from CCW_SALDOS C, /*VTW_COMPROBANTES_CABECERA CC, CCW_CONDICIONES_VENTAS CV,*/ BSW_MONEDAS M
+                  WHERE C.ID_EMPRESA=:P0_ID_EMPRESA
+                  AND C.ID_MONEDA_CUOTA = M.ID
+                  AND (C.SALDO_CUOTA-NVL(C.REC_PENDIENTES,0)) <> 0
+                  AND C.ID_CLIENTE = :P261_CLIENTE_PARAM
+                  /*AND C.ID_COMPROBANTE = CC.ID
+                  AND CC.id_condicion_venta = cv.id
+                  AND (CV.PLAZO <> 0 OR CV.COD_CONDICION_VENTA = '9')*/ --PARA LOS SALDOS MIGRADOS 
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        toolbar {
+            controls: searchCol
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        heading {
+            fixedTo: region
+            fixedReportHeight: 450
+        }
+        advanced {
+            savedReportMappingIdentifier: 60776290727369392
+        }
+
+        savedReport 607767 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @APEX$ROW_SELECTOR
+                layout {
+                    show: false
+                    sequence: 51
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    width: 104
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_COMPROBANTE
+                layout {
+                    width: 123
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 73
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 111
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NRO_CUOTA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 117
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ACOBRAR
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_CUOTA
+                layout {
+                    width: 99
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA_CUOTA
+                layout {
+                    show: false
+                    width: 79
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @REC_PENDIENTES
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ORIGEN
+                layout {
+                    width: 130
+                    sequence: 40
+                }
+            )
+
+            displayColumn (
+                column: @ID_USUARIO
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @FEC_CARGA
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_NOTAS_DEBCRED
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @SALDO_ANTERIOR
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @ID_RECIBO
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_EXTRACTO_INICIAL
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @IND_MAQUINA
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @NRO_VALOR
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @SALDO_EXENTAS
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @SALDO_GRAVADAS
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @ID_COBRADOR
+                layout {
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @IND_ALTO_RIESGO
+                layout {
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @TIP_PAGARE
+                layout {
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_EXENTAS
+                layout {
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @ID_PER_JURIDICA
+                layout {
+                    sequence: 33
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO_US
+                layout {
+                    sequence: 34
+                }
+            )
+
+            displayColumn (
+                column: @PORC_IVA
+                layout {
+                    sequence: 35
+                }
+            )
+
+            displayColumn (
+                column: @TOT_IVA
+                layout {
+                    sequence: 36
+                }
+            )
+
+            displayColumn (
+                column: @PORC_GRAVADAS
+                layout {
+                    sequence: 37
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_GRAVADAS
+                layout {
+                    sequence: 38
+                }
+            )
+
+            displayColumn (
+                column: @FACTURA
+                layout {
+                    sequence: 39
+                }
+            )
+
+            displayColumn (
+                column: @REFERENCIA
+                layout {
+                    show: false
+                    sequence: 50
+                }
+            )
+
+            displayColumn (
+                column: @COLUMNA
+                layout {
+                    sequence: 41
+                }
+            )
+
+            displayColumn (
+                column: @ID_VENDEDOR
+                layout {
+                    sequence: 42
+                }
+            )
+
+            displayColumn (
+                column: @ID_SECTOR
+                layout {
+                    sequence: 43
+                }
+            )
+
+            displayColumn (
+                column: @ID_CORPORACION
+                layout {
+                    sequence: 44
+                }
+            )
+
+            displayColumn (
+                column: @ID_ESTADO_FORMA
+                layout {
+                    sequence: 45
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO
+                layout {
+                    sequence: 46
+                }
+            )
+
+            displayColumn (
+                column: @POR_CORPORACION
+                layout {
+                    sequence: 47
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COBRO
+                layout {
+                    sequence: 48
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPR_ANT
+                layout {
+                    sequence: 49
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 41
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @SELECCIONAR
+                layout {
+                    width: 59
+                    sequence: 52
+                }
+            )
+
+            displayColumn (
+                column: @SALDO
+                layout {
+                    show: false
+                    sequence: 53
+                }
+            )
+
+            sort (
+                column: @NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: hidden
+            layout {
+                sequence: 20
+            }
+            source {
+                type: none
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                type: none
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COLUMNA (
+            type: hidden
+            layout {
+                sequence: 440
+            }
+            source {
+                databaseColumn: COLUMNA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCRIPCION (
+            type: textField
+            heading {
+                heading: <p>Moneda</p>
+            }
+            layout {
+                sequence: 550
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column FACTURA (
+            type: hidden
+            layout {
+                sequence: 430
+            }
+            source {
+                databaseColumn: FACTURA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ACOBRAR (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: FEC_ACOBRAR
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_CARGA (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: FEC_CARGA
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_COBRO (
+            type: hidden
+            layout {
+                sequence: 510
+            }
+            source {
+                databaseColumn: FEC_COBRO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ORIGEN (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Origen</p>
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_ORIGEN
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COBRADOR (
+            type: hidden
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: ID_COBRADOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CONCEPTO (
+            type: hidden
+            layout {
+                sequence: 490
+            }
+            source {
+                databaseColumn: ID_CONCEPTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CORPORACION (
+            type: hidden
+            layout {
+                sequence: 470
+            }
+            source {
+                databaseColumn: ID_CORPORACION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ESTADO_FORMA (
+            type: hidden
+            layout {
+                sequence: 480
+            }
+            source {
+                databaseColumn: ID_ESTADO_FORMA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EXTRACTO_INICIAL (
+            type: hidden
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: ID_EXTRACTO_INICIAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA_CUOTA (
+            type: textField
+            heading {
+                heading: Moneda
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: ID_MONEDA_CUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_NOTAS_DEBCRED (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: ID_NOTAS_DEBCRED
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PER_JURIDICA (
+            type: hidden
+            layout {
+                sequence: 370
+            }
+            source {
+                databaseColumn: ID_PER_JURIDICA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_RECIBO (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: ID_RECIBO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SECTOR (
+            type: hidden
+            layout {
+                sequence: 460
+            }
+            source {
+                databaseColumn: ID_SECTOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_SUCURSAL
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_USUARIO (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: ID_USUARIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: hidden
+            layout {
+                sequence: 450
+            }
+            source {
+                databaseColumn: ID_VENDEDOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_ALTO_RIESGO (
+            type: hidden
+            layout {
+                sequence: 340
+            }
+            source {
+                databaseColumn: IND_ALTO_RIESGO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_MAQUINA (
+            type: hidden
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: IND_MAQUINA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Monto Cuota</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column MONTO_EXENTAS (
+            type: hidden
+            layout {
+                sequence: 360
+            }
+            source {
+                databaseColumn: MONTO_EXENTAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_GRAVADAS (
+            type: hidden
+            layout {
+                sequence: 420
+            }
+            source {
+                databaseColumn: MONTO_GRAVADAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Numero</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column NRO_CUOTA (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: NRO_CUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_VALOR (
+            type: hidden
+            layout {
+                sequence: 300
+            }
+            source {
+                databaseColumn: NRO_VALOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_GRAVADAS (
+            type: hidden
+            layout {
+                sequence: 410
+            }
+            source {
+                databaseColumn: PORC_GRAVADAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_IVA (
+            type: hidden
+            layout {
+                sequence: 390
+            }
+            source {
+                databaseColumn: PORC_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column POR_CORPORACION (
+            type: hidden
+            layout {
+                sequence: 500
+            }
+            source {
+                databaseColumn: POR_CORPORACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column REC_PENDIENTES (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: REC_PENDIENTES
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column REFERENCIA (
+            type: textField
+            heading {
+                heading: <p>Referencia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: REFERENCIA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column SALDO (
+            type: numberField
+            heading {
+                heading: Saldo
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 540
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SALDO_ANTERIOR (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: SALDO_ANTERIOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SALDO_EXENTAS (
+            type: hidden
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: SALDO_EXENTAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SALDO_GRAVADAS (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: SALDO_GRAVADAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SELECCIONAR (
+            type: checkbox
+            heading {
+                heading: <span  aria-hidden="true" onclick="updateColorCheckbox(event,this)"><p>Selecc.</p></span>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 530
+                columnAlignment: center
+            }
+            source {
+                type: none
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column TIPO_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 5
+            }
+            source {
+                databaseColumn: TIPO_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_CAMBIO_US (
+            type: hidden
+            layout {
+                sequence: 380
+            }
+            source {
+                databaseColumn: TIP_CAMBIO_US
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPR_ANT (
+            type: hidden
+            layout {
+                sequence: 520
+            }
+            source {
+                databaseColumn: TIP_COMPR_ANT
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_PAGARE (
+            type: hidden
+            layout {
+                sequence: 350
+            }
+            source {
+                databaseColumn: TIP_PAGARE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_IVA (
+            type: hidden
+            layout {
+                sequence: 400
+            }
+            source {
+                databaseColumn: TOT_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Saldos
+        }
+    )
+
+    pageItem P261_BANDERA (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @saldos
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P261_CLIENTE_PARAM (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @saldos
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P261_ID_CABECERA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @saldos
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P261_ID_SALDOS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @saldos
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @saldos
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 170
+                items: {
+                    P170_ID: &P261_ID_CABECERA.
+                    P170_BANDERA_CARGAR: N
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button cargar (
+        buttonName: CARGAR
+        label: Cargar
+        layout {
+            sequence: 20
+            region: @saldos
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 170
+                items: {
+                    P170_ID: &P261_ID_CABECERA.
+                    P170_BANDERA_CARGAR: S
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button marcar-todo (
+        buttonName: MARCAR_TODO
+        label: Marcar Todo
+        layout {
+            sequence: 30
+            region: @saldos
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--success
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction cargar-id (
+        name: Cargar Id
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @saldos
+            columns: SELECCIONAR
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      l_collection_name CONSTANT VARCHAR2(255) := WWV_FLOW.G_INSTANCE;     -- WWV_FLOW.G_INSTANCE is your user session number and will keep the collections per user session
+                    BEGIN
+                      IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => l_collection_name) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => l_collection_name);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => l_collection_name);
+                     
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => l_collection_name,
+                        p_c001 => :P261_ID_SALDOS
+                         );
+                    END;
+                    ```
+                itemsToSubmit: P261_ID_SALDOS
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if(id_saldos.length>1){
+                        $s('P261_ID_SALDOS',id_saldos);
+                        id_saldos='';
+                    }
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    IF :SELECCIONAR = 'S' THEN
+                    RETURN :P261_ID_SALDOS||:ID||',';
+                    ELSE 
+                    RETURN REPLACE (:P261_ID_SALDOS,:ID||',','');
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    ID
+                    P261_ID_SALDOS
+                    SELECCIONAR
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P261_ID_SALDOS
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: Inicializar
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todo (
+        name: Marcar Todo
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: marcarTodos();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process carga-de-recibos-save-interactive-grid-data (
+        name: Carga de Recibos - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @saldos
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 58670404815309148
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: Operación realizada exitosamente!
+        }
+        advanced {
+            executionMappingIdentifier: 61367961534693119
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CARGAR
+        }
+    )
+
+)
+

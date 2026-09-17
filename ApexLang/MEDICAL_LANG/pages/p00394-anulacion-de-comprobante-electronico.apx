@@ -1,0 +1,864 @@
+page 394 (
+    name: Anulacion de Comprobante Electronico
+    alias: ANULACION-DE-COMPROBANTE-ELECTRONICO
+    title: Anulacion de Comprobante Electronico
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .readOnly{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 214px;
+                height: 25px;
+                pointer-events: none;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: left;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            td[headers="Mostrar"] img {   width: 74px; } 
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region anulacion-de-comprobante-electronico (
+        name: Anulacion de Comprobante Electronico
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region comprobantes-electronicos (
+        name: Comprobantes Electronicos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.tip_comprobante,
+                       c.ser_comprobante,
+                       c.nro_comprobante,
+                       c.fec_comprobante,
+                       c.nombre_cliente,
+                       c.ruc_cliente,
+                       c.nro_cdc_fe,
+                       c.estado,
+                       c.tot_bruto,
+                       c.desc_condicion_operacion,
+                       case c.estado 
+                       WHEN 'A' THEN 'fa fa-check u-success-text'
+                       ELSE NULL
+                       END AS ICONO_ESTADO,
+                       enlace_qr_fe
+                  FROM FEWV_FACTURA_CAB C
+                 WHERE NVL(C.ind_aprobado_fe, 'X') = 'S'
+                   AND C.FEC_COMPROBANTE = :P394_FEC_COMPROBANTE
+                 UNION ALL
+                 SELECT C.tip_comprobante,
+                       c.ser_comprobante,
+                       c.nro_comprobante,
+                       c.fec_comprobante,
+                       c.nombre_cliente,
+                       c.ruc_cliente,
+                       c.nro_cdc_fe,
+                       c.estado,
+                       c.tot_bruto,
+                       c.desc_condicion_operacion,
+                       case c.estado 
+                       WHEN 'A' THEN 'fa fa-check u-success-text'
+                       ELSE NULL
+                       END AS ICONO_ESTADO,
+                       enlace_qr_fe
+                  FROM FEWV_NOTCRED_CAB C
+                 WHERE NVL(C.ind_aprobado_fe, 'X') = 'S'
+                   AND C.FEC_COMPROBANTE = :P394_FEC_COMPROBANTE
+                UNION ALL
+                 SELECT C.tip_comprobante,
+                       c.ser_comprobante,
+                       c.nro_comprobante,
+                       c.fec_comprobante,
+                       c.nombre_cliente,
+                       c.ruc_cliente,
+                       c.nro_cdc_fe,
+                       c.estado,
+                      0,-- c.tot_bruto,
+                       c.descripcion,
+                       case c.estado 
+                       WHEN 'A' THEN 'fa fa-check u-success-text'
+                       ELSE NULL
+                       END AS ICONO_ESTADO,
+                       enlace_qr_fe
+                  FROM FEWV_REMISION_CAB C
+                 WHERE NVL(C.ind_aprobado_fe, 'X') = 'S'
+                   AND C.FEC_COMPROBANTE = :P394_FEC_COMPROBANTE
+                ORDER BY 3 DESC, 4 DESC, 1 ASC
+                ```
+            pageItemsToSubmit: P394_FEC_COMPROBANTE
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 178120814458733141
+        }
+
+        column DESC_CONDICION_OPERACION (
+            type: plainText
+            heading {
+                heading: Condicion
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column ENLACE_QR_FE (
+            type: link
+            heading {
+                heading: Consulta Ekuatia
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    type: url
+                    url: #ENLACE_QR_FE#
+                }
+                linkText: <img src="#IMAGE_PREFIX#app_ui/img/icons/apex-edit-view.png" class="apex-edit-view" alt="">
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Anulado
+            }
+            layout {
+                sequence: 80
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ICONO_ESTADO#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ICONO_ESTADO (
+            type: hidden
+            heading {
+                heading: Icono Estado
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column NOMBRE_CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_CDC_FE (
+            type: plainText
+            heading {
+                heading: CDC
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Numero
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column RUC_CLIENTE (
+            type: plainText
+            heading {
+                heading: Documento
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Serie
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_BRUTO (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Comprobantes Electronicos
+        }
+
+        savedReport 178065 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn DESC_CONDICION_OPERACION (
+                sequence: 10
+            )
+
+            displayColumn ENLACE_QR_FE (
+                sequence: 11
+            )
+
+            displayColumn ESTADO (
+                sequence: 8
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn NOMBRE_CLIENTE (
+                sequence: 5
+            )
+
+            displayColumn NRO_CDC_FE (
+                sequence: 7
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn RUC_CLIENTE (
+                sequence: 6
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn TOT_BRUTO (
+                sequence: 9
+            )
+
+        )
+
+    )
+
+    pageItem P394_AMBIENTE_EJECUCION (
+        type: popupLov
+        label {
+            label: <p>Ambiente de Ejecución:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Test;TEST,Produccion;PROD
+        }
+        layout {
+            sequence: 40
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: 'PROD'
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P394_CLIENTE (
+        type: textField
+        label {
+            label: <p>Cliente:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P394_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p>Fecha:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P394_ID_COMPROBANTE (
+        type: popupLov
+        label {
+            label: <p>Comprobante:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 1000
+            popupHeight: 750
+            additionalOutputs: CLIENTE:P394_CLIENTE,SUCURSAL:P394_SUCURSAL,TOT_COMPROBANTE:P394_TOTAL,TIP_COMPROBANTE:P394_TIP_COMPROBANTE
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-comprobantes-electronicos
+            nullDisplayValue: -- SIN SELECCIONAR --
+        }
+        layout {
+            sequence: 50
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P394_MOTIVO_ANULACION (
+        type: textField
+        label {
+            label: <p><b style="color:red;">*</b>Motivo Anulación: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P394_RESPUESTA (
+        type: textarea
+        label {
+            label: <p>Respuesta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P394_SUCURSAL (
+        type: textField
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P394_TIP_COMPROBANTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+        }
+    )
+
+    pageItem P394_TOTAL (
+        type: numberField
+        label {
+            label: <p>Total:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @anulacion-de-comprobante-electronico
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @anulacion-de-comprobante-electronico
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--stretch
+                t-Button--gapTop
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button refrescar (
+        buttonName: Refrescar
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @anulacion-de-comprobante-electronico
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction proceso-anulacion (
+        name: Proceso anulacion
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN 
+                     FEW_ANULAR_COMPROBANTE_ELECTRONICO(P_ID_EMPRESA           => :P0_ID_EMPRESA,
+                                                         P_AMBIENTE_EJECUCION   => :P394_AMBIENTE_EJECUCION,
+                                                         P_ID_COMPROBANTE       => :P394_ID_COMPROBANTE,
+                                                         P_TIP_COMPROBANTE      => :P394_TIP_COMPROBANTE,
+                                                         P_MOTIVO_ANULACION     => :P394_MOTIVO_ANULACION,
+                                                         P_RESPUESTA =>:P394_RESPUESTA);
+                                                         END;
+                    ```
+                itemsToSubmit: [
+                    P394_AMBIENTE_EJECUCION
+                    P394_ID_COMPROBANTE
+                    P394_MOTIVO_ANULACION
+                    P394_TIP_COMPROBANTE
+                ]
+                itemsToReturn: P394_RESPUESTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-reporte (
+        name: Refrescar Reporte
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refrescar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @comprobantes-electronicos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process anular-comprobante (
+        name: Anular Comprobante
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                  FEW_ANULAR_COMPROBANTE_ELECTRONICO(P_ID_EMPRESA           => :P0_ID_EMPRESA,
+                                                     P_AMBIENTE_EJECUCION   => :P394_AMBIENTE_EJECUCION,
+                                                     P_ID_COMPROBANTE       => :P394_ID_COMPROBANTE,
+                                                     P_TIP_COMPROBANTE      => :P394_TIP_COMPROBANTE,
+                                                     P_MOTIVO_ANULACION     => :P394_MOTIVO_ANULACION,
+                                                     p_respuesta              => :P394_RESPUESTA);
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Operación realizada con éxito.
+        }
+        advanced {
+            executionMappingIdentifier: 63447828569150407
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

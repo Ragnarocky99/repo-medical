@@ -1,0 +1,2574 @@
+page 673 (
+    name: Conciliacion Banco
+    alias: CONCILIACIÓN-BANCO1
+    title: Conciliacion Banco
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .img-clase {
+                width: 8rem; /* Establece el ancho al 50% del contenedor padre */
+                height: auto; /* Mantén la proporción original */
+            }
+            
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+                text-align: left;
+            }
+            
+            .card-size {
+                width: fit-content;
+                height: auto;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: 13.5px;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region detalles (
+        name: Detalles
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region extracto-sistema (
+        name: Extracto Sistema
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select  t_id as id,
+                        FEC_COMPROBANTE,
+                        TIP_COMPROBANTE,
+                        NRO_COMPROBANTE,
+                        DETALLE,
+                        SER_COMPROBANTE,
+                        DESCRIPCION,
+                        TOT_DEBITO,
+                        TOT_CREDITO,
+                        case nvl(ind_conciliado,'N')
+                          when 'N' then ''
+                          when 'S' then 'Desconciliar'
+                        end as desconciliar,
+                        FEC_CONCILIACION,
+                        case
+                            when (IND_CONCILIADO is null or IND_CONCILIADO = 'N') then 'PENDIENTE'
+                            when IND_CONCILIADO = 'S' then 'CONCILIADO'
+                        end ESTADO_CONCILIACION,
+                        FEC_BANCO,
+                        FEC_BANCO FEC_BANCO_ORI,
+                        IND_CONCILIADO,
+                        IND_CONCILIADO IND_CONCILIADO_ORI,
+                        PREPARA_URL_CARGA(:P0_ID_EMPRESA, TIP_COMPROBANTE, ID) URL,
+                        FEC_VENCIMIENTO
+                from CHVW_EXTRACTO_BANCARIO
+                where   NRO_CUENTA = :P673_CUENTA
+                  --and   FEC_COMPROBANTE BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                and     NVL(FEC_BANCO, LAST_DAY(FEC_VENCIMIENTO)) BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                --and     FEC_VENCIMIENTO BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                --and     /*FEC_COMPROBANTE*/ ((FEC_COMPROBANTE between :P673_FECHA_INI and :P673_FECHA_FIN) or (nvl(ind_conciliado,'N') = 'N' and fec_vencimiento <= :P673_FECHA_INI)) 
+                and     (ANULADO <> 'S' or ANULADO is null)
+                and     (IND_CONCILIADO = :P673_ESTADO OR :P673_ESTADO IS NULL)
+                and   FEC_COMPROBANTE != '01/01/1000'
+                ```
+            pageItemsToSubmit: [
+                P673_CUENTA
+                P673_ESTADO
+                P673_FECHA_INI
+                P673_FECHA_FIN
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: EXTRACTO
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        performance {
+            lazyLoading: true
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        pagination {
+            type: page
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 99853213654507211
+        }
+
+        savedReport 1019551 (
+            visibility: primary
+            view {
+                default: grid
+                settingsAreaExpanded: false
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @FEC_BANCO_ORI
+                layout {
+                    show: false
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @IND_CONCILIADO_ORI
+                layout {
+                    show: false
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @FEC_BANCO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @IND_CONCILIADO
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @URL
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @DESCONCILIAR
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 86
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 52
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 116
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @DETALLE
+                layout {
+                    width: 448
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 51
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    width: 127
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @TOT_DEBITO
+                layout {
+                    width: 97.075
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @TOT_CREDITO
+                layout {
+                    width: 103.075
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @FEC_CONCILIACION
+                layout {
+                    width: 92.075
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_CONCILIACION
+                layout {
+                    show: false
+                    width: 127
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @FEC_COMPROBANTE
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+            aggregate sum (
+                column: @TOT_DEBITO
+            )
+
+            aggregate sum-2 (
+                column: @TOT_CREDITO
+                showGrandTotal: true
+            )
+
+            highlight conciliado (
+                name: CONCILIADO
+                condition {
+                    column: @IND_CONCILIADO
+                    value: Activado
+                }
+                colors {
+                    background: #d0f1cc
+                }
+                execution {
+                    sequence: 5
+                }
+            )
+
+            highlight pendiente (
+                name: PENDIENTE
+                condition {
+                    column: @IND_CONCILIADO
+                    value: Desactivado
+                }
+                colors {
+                    background: #fff5ce
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column DESCONCILIAR (
+            type: link
+            heading {
+                heading: <p>Desconciliar</p>
+            }
+            layout {
+                sequence: 140
+            }
+            link {
+                target: {
+                    page: 712
+                    items: {
+                        P712_ID_COMPROBANTE: &ID.
+                        P712_TIP_COMPROBANTE: &TIP_COMPROBANTE.
+                    }
+                }
+                linkText: &DESCONCILIAR.
+                linkAttributes: class="t-Button t-Button--secondary"
+            }
+            source {
+                databaseColumn: DESCONCILIAR
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column DESCRIPCION (
+            type: textField
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DETALLE (
+            type: textarea
+            heading {
+                heading: <p>Detalle</p>
+            }
+            layout {
+                sequence: 60
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: DETALLE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ESTADO_CONCILIACION (
+            type: textField
+            heading {
+                heading: <p>Estado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: ESTADO_CONCILIACION
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_BANCO (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Banco</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_BANCO
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column FEC_BANCO_ORI (
+            type: datePicker
+            heading {
+                heading: Fec Banco Ori
+            }
+            layout {
+                sequence: 190
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_BANCO_ORI
+                dataType: date
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column FEC_CONCILIACION (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Conciliación</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_CONCILIACION
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 200
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_CONCILIADO (
+            type: checkbox
+            heading {
+                heading: <p>Conciliado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_CONCILIADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_CONCILIADO_ORI (
+            type: textField
+            heading {
+                heading: Ind Conciliado Ori
+            }
+            layout {
+                sequence: 180
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: IND_CONCILIADO_ORI
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Número</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 40
+            }
+            link {
+                target: {
+                    type: url
+                    url: &URL.
+                }
+                linkText: &NRO_COMPROBANTE.
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 3
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_CREDITO (
+            type: numberField
+            heading {
+                heading: <p>Crédito</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_CREDITO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TOT_DEBITO (
+            type: numberField
+            heading {
+                heading: <p>Débito</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_DEBITO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column URL (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: URL
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Extracto Sistema
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            parentRegion: @detalles
+            slot: regionBody
+            columnSpan: 7
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region logo (
+        name: Logo
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select  id,
+                        imagen_cedula,
+                        pagina_web
+                from bsw_personas
+                where id = :P673_BANCO_ID;
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: regionBody
+            columnSpan: 2
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--styleC
+                margin-right-none
+            ]
+        }
+        card {
+            primaryKeyColumn1: ID
+        }
+        media {
+            source: blobColumn
+            blobColumn: IMAGEN_CEDULA
+        }
+
+        action action (
+            type: fullCard
+            layout {
+                sequence: 10
+            }
+            behavior {
+                type: redirectUrl
+                targetUrl: javascript:window.open("&PAGINA_WEB.")
+            }
+        )
+
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    pageItem P673_ARCHIVO (
+        type: fileUpload
+        label {
+            label: <p>Excel:&ensp;</p>
+            alignment: left
+        }
+        display {
+            dropzoneTitle: Seleccione un archivo
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P673_BANCO (
+        type: textField
+        label {
+            label: <p>Banco:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            disabled: true
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            icon: fa-building-o
+            width: 30
+        }
+    )
+
+    pageItem P673_BANCO_ID (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_CARD_SIZE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_COD_BANCO (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_CUENTA (
+        type: popupLov
+        label {
+            label: <p>Cuenta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            title: Cuentas de &P673_BANCO.
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas-nro-p
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P673_ESTADO (
+        type: radioGroup
+        label {
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC2:CONCILIADO;S,PENDIENTE;N
+            displayExtraValues: false
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P673_EXT_BANCO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_FECHA_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Fin
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P673_FECHA_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Inicio
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem P673_FILENAME (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_MOSTRAR_CONCILIACION (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 110
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_MOSTRAR_EXT_SISTEMA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            region: @detalles
+            slot: regionBody
+        }
+    )
+
+    pageItem P673_SALDO_INICIAL (
+        type: numberField
+        label {
+            label: <p>Saldo Inicial:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P673_TOTAL (
+        type: numberField
+        label {
+            label: <p class="totales">Total:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P673_TOTAL_BANCO (
+        type: numberField
+        label {
+            label: <p>Saldo Extracto Banco:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P673_TOTAL_CONCILIADO_BANCO (
+        type: numberField
+        label {
+            label: <p>Saldo Extracto Conciliado:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P673_TOTAL_PENDIENTE_BANCO (
+        type: numberField
+        label {
+            label: <p>Saldo Extracto Pendiente:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button conciliar (
+        buttonName: CONCILIAR
+        label: Conciliar
+        layout {
+            sequence: 10
+            region: @detalles
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: El sistema empezará a conciliar los datos. ¿Estás seguro?
+            style: information
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button reset (
+        buttonName: Reset
+        label: Reset
+        layout {
+            sequence: 30
+            region: @detalles
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button visualizar-ext-sis (
+        buttonName: VISUALIZAR_EXT_SIS
+        label: Visualizar Extracto
+        layout {
+            sequence: 10
+            region: @detalles
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--gapLeft
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 670
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction accionar-al-cargar-pagina (
+        name: Accionar al cargar pagina
+        execution {
+            sequence: 130
+        }
+        when {
+            event: ready
+        }
+
+        action habilitar-copiar-grilla-ig (
+            name: Habilitar copiar grilla ig
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    document.addEventListener('copy', (event) => {
+                        const activeElement = $(document.activeElement)[0];
+                        const textToCopy = activeElement?.innerText || window.getSelection();
+                        event.clipboardData.setData('text/plain', textToCopy);
+                        event.preventDefault();
+                    });
+                    ```
+            }
+            execution {
+                sequence: 40
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    to_number(replace(:P673_TOTAL_CONCILIADO_BANCO,'.',''))
+                    - to_number(replace(:P673_SALDO_INICIAL,'.',''))
+                    - to_number(replace(:P673_TOTAL_PENDIENTE_BANCO,'.',''))
+                    ```
+                itemsToSubmit: [
+                    P673_TOTAL_CONCILIADO_BANCO
+                    P673_SALDO_INICIAL
+                    P673_TOTAL_PENDIENTE_BANCO
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_TOTAL
+            }
+            execution {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action p673-cuenta (
+            name: P673_CUENTA
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: P673_CUENTA
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction asignar-tamanho-card (
+        name: Asignar tamanho card
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody: return '8rem';
+                itemsToSubmit: P673_CARD_SIZE
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_CARD_SIZE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction añadir-btn (
+        name: "Añadir btn "
+        execution {
+            sequence: 100
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action plugin-hr-bilog-extendigtoolbar (
+            action: plugin/interactiveGridExtendToolbar
+            settings {
+                label: Conciliar Selección (Forzar)
+                hot: true
+                icon: fa-university
+                title: Conciliar
+                triggerAction: Conciliar_Seleccion
+            }
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action plugin-hr-bilog-extendigtoolbar-2 (
+            action: plugin/interactiveGridExtendToolbar
+            settings {
+                label: Desconciliar Selección (Forzar)
+                hot: true
+                icon: fa-refresh
+                title: Conciliar
+                triggerAction: Desconciliar_Seleccion
+            }
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction cambiar-tamanho (
+        name: Cambiar  tamanho
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P673_CARD_SIZE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $(':root').css('--a-cv-item-width',$v('P673_CARD_SIZE'));
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction change-filtros (
+        name: Change - Filtros
+        execution {
+            sequence: 140
+        }
+        when {
+            selectionType: items
+            items: [
+                P673_CUENTA
+                P673_ESTADO
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction conciliar-seleccionados (
+        name: Conciliar Seleccionados
+        execution {
+            sequence: 110
+        }
+        when {
+            event: custom
+            customEvent: Conciliar_Seleccion
+            selectionType: region
+            region: @extracto-sistema
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-interactive-grid-process-rows (
+            action: plugin/fosInteractiveGridProcessRows
+            settings {
+                action: processSelectedRows
+                plSqlCode:
+                    ```plsql
+                    CHW_ACTUALIZA_ESTADO_CONCILIACION(
+                        :ID, :TIP_COMPROBANTE, 'S'
+                    );
+                    ```
+                itemsToSubmit: [
+                    ID
+                    TIP_COMPROBANTE
+                ]
+                successMessage: Registros conciliados correctamente.
+                errorMessage: #SQLERRM#
+                extraOptions: refreshGridAfterProcessing
+            }
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                spinnerType: grid
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha-fin (
+        name: CONVERT_FECHA_FIN
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P673_FECHA_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P673_FECHA_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P673_FECHA_FIN,'/','');
+                            conv_fecha := substr(:P673_FECHA_FIN,1,2)||'/'||
+                                                      substr(:P673_FECHA_FIN,3,2)||'/'||
+                                                      lpad(substr(:P673_FECHA_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P673_FECHA_FIN := conv_fecha;
+                            ELSIF (length(:P673_FECHA_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P673_FECHA_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P673_FECHA_FIN
+                itemsToReturn: P673_FECHA_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha-ini (
+        name: CONVERT_FECHA_INI
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P673_FECHA_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P673_FECHA_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P673_FECHA_INI,'/','');
+                            conv_fecha := substr(:P673_FECHA_INI,1,2)||'/'||
+                                                      substr(:P673_FECHA_INI,3,2)||'/'||
+                                                      lpad(substr(:P673_FECHA_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P673_FECHA_INI := conv_fecha;
+                            ELSIF (length(:P673_FECHA_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P673_FECHA_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P673_FECHA_INI
+                itemsToReturn: P673_FECHA_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction desconciliar-seleccionados (
+        name: Desconciliar Seleccionados
+        execution {
+            sequence: 120
+        }
+        when {
+            event: custom
+            customEvent: Desconciliar_Seleccion
+            selectionType: region
+            region: @extracto-sistema
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-interactive-grid-process-rows (
+            action: plugin/fosInteractiveGridProcessRows
+            settings {
+                action: processSelectedRows
+                plSqlCode:
+                    ```plsql
+                    CHW_ACTUALIZA_ESTADO_CONCILIACION(
+                        :ID, :TIP_COMPROBANTE, 'N', NULL
+                    );
+                    ```
+                itemsToSubmit: [
+                    ID
+                    TIP_COMPROBANTE
+                ]
+                successMessage: Registros conciliados correctamente.
+                errorMessage: #SQLERRM#
+                extraOptions: refreshGridAfterProcessing
+            }
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                spinnerType: grid
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction mostrar-extracto (
+        name: Mostrar Extracto
+        execution {
+            sequence: 60
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @visualizar-ext-sis
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody: return 'S';
+                itemsToSubmit: P673_MOSTRAR_EXT_SISTEMA
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_MOSTRAR_EXT_SISTEMA
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-extracto (
+        name: Refrescar Extracto
+        execution {
+            sequence: 150
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-sistema
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action p673-saldo-inicial (
+            name: P673_SALDO_INICIAL
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT
+                        	NVL(SUM(NVL(TOT_CREDITO, 0)) - SUM(NVL(TOT_DEBITO, 0)) ,0)
+                        FROM "CHVW_EXTRACTO_BANCARIO" E
+                        WHERE 
+                        	 E.ID_EMPRESA = :P0_ID_EMPRESA
+                        AND E.NRO_CUENTA = :P673_CUENTA
+                        AND E.ID_PER_JURIDICA = :P673_BANCO_ID
+                        AND NVL(E.ANULADO, 'N') != 'S'
+                        AND NVL(E.IND_CONCILIADO, 'N') = 'S'
+                        --AND E.FEC_VENCIMIENTO < :P673_FECHA_INI
+                        AND NVL(E.FEC_BANCO, LAST_DAY(E.FEC_VENCIMIENTO)) < :P673_FECHA_INI
+                    ```
+                itemsToSubmit: [
+                    P673_FECHA_INI
+                    P673_FECHA_FIN
+                    P673_CUENTA
+                    P673_BANCO_ID
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_SALDO_INICIAL
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action p673-total (
+            name: P673_TOTAL
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: "REPLACE(:P673_TOTAL_CONCILIADO_BANCO, '.', '') + REPLACE(:P673_SALDO_INICIAL, '.', '') "
+                itemsToSubmit: [
+                    P673_SALDO_INICIAL
+                    P673_TOTAL_CONCILIADO_BANCO
+                    P673_TOTAL_BANCO
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_TOTAL
+            }
+            execution {
+                sequence: 80
+                fireOnInit: false
+            }
+        )
+
+        action p673-total-banco (
+            name: P673_TOTAL_BANCO
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select NVL((SUM(NVL(TOT_CREDITO, 0)) - SUM(NVL(TOT_DEBITO, 0))), 0)
+                     from CHVW_EXTRACTO_BANCARIO
+                     where NRO_CUENTA = :P673_CUENTA
+                       and FEC_BANCO BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                       and (ANULADO != 'S' or ANULADO is null)
+                       and (IND_CONCILIADO = :P673_ESTADO OR :P673_ESTADO IS NULL)
+                       and FEC_VENCIMIENTO > :P673_FECHA_FIN
+                    --    and t_id not in (
+                    --        select t_id
+                    --         from CHVW_EXTRACTO_BANCARIO
+                    --         where NRO_CUENTA = :P673_CUENTA
+                    --           and FEC_VENCIMIENTO BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                    --           and (ANULADO != 'S' or ANULADO is null)
+                    --           and (IND_CONCILIADO = :P673_ESTADO OR :P673_ESTADO IS NULL)
+                    --    )
+                    
+                    ```
+                itemsToSubmit: [
+                    P673_FECHA_INI
+                    P673_FECHA_FIN
+                    P673_CUENTA
+                    P673_BANCO_ID
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_TOTAL_BANCO
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+        action p673-total-conciliado-banco (
+            name: P673_TOTAL_CONCILIADO_BANCO
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select NVL((SUM(NVL(TOT_CREDITO, 0)) - SUM(NVL(TOT_DEBITO, 0))), 0)
+                     from CHVW_EXTRACTO_BANCARIO
+                     where NRO_CUENTA = :P673_CUENTA
+                       --and FEC_VENCIMIENTO BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                       and (ANULADO != 'S' or ANULADO is null)
+                       and NVL(IND_CONCILIADO, 'N') = 'S'
+                       and NVL(FEC_BANCO, LAST_DAY(FEC_VENCIMIENTO)) BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                    ```
+                itemsToSubmit: [
+                    P673_FECHA_INI
+                    P673_FECHA_FIN
+                    P673_CUENTA
+                    P673_BANCO_ID
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_TOTAL_CONCILIADO_BANCO
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action p673-total-pendiente-banco (
+            name: P673_TOTAL_PENDIENTE_BANCO
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select NVL((SUM(NVL(TOT_CREDITO, 0)) - SUM(NVL(TOT_DEBITO, 0))), 0)
+                     from CHVW_EXTRACTO_BANCARIO
+                     where NRO_CUENTA = :P673_CUENTA
+                       --and FEC_VENCIMIENTO BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                       and (ANULADO != 'S' or ANULADO is null)
+                       and NVL(IND_CONCILIADO, 'N') != 'S'
+                       and NVL(FEC_BANCO, LAST_DAY(FEC_VENCIMIENTO)) BETWEEN :P673_FECHA_INI AND :P673_FECHA_FIN
+                    ```
+                itemsToSubmit: [
+                    P673_FECHA_INI
+                    P673_FECHA_FIN
+                    P673_CUENTA
+                    P673_BANCO_ID
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P673_TOTAL_PENDIENTE_BANCO
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction subir-archivo (
+        name: Subir Archivo
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P673_ARCHIVO
+        }
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation is-valid-file-type (
+        name: Is valid file type
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                    l_file_name varchar2(100);
+                begin
+                    select filename into l_file_name from apex_application_temp_files where name = :P673_ARCHIVO;
+                    
+                    if apex_data_parser.assert_file_type(
+                           p_file_name => l_file_name,
+                           p_file_type => apex_data_parser.c_file_type_xlsx )
+                    then
+                        return true;
+                    else
+                        --:P673_ARCHIVO := null;
+                        return false;
+                    end if;
+                end;
+                ```
+        }
+        error {
+            errorMessage: Tipo de archivo inválido. Solo soportado archivos XLSX (Excel)
+            associatedItem: @P673_ARCHIVO
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P673_ARCHIVO
+        }
+    )
+
+    computation p673-cod-banco (
+        itemName: P673_COD_BANCO
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select cod_persona
+                from bsw_personas
+                where id = :P673_BANCO_ID
+                ```
+        }
+    )
+
+    computation p673-filename (
+        itemName: P673_FILENAME
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select filename
+                from apex_application_temp_files
+                where name = :P673_ARCHIVO
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P673_ARCHIVO
+        }
+    )
+
+    process actualiza-estado (
+        name: Actualiza Estado
+        type: executeCode
+        editableRegion: @extracto-sistema
+        source {
+            plsqlCode:
+                ```plsql
+                IF NVL(:IND_CONCILIADO_ORI, 'N') != NVL(:IND_CONCILIADO, 'N') THEN
+                    CHW_ACTUALIZA_ESTADO_CONCILIACION(:ID, :TIP_COMPROBANTE, :IND_CONCILIADO);
+                END IF;
+                ```
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 99854650745507225
+        }
+    )
+
+    process actualiza-fecha-banco (
+        name: Actualiza Fecha Banco
+        type: executeCode
+        editableRegion: @extracto-sistema
+        source {
+            plsqlCode:
+                ```plsql
+                IF NVL(:FEC_BANCO_ORI, TRUNC(SYSDATE)) != NVL(:FEC_BANCO, TRUNC(SYSDATE)) THEN
+                    CHW_ACTUALIZA_FEC_BANCO_CONCILIACION(:ID, :TIP_COMPROBANTE, :FEC_BANCO);
+                END IF;
+                ```
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 21283310126888937
+        }
+    )
+
+    process clear-cache (
+        name: Clear Cache
+        type: clearSessionState
+        clear {
+            type: items
+            items: [
+                P673_CUENTA
+                P673_ARCHIVO
+                P673_FILENAME
+                P673_FECHA_INI
+                P673_FECHA_FIN
+                P673_MOSTRAR_EXT_SISTEMA
+                P673_EXT_BANCO
+                P673_MOSTRAR_CONCILIACION
+                P673_ESTADO
+            ]
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 95349847297966681
+        }
+        serverSideCondition {
+            whenButtonPressed: @reset
+        }
+    )
+
+    process conciliar (
+        name: Conciliar
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                    l_seq number;
+                    l_estado varchar2(100);
+                    l_cantidad number;
+                    l_nro_comp  varchar2(100);
+                    l_debito varchar2(100) ;
+                    l_credito varchar2(100) ;
+                begin
+                    if not APEX_COLLECTION.COLLECTION_EXISTS('EXTRACTO_BANCARIO_COL') then
+                        raise_application_error(-20000, 'No se ha subido ningún extracto bancario');
+                    end if;
+                    if :P673_CUENTA is null then
+                        raise_application_error(-20000, 'No se ha seleccionado ninguna cuenta');
+                    end if;
+                        
+                    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION (
+                        p_collection_name => 'CONCILIACION_COLL'
+                    );
+                    -- Recorremos los datos del movimiento bancario
+                    for i in (
+                        select  *
+                        from    CHVW_EXTRACTO_BANCARIO
+                        where   NRO_CUENTA = :P673_CUENTA
+                        and     /*FEC_COMPROBANTE*/FEC_VENCIMIENTO between :P673_FECHA_INI and :P673_FECHA_FIN
+                        ---and     NRO_COMPROBANTE = 23
+                        and     (ANULADO <> 'S' or ANULADO is null)
+                    )
+                    loop
+                    
+                        -- Verificar si el comprobante existe en el extracto bancario
+                        begin
+                            select  count(1),
+                                    c001,
+                                    nvl(c002,0) c002,
+                                    nvl(c003,0) c003
+                            into    l_cantidad,
+                                    l_nro_comp,
+                                    l_debito,
+                                    l_credito
+                            from    apex_collections
+                            where   collection_name = 'EXTRACTO_BANCARIO_COL'
+                            and     c001 = i.NRO_COMPROBANTE
+                            and     replace(c002,'.','') = replace(i.TOT_DEBITO,'.','')
+                            and     replace(c003,'.','') = replace(i.TOT_CREDITO,'.','') 
+                            group by c001,c002, c003;      
+                        exception
+                            when    NO_DATA_FOUND then
+                                l_cantidad := 0;
+                                l_nro_comp := 0;
+                                l_credito := 0;
+                                l_debito := 0;
+                        end;
+                        
+                        if l_debito is null then
+                         l_debito := 0;
+                        end if;
+                        if l_credito is null then
+                         l_credito := 0;
+                        end if;
+                       
+                        if  l_cantidad > 0 and (
+                            replace(l_debito,'.','') = replace(i.TOT_DEBITO,'.','')  and -- or
+                            replace(l_credito,'.','') = replace(i.TOT_CREDITO,'.','') 
+                        ) /*AND l_nro_comp = i.NRO_COMPROBANTE*/ then
+                            l_estado := 'CONCILIADO';
+                        ---elsif l_cantidad > 0 and (l_debito <> i.TOT_CREDITO or l_credito <> i.TOT_DEBITO) then
+                        elsif l_cantidad > 0 and (l_debito <> i.TOT_DEBITO or /*and*/ l_credito <> i.TOT_CREDITO) then
+                            l_estado := 'NO COINCIDE';
+                        else
+                            l_estado := 'PENDIENTE';
+                        end if;
+                
+                
+                        APEX_COLLECTION.ADD_MEMBER(
+                            p_collection_name   => 'CONCILIACION_COLL',
+                            p_c001              => to_char(sysdate),
+                            p_c002              => i.TIP_COMPROBANTE,
+                            p_c003              => i.NRO_COMPROBANTE,
+                            p_c004              => i.SER_COMPROBANTE,
+                            p_c005              => i.DETALLE,
+                            p_c006              => i.DESCRIPCION,
+                            p_c007              => replace(i.TOT_DEBITO ,'.', ''),
+                            p_c008              => replace(i.TOT_CREDITO ,'.', ''),
+                            p_c009              => nvl(replace(l_debito,'.',''),0),
+                            p_c010              => nvl(replace(l_credito,'.',''),0),
+                            p_c011              => abs(to_number(nvl(replace(i.TOT_DEBITO, '.', ''), 0))  - to_number(nvl(replace(l_debito,'.',''), 0))),
+                            p_c012              => abs(to_number(nvl(replace(i.TOT_CREDITO, '.', ''), 0)) - to_number(nvl(replace(l_credito,'.',''), 0))),
+                            p_c013              => l_estado
+                        );
+                          
+                    end loop;
+                    :P673_MOSTRAR_CONCILIACION := 'S';
+                    :P673_FILENAME := null;
+                    :P673_MOSTRAR_EXT_SISTEMA := null;
+                      
+                end;
+                
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 95350224739966681
+        }
+        serverSideCondition {
+            whenButtonPressed: @conciliar
+            type: never
+        }
+    )
+
+    process conciliar-excel (
+        name: Conciliar Excel
+        type: executeCode
+        source {
+            plsqlCode: CHWP_CONCILIA_EXCEL;
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 29466015950695241
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P673_ARCHIVO
+        }
+    )
+
+    process conciliar-submit (
+        name: Conciliar Submit
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                CHW_ACTUALIZA_ESTADO_CONCI(P_USUARIO => :APP_USER,
+                                             P_NRO_CUENTA => :P673_CUENTA,
+                                             P_COD_BANCO => :P673_COD_BANCO,
+                                             P_CONCILIADO_MANUAL => 'N',
+                                             P_ID_COMPROBANTE => NULL,
+                                             P_TIP_COMPROBANTE => NULL);
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 29877221755745931
+        }
+        serverSideCondition {
+            whenButtonPressed: @conciliar
+            type: never
+        }
+    )
+
+    process crear-coleccion (
+        name: Crear Coleccion
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                --Creamos la colección
+                
+                if :P673_EXT_BANCO is null then
+                    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION (
+                        p_collection_name => 'EXTRACTO_BANCARIO_COL'
+                    );
+                
+                    -- Iteramos sobre el archivo cargado desde el File Broswer y lo guardamos en la coleccion.      
+                    for i in (
+                        select  *
+                        from    apex_application_temp_files f,
+                                table(
+                                        apex_data_parser.parse(
+                                        p_content           => f.blob_content,
+                                        p_file_name         => f.filename,
+                                        --p_skip_rows         => 1,
+                                        --p_xlsx_sheet_name   => case when :P655_XLSX_WORKSHEET is not null then :P655_XLSX_WORKSHEET end,
+                                        --p_file_profile      => apex_data_loading.get_file_profile( p_static_id => 'ventas_excel' ),
+                                        p_max_rows          => 500 
+                                    )
+                                ) p
+                
+                        where f.name = :P673_ARCHIVO
+                    )
+                    loop
+                        APEX_COLLECTION.ADD_MEMBER(
+                            p_collection_name   => 'EXTRACTO_BANCARIO_COL',
+                            p_c001              => i.col001,
+                            p_c002              => i.col002,
+                            p_c003              => i.col003,
+                            p_c004              => i.col004,
+                            p_c005              => i.col005,
+                            p_c006              => i.col006,
+                            p_c007              => i.col007,
+                            p_c008              => i.col008,
+                            p_c009              => i.col009,
+                            p_c010              => i.col010,
+                            p_c011              => i.col011,
+                            p_c012              => i.col012,
+                            p_c013              => i.col013,
+                            p_c014              => i.col014,
+                            p_c015              => i.col015
+                        );       
+                    end loop;
+                    :P673_EXT_BANCO := 'S';
+                end if;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeRegions
+        }
+        advanced {
+            executionMappingIdentifier: 95349060412966679
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P673_ARCHIVO
+        }
+    )
+
+    process subir-excel (
+        name: Subir Excel
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                    apex_collection.create_or_truncate_collection('EXTRACTO');
+                    for r1 in (select *
+                                 from apex_application_temp_files f, 
+                                      table( apex_data_parser.parse(
+                                                p_content                     => f.blob_content,
+                                                p_add_headers_row             => 'n',
+                                                p_file_name                   => f.filename) 
+                                            ) p
+                                 where f.name = :P673_ARCHIVO 
+                                   and p.line_number > 1
+                              )
+                    loop
+                        -- Solo ejecutar si no esta vacio los campos
+                        if r1.col001 is null then
+                            raise_application_error(-20000, 'No puede dejar el campo de la fecha. Linea '||r1.col001);
+                        end if;
+                
+                        apex_collection.add_member(p_collection_name => 'EXTRACTO',
+                                                   p_d001            => to_date(r1.col001, 'yyyy-MM-dd'),
+                                                   p_c001            => r1.col002,
+                                                   p_n001            => nvl(replace(r1.col003, '.', ','), 0),
+                                                   p_n002            => nvl(replace(r1.col004, '.', ','), 0));
+                
+                    end loop;
+                
+                exception
+                    when others then
+                        raise_application_error(-20000, sqlerrm);
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 29465980077695240
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P673_ARCHIVO
+        }
+    )
+
+)
+

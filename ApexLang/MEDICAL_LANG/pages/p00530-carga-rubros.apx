@@ -1,0 +1,374 @@
+page 530 (
+    name: Carga Rubros
+    alias: CARGA-RUBROS
+    title: Carga de Rubros
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: document.getElementById("P530_COD_RUBRO").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-rubros (
+        name: Carga Rubros
+        type: form
+        source {
+            location: localDatabase
+            tableName: ACW_RUBROS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P530_COD_RUBRO (
+        type: textField
+        label {
+            label: <p>Código: </p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 20
+            region: @carga-rubros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-rubros
+            column: COD_RUBRO
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(R.COD_RUBRO)), 0)+1 
+                FROM ACW_RUBROS R 
+                WHERE R.ID_EMPRESA=:P0_ID_EMPRESA
+                
+                
+                ```
+        }
+    )
+
+    pageItem P530_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción: </p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 30
+            region: @carga-rubros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-rubros
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P530_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-rubros
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-rubros
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P530_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @carga-rubros
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-rubros
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P530_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P530_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P530_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 82852552918459740
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-rubros (
+        name: Initialize form Carga Rubros
+        type: formInitialization
+        formRegion: @carga-rubros
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 82851780759459740
+        }
+    )
+
+    process process-form-carga-rubros (
+        name: Process form Carga Rubros
+        type: formAutoRowProcessing
+        formRegion: @carga-rubros
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 82852157664459740
+        }
+    )
+
+)
+

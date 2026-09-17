@@ -1,0 +1,774 @@
+page 583 (
+    name: Cheques Recibidos en Caja
+    alias: CHEQUES-RECIBIDOS-EN-CAJA
+    title: Cheques Recibidos en Caja
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region listado-de-cheques-recibidos (
+        name: Listado de cheques recibidos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select 
+                       V.ID_PER_JURIDICA,
+                       V.NRO_VALOR,
+                       V.FEC_EMISION,
+                       V.FEC_VENCIMIENTO,
+                       V.MONTO_VALOR,
+                       V.ID_CLIENTE,   
+                       V.NRO_CUENTA,
+                       V.ESTADO_VALOR,
+                       S.DESCRIPCION,
+                 CASE V.estado_VALOR
+                           WHEN 'A' THEN 'A Depositar'
+                           WHEN 'P' THEN 'Pendiente'
+                           WHEN 'D' THEN 'Depositado'
+                           WHEN 'R' THEN 'Rechazando '
+                           WHEN 'C' THEN 'Canjeado'
+                           ELSE ''
+                       END AS estado_valorr,
+                       v.id,
+                       (SELECT VD.NRO_COMPROBANTE
+                          FROM CCW_MOV_VALORES_DET VD
+                         WHERE VD.TIP_COMPROBANTE = 'DEP'
+                           AND VD.ID_CUENTA_BANCARIA = V.ID_CUENTA_BANCARIA
+                           AND VD.NRO_VALOR = V.NRO_VALOR) NRO_DEPOSITO,
+                       (SELECT VD.ID_MOV_VALORES_CAB
+                          FROM CCW_MOV_VALORES_DET VD
+                         WHERE VD.TIP_COMPROBANTE = 'DEP'
+                           AND VD.ID_CUENTA_BANCARIA = V.ID_CUENTA_BANCARIA
+                           AND VD.NRO_VALOR = V.NRO_VALOR) ID_MOV_VALORES_CAB
+                 
+                  from CCW_VALORES V,  BSW_SUBTIPOS_TRANS S
+                  WHERE
+                  V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.ID_CLIENTE = :P583_CLIENTE OR :P583_CLIENTE IS NULL)
+                  AND (V.ID_PER_JURIDICA = :P583_BANCO OR :P583_BANCO IS NULL)
+                
+                  AND (V.FEC_VENCIMIENTO >= :P583_PERIODO_VENCI_INI OR :P583_PERIODO_VENCI_INI IS NULL)
+                  AND (V.FEC_VENCIMIENTO <= :P583_PERIODO_VENCI_FIN OR :P583_PERIODO_VENCI_FIN IS NULL)
+                  AND (V.FEC_EMISION >= :P583_PERIODO_EMI_INI OR :P583_PERIODO_EMI_INI IS NULL)
+                  AND (V.FEC_EMISION <= :P583_PERIODO_EMI_FIN OR :P583_PERIODO_EMI_FIN IS NULL)
+                
+                  AND (V.ESTADO_VALOR = :P583_ESTADO OR :P583_ESTADO IS NULL)
+                  AND (V.NRO_VALOR = :P583_NRO_CHEQUE OR :P583_NRO_CHEQUE IS NULL)
+                  AND V.ID_SUBTIPO_TRANS = S.ID
+                
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 593
+                items: {
+                    P593_ID_CLIENTE: #ID_CLIENTE#
+                    P593_ID_PER_JURIDICA: #ID_PER_JURIDICA#
+                    P593_NRO_CUENTA: #NRO_CUENTA#
+                    P593_NRO_VALOR: #NRO_VALOR#
+                    P593_FEC_EMISION: #FEC_VENCIMIENTO#
+                    P593_MONTO_VALOR: #MONTO_VALOR#
+                    P593_ESTADO_VALOR: #ESTADO_VALOR#
+                    P593_FEC_VENCIMIENTO: #FEC_VENCIMIENTO#
+                    P593_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 97343304876546218
+        }
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: "Sub Tipo de Transacción "
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column ESTADO_VALOR (
+            type: plainText
+            heading {
+                heading: Estado Valor
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column ESTADO_VALORR (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 390
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column FEC_EMISION (
+            type: plainText
+            heading {
+                heading: Fecha Emisión
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fecha Vencimiento
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 410
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column ID_MOV_VALORES_CAB (
+            type: hidden
+            heading {
+                heading: Id Mov Valores Cab
+            }
+            layout {
+                sequence: 430
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column ID_PER_JURIDICA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Banco
+                alignment: center
+            }
+            lov {
+                lov: @lv-bancos
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column MONTO_VALOR (
+            type: plainText
+            heading {
+                heading: Monto Valor
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column NRO_CUENTA (
+            type: plainText
+            heading {
+                heading: Nro Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 370
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column NRO_DEPOSITO (
+            type: link
+            heading {
+                heading: Nro Deposito
+                alignment: center
+            }
+            layout {
+                sequence: 420
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 341
+                    items: {
+                        P341_ID: #ID_MOV_VALORES_CAB#
+                    }
+                }
+                linkText: #NRO_DEPOSITO#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column NRO_VALOR (
+            type: plainText
+            heading {
+                heading: Nro Cheque
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Listado de cheques recibidos
+        }
+
+        savedReport 108736 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn DESCRIPCION (
+                sequence: 7
+            )
+
+            displayColumn ESTADO_VALORR (
+                sequence: 9
+            )
+
+            displayColumn FEC_EMISION (
+                sequence: 3
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 4
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 6
+            )
+
+            displayColumn ID_PER_JURIDICA (
+                sequence: 1
+            )
+
+            displayColumn MONTO_VALOR (
+                sequence: 5
+            )
+
+            displayColumn NRO_DEPOSITO (
+                sequence: 8
+            )
+
+            displayColumn NRO_VALOR (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    pageItem P583_BANCO (
+        type: popupLov
+        label {
+            label: <p>Banco: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-bancos
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P583_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P583_ESTADO (
+        type: popupLov
+        label {
+            label: <p>Estado: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:A Depositar;A,Pendiente;P,Depositado;D,Rechazando ;R,Canjeado;C
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P583_NRO_CHEQUE (
+        type: textField
+        label {
+            label: <p>Nro Cheque: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P583_PERIODO_EMI_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P583_PERIODO_EMI_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Emisión: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P583_PERIODO_VENCI_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P583_PERIODO_VENCI_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Vencimiento: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button ejecutar (
+        buttonName: Ejecutar
+        label: Ejecutar
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 120
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction refrescar-region (
+        name: Refrescar region
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @listado-de-cheques-recibidos
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @listado-de-cheques-recibidos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go to Page 590
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 590
+                items: {
+                    P590_BANCO: &P583_BANCO.
+                    P590_CLIENTE: &P583_CLIENTE.
+                    P590_ESTADO: &P583_ESTADO.
+                    P590_NRO_CHEQUE: &P583_NRO_CHEQUE.
+                    P590_PERIODO_EMI_FIN: &P583_PERIODO_EMI_FIN.
+                    P590_PERIODO_EMI_INI: &P583_PERIODO_EMI_INI.
+                    P590_PERIODO_VENCI_INI: &P583_PERIODO_VENCI_INI.
+                    P590_PERIODO_VENCI_FIN: &P583_PERIODO_VENCI_FIN.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

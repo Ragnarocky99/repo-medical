@@ -1,0 +1,734 @@
+page 298 (
+    name: Carga de Centros de Pago RRHH
+    alias: CARGA-DE-CENTROS-DE-PAGO-RRHH
+    title: Carga de Centros de Pago
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-centros-de-pago (
+        name: Carga de Centros de Pago
+        type: form
+        source {
+            location: localDatabase
+            tableName: RHW_CENTROS_PAGOS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P298_COD_CENTRO_PAGO (
+        type: displayOnly
+        label {
+            label: <p>Cód. Centro Pago: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: COD_CENTRO_PAGO
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(COD_CENTRO_PAGO)), 0) + 1 
+                FROM RHW_CENTROS_PAGOS WHERE ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    pageItem P298_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 150
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P298_DESCRIPCION (
+        type: textField
+        label {
+            label: <P>Descripción: &ensp;</P>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_DIRECCION (
+        type: textField
+        label {
+            label: <p>Dirección: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: DIRECCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_EMPRESA_PARA_ASIENTO (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: EMPRESA_PARA_ASIENTO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_ID (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P298_ID_BARRIO (
+        type: popupLov
+        label {
+            label: <p>Barrio: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery: SELECT DESCRIPCION,ID FROM BSW_BARRIOS WHERE ID_PAIS=:P298_ID_PAIS AND ID_PROVINCIA=:P298_ID_PROVINCIA AND ID_CIUDAD=:P298_ID_CIUDAD
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        cascadingLov {
+            parentItems: [
+                P298_ID_PAIS
+                P298_ID_PROVINCIA
+                P298_ID_CIUDAD
+            ]
+            itemsToSubmit: [
+                P298_ID_PAIS
+                P298_ID_PROVINCIA
+                P298_ID_CIUDAD
+            ]
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID_BARRIO
+            dataType: number
+        }
+    )
+
+    pageItem P298_ID_CIUDAD (
+        type: popupLov
+        label {
+            label: <p>Ciudad: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery: SELECT DESCRIPCION, ID FROM BSW_CIUDADES WHERE ID_PROVINCIA = :P298_ID_PROVINCIA AND ID_PAIS = :P298_ID_PAIS;
+            nullDisplayValue: --Sin seleccionar--
+        }
+        cascadingLov {
+            parentItems: [
+                P298_ID_PAIS
+                P298_ID_PROVINCIA
+            ]
+            itemsToSubmit: [
+                P298_ID_PAIS
+                P298_ID_PROVINCIA
+            ]
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID_CIUDAD
+            dataType: number
+        }
+    )
+
+    pageItem P298_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P298_ID_PAIS (
+        type: popupLov
+        label {
+            label: <p>País: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-paises-id
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID_PAIS
+            dataType: number
+        }
+    )
+
+    pageItem P298_ID_PROVINCIA (
+        type: popupLov
+        label {
+            label: <p>Departamento: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION,ID FROM BSW_PROVINCIAS WHERE ID_PAIS=:P298_ID_PAIS 
+                
+                ```
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        cascadingLov {
+            parentItems: P298_ID_PAIS
+            itemsToSubmit: P298_ID_PAIS
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID_PROVINCIA
+            dataType: number
+        }
+    )
+
+    pageItem P298_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P298_IND_PRINCIPAL (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: IND_PRINCIPAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_NRO_PATRONAL (
+        type: textField
+        label {
+            label: <p>Nro. Patronal: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: NRO_PATRONAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_REGISTRO (
+        type: textField
+        label {
+            label: <p>Nro. Registro &ensp; M.T.E.SS: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 10
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: REGISTRO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_TELEFONO (
+        type: textField
+        label {
+            label: <p>Teléfono: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: TELEFONO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P298_TIPO (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @carga-de-centros-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-centros-de-pago
+            column: TIPO
+            dataType: varchar2
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P298_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: [
+                borrar
+                t-Button--danger
+            ]
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P298_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P298_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 9302198201028209
+        }
+    )
+
+    process initialize-form-carga-de-centros-de-pago (
+        name: Initialize form Carga de Centros de Pago
+        type: formInitialization
+        formRegion: @carga-de-centros-de-pago
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 9301323140028209
+        }
+    )
+
+    process process-form-carga-de-centros-de-pago (
+        name: Process form Carga de Centros de Pago
+        type: formAutoRowProcessing
+        formRegion: @carga-de-centros-de-pago
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 9301746405028209
+        }
+    )
+
+)
+

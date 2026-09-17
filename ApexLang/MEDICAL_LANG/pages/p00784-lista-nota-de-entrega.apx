@@ -1,0 +1,918 @@
+page 784 (
+    name: Lista Nota de Entrega
+    alias: LISTA-NOTA-DE-ENTREGA
+    title: Lista Nota de Entrega
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region lista-nota-de-entrega (
+        name: Lista Nota de Entrega
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT EC.ID,
+                       EC.ID_EMPRESA,
+                       EC.ID_SUCURSAL,
+                       EC.NUM_ENT_SAL,
+                       EC.FEC_ENT_SAL,
+                       EC.ID_MOTIVO_ENT_SAL,
+                       EC.COD_USUARIO_AUD,
+                       EC.TIP_REFERENCIA,
+                       EC.SER_REFERENCIA,
+                       EC.NUM_REFERENCIA,
+                       EC.ESTADO,
+                       EC.TOT_COSTO,
+                       EC.TOT_CANTIDAD,
+                       EC.ID_CLIENTE,
+                       EC.FEC_ALTA,
+                       EC.SER_ENT_SAL,
+                       EC.ASIENTOS,
+                       EC.TIP_ENT_SAL,
+                       EC.ID_LICITACION_CAB,
+                       EC.ID_ASIENTO_PROV,
+                       EC.ASIENTOS_NTE,
+                       EC.ID_ASIENTO_NTE_PROV,
+                       LC.NRO_ID_LICITACION,
+                       DE.ID ID_DEVOLUCION
+                  FROM STW_ENTSAL_CAB EC
+                LEFT JOIN STW_ENTSAL_CAB DE ON EC.ID = DE.ID_ENTSAL_REF
+                  JOIN LCW_LICITACIONES_CAB LC ON LC.ID = EC.ID_LICITACION_CAB
+                 WHERE EC.TIP_ENT_SAL = W_BUSCA_PARAMETRO('LC', 'TIP_COMPROBANTE_NOTA_ENTREGA')
+                   AND EC.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND EC.FEC_ENT_SAL BETWEEN :P784_FEC_INI AND :P784_FEC_FIN
+                   AND (EC.ID_CLIENTE = :P784_ID_CLIENTE OR :P784_ID_CLIENTE IS NULL)
+                   AND (EC.NUM_REFERENCIA = :P784_NRO_LICITACION OR :P784_NRO_LICITACION IS NULL)
+                   AND (EC.NUM_ENT_SAL = :P784_NUM_ENT_SAL OR :P784_NUM_ENT_SAL IS NULL)
+                ORDER BY EC.FEC_ENT_SAL DESC, EC.NUM_ENT_SAL DESC
+                ```
+            pageItemsToSubmit: [
+                P784_FEC_INI
+                P784_FEC_FIN
+                P784_ID_CLIENTE
+                P784_NRO_LICITACION
+                P784_NRO_ID_LICITACION
+                P784_NUM_ENT_SAL
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 786
+                items: {
+                    P786_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 44592380219413954
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 47
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ID_ASIENTO_PROV#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column ASIENTOS_NTE (
+            type: link
+            heading {
+                heading: Asientos Reversion
+                alignment: center
+            }
+            layout {
+                sequence: 207
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ID_ASIENTO_NTE_PROV#
+                    }
+                }
+                linkText: #ASIENTOS_NTE#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BL
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Creado Por
+                alignment: center
+            }
+            layout {
+                sequence: 11
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 18
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Alta
+                alignment: center
+            }
+            layout {
+                sequence: 42
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column FEC_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Fecha Nota Ent.
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                primaryKey: true
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_ASIENTO_NTE_PROV (
+            type: hidden
+            heading {
+                heading: Id Asiento Nte Prov
+            }
+            layout {
+                sequence: 217
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BM
+            }
+        )
+
+        column ID_ASIENTO_PROV (
+            type: hidden
+            heading {
+                heading: Id Asiento Prov
+            }
+            layout {
+                sequence: 197
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BK
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 35
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column ID_DEVOLUCION (
+            type: hidden
+            heading {
+                heading: Id Devolucion
+            }
+            layout {
+                sequence: 237
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BO
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 67
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BG
+            }
+        )
+
+        column ID_LICITACION_CAB (
+            type: hidden
+            heading {
+                heading: Id Licitacion Cab
+            }
+            layout {
+                sequence: 187
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BJ
+            }
+        )
+
+        column ID_MOTIVO_ENT_SAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Motivo
+                alignment: center
+            }
+            lov {
+                lov: @lv-motivo-entsal
+            }
+            layout {
+                sequence: 87
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BI
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 77
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BH
+            }
+        )
+
+        column NRO_ID_LICITACION (
+            type: plainText
+            heading {
+                heading: Nro. ID
+                alignment: center
+            }
+            layout {
+                sequence: 227
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BN
+            }
+        )
+
+        column NUM_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Numero
+                alignment: center
+            }
+            layout {
+                sequence: 4
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NUM_REFERENCIA (
+            type: plainText
+            heading {
+                heading: Nro. Licitacion
+                alignment: center
+            }
+            layout {
+                sequence: 15
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column SER_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 45
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column SER_REFERENCIA (
+            type: plainText
+            heading {
+                heading: Serie Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 14
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column TIP_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 48
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column TIP_REFERENCIA (
+            type: plainText
+            heading {
+                heading: Tipo Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 13
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column TOT_CANTIDAD (
+            type: plainText
+            heading {
+                heading: Total Cantidad
+                alignment: center
+            }
+            layout {
+                sequence: 29
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column TOT_COSTO (
+            type: plainText
+            heading {
+                heading: Total Costo
+                alignment: center
+            }
+            layout {
+                sequence: 28
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lista Nota de Entrega
+        }
+
+        savedReport 446161 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 12
+            )
+
+            displayColumn ASIENTOS_NTE (
+                sequence: 13
+            )
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 15
+            )
+
+            displayColumn ESTADO (
+                sequence: 14
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 16
+            )
+
+            displayColumn FEC_ENT_SAL (
+                sequence: 2
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 9
+            )
+
+            displayColumn ID_MOTIVO_ENT_SAL (
+                sequence: 6
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 1
+            )
+
+            displayColumn NRO_ID_LICITACION (
+                sequence: 8
+            )
+
+            displayColumn NUM_ENT_SAL (
+                sequence: 5
+            )
+
+            displayColumn NUM_REFERENCIA (
+                sequence: 7
+            )
+
+            displayColumn SER_ENT_SAL (
+                sequence: 4
+            )
+
+            displayColumn TIP_ENT_SAL (
+                sequence: 3
+            )
+
+            displayColumn TOT_CANTIDAD (
+                sequence: 11
+            )
+
+            displayColumn TOT_COSTO (
+                sequence: 10
+            )
+
+            sort (
+                column: NUM_ENT_SAL
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P784_FEC_FIN (
+        type: datePicker
+        label {
+            label: Fec Fin
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P784_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Nota Entrega:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P784_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P784_NRO_ID_LICITACION (
+        type: textField
+        label {
+            label: <p>ID Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P784_NRO_LICITACION (
+        type: textField
+        label {
+            label: <p>Nro. Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P784_NUM_ENT_SAL (
+        type: textField
+        label {
+            label: <p>Nro. Nota Entrega:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction change-filtros (
+        name: Change - Filtros
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: [
+                P784_ID_CLIENTE
+                P784_NRO_LICITACION
+                P784_NRO_ID_LICITACION
+                P784_NUM_ENT_SAL
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @lista-nota-de-entrega
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-reporte (
+        name: Refrescar Reporte
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @lista-nota-de-entrega
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

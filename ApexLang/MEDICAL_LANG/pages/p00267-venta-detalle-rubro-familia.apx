@@ -1,0 +1,1559 @@
+page 267 (
+    name: Venta Detalle Articulos
+    alias: VENTA-DETALLE-RUBRO-FAMILIA
+    title: Venta Detalle Articulos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: FILTROS
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region venta-detalle-rubro-familia (
+        name: Venta Detalle Rubro-Familia
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT  V.TIP_COMPROBANTE,
+                        V.FEC_COMPROBANTE,
+                        V.NRO_COMPROBANTE,
+                        V.COD_ARTICULO,
+                        V.DESC_ARTICULO,
+                        V.COD_FABRICANTE,
+                        V.MONTO_TOTAL TOT_GRAVADA,
+                        V.TOTAL_IVA TOT_IVA,
+                        V.MONTO_TOTAL_C_IVA TOT_COMPROBANTE,
+                        V.MONTO_TOTAL_S_IVA TOT_EXENTA, --MONTO_TOTAL_S_IVA
+                        V.DESC_FAMILIA,
+                        V.ID_FAMILIA,
+                        V.DESC_RUBRO,
+                        V.ID_RUBRO,
+                        V.DESC_LINEA,
+                        v.ID_LINEA,
+                        V.DESC_MARCA,
+                        V.ID_MARCA,
+                        V.CLIENTE,
+                        V.NRO_LOTE,
+                        --sum(V.NRO_OCC) as Nro_OCC,
+                        Nro_OCC,
+                        V.CANTIDAD_UB,
+                        V.TRIPTICO,
+                        V.FEC_TRIPTICO,
+                        V.IND_CONTROLADO,
+                        V.ID_ENVASE,
+                        V.ID_UNIDAD_MEDIDA,
+                        v.id_tip_cliente,
+                        V.ID_CLIENTE,
+                        V.ID_ARTICULO,
+                        v.ID_FACDET,
+                        -- (SELECT PC.FEC_COMPROBANTE
+                        --    FROM VTW_COMPROBANTES_CABECERA VC
+                        --  LEFT JOIN VTW_PEDIDOS_CABECERA PC ON PC.SER_COMPROBANTE = VC.SER_COMPROBANTE_REF AND PC.NRO_COMPROBANTE = VC.NRO_COMPROBANTE_REF
+                        --   WHERE VC.ID = V.ID_COMPROBANTE
+                        --     AND VC.TIP_COMPROBANTE_REF = 'PED') FEC_PEDIDO,
+                        V.FEC_PEDIDO,
+                        V.CONTROLADO,
+                        V.ID_VENDEDOR,
+                        V.NRO_ITEM,
+                        V.NRO_PLANILLA_REPARTO,
+                        V.NRO_LICITACION,
+                        V.FEC_OCC,
+                        V.FEC_PLAZO
+                FROM    VTV_VENTAS  V
+                WHERE   V.ID_EMPRESA  = :P0_ID_EMPRESA
+                AND     V.FEC_COMPROBANTE BETWEEN :P267_FECHA_INI AND :P267_FECHA_FIN
+                /*AND V.FEC_COMPROBANTE >=  :P267_FECHA_INI
+                AND V.FEC_COMPROBANTE <=  :P267_FECHA_FIN
+                AND     (V.ID_RUBRO = :P267_RUBRO OR :P267_RUBRO IS NULL)
+                AND     (V.ID_FAMILIA = :P267_FAMILIA OR :P267_FAMILIA IS NULL)
+                AND     (V.ID_LINEA = :P267_LINEA OR :P267_LINEA IS NULL)*/
+                AND     (V.ID_MARCA = :P267_MARCA OR :P267_MARCA IS NULL)
+                AND     (NVL(V.IND_CONTROLADO,'N') = :P267_CONTROLADO OR :P267_CONTROLADO IS NULL)
+                AND     (V.ID_CLIENTE = :P267_ID_CLIENTE OR :P267_ID_CLIENTE IS NULL)
+                AND     (V.ID_ARTICULO = :P267_ID_ARTCIULO OR :P267_ID_ARTCIULO IS NULL)
+                
+                -- group by V.FEC_COMPROBANTE,
+                --         V.NRO_COMPROBANTE,
+                --         V.COD_ARTICULO,
+                --         V.DESC_ARTICULO,
+                --         V.COD_FABRICANTE,
+                --         V.TOT_GRAVADA, --MONTO_TOTAL
+                --         V.TOT_IVA, --TOTAL_IVA
+                --         V.TOT_COMPROBANTE, --MONTO_TOTAL_C_IVA
+                --         v.TOT_EXENTA, --MONTO_TOTAL_S_IVA
+                --         V.DESC_FAMILIA,
+                --         V.ID_FAMILIA,
+                --         V.DESC_RUBRO,
+                --         V.ID_RUBRO,
+                --         V.DESC_LINEA,
+                --         v.ID_LINEA,
+                --         V.DESC_MARCA,
+                --         V.ID_MARCA,
+                --         V.CLIENTE,
+                --         V.NRO_LOTE,
+                --         V.CANTIDAD_UB,
+                --         V.TRIPTICO,
+                --         V.FEC_TRIPTICO,
+                --         V.IND_CONTROLADO,
+                --         V.ID_ENVASE,
+                --         V.ID_UNIDAD_MEDIDA,
+                --         v.id_tip_cliente,
+                --         V.ID_CLIENTE,
+                --         V.ID_ARTICULO,
+                --         v.ID_FACDET,
+                --         V.ID_COMPROBANTE,
+                --         V.TIP_COMPROBANTE,
+                --         V.NRO_OCC,
+                --         V.CONTROLADO,
+                --         V.ID_VENDEDOR,
+                --         V.NRO_ITEM,
+                --         --V.NRO_PLANILLA_REPARTO,
+                --         V.NRO_LICITACION
+                ```
+            pageItemsToSubmit: [
+                P267_FECHA_INI
+                P267_FECHA_FIN
+                P267_ID_CLIENTE
+                P267_ID_ARTCIULO
+                P267_MARCA
+                P267_CONTROLADO
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 60033769761098925
+        }
+
+        column CANTIDAD_UB (
+            type: plainText
+            heading {
+                heading: Cantidad Facturada
+                alignment: end
+            }
+            layout {
+                sequence: 198
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 168
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cód. Artículo
+                alignment: center
+            }
+            layout {
+                sequence: 138
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: plainText
+            heading {
+                heading: Cód. Fabricante
+                alignment: center
+            }
+            layout {
+                sequence: 158
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column CONTROLADO (
+            type: plainText
+            heading {
+                heading: Controlado
+                alignment: center
+            }
+            layout {
+                sequence: 338
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Desc. Artículo
+                alignment: center
+            }
+            layout {
+                sequence: 148
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column DESC_FAMILIA (
+            type: plainText
+            heading {
+                heading: <p>Familia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column DESC_LINEA (
+            type: plainText
+            heading {
+                heading: <p>Linea</p>
+                alignment: center
+            }
+            layout {
+                sequence: 78
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column DESC_MARCA (
+            type: plainText
+            heading {
+                heading: <p>Marca</p>
+                alignment: center
+            }
+            layout {
+                sequence: 98
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column DESC_RUBRO (
+            type: plainText
+            heading {
+                heading: <p>Rubro</p>
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 118
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column FEC_OCC (
+            type: plainText
+            heading {
+                heading: Fecha OCC
+                alignment: center
+            }
+            layout {
+                sequence: 398
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: BJ
+            }
+        )
+
+        column FEC_PEDIDO (
+            type: plainText
+            heading {
+                heading: Fecha Pedido
+                alignment: center
+            }
+            layout {
+                sequence: 308
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AZ
+            }
+        )
+
+        column FEC_PLAZO (
+            type: plainText
+            heading {
+                heading: Fecha Plazo
+                alignment: center
+            }
+            layout {
+                sequence: 408
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: BK
+            }
+        )
+
+        column FEC_TRIPTICO (
+            type: plainText
+            heading {
+                heading: Fec. Tríptico
+                alignment: center
+            }
+            layout {
+                sequence: 228
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column ID_ARTICULO (
+            type: plainText
+            heading {
+                heading: Id Articulo
+                alignment: end
+            }
+            layout {
+                sequence: 288
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainText
+            heading {
+                heading: Id Cliente
+                alignment: end
+            }
+            layout {
+                sequence: 278
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AW
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentación
+                alignment: center
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 248
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column ID_FACDET (
+            type: plainText
+            heading {
+                heading: Id Facdet
+                alignment: end
+            }
+            layout {
+                sequence: 298
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AY
+            }
+        )
+
+        column ID_FAMILIA (
+            type: plainText
+            heading {
+                heading: <p>Código Familia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 58
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column ID_LINEA (
+            type: plainText
+            heading {
+                heading: <p>Código Linea</p>
+                alignment: center
+            }
+            layout {
+                sequence: 88
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column ID_MARCA (
+            type: plainText
+            heading {
+                heading: <p>Código Marca</p>
+                alignment: center
+            }
+            layout {
+                sequence: 108
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_RUBRO (
+            type: plainText
+            heading {
+                heading: <p>Código Rubro</p>
+                alignment: center
+            }
+            layout {
+                sequence: 68
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column ID_TIP_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Tipo Cliente</p>
+                alignment: center
+            }
+            lov {
+                lov: @ccw-tipo-cliente-cod-tip-cliente
+            }
+            layout {
+                sequence: 268
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Unidad Medida
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 258
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Vendedor
+                alignment: center
+            }
+            lov {
+                lov: @lv-vendedores
+            }
+            layout {
+                sequence: 348
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BD
+            }
+        )
+
+        column IND_CONTROLADO (
+            type: plainText
+            heading {
+                heading: Ind Controlado
+            }
+            layout {
+                sequence: 238
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro. Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 128
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column NRO_ITEM (
+            type: plainText
+            heading {
+                heading: Nro. Item
+                alignment: center
+            }
+            layout {
+                sequence: 358
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BE
+            }
+        )
+
+        column NRO_LICITACION (
+            type: plainText
+            heading {
+                heading: Nro. Licitacion
+                alignment: center
+            }
+            layout {
+                sequence: 378
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BH
+            }
+        )
+
+        column NRO_LOTE (
+            type: plainText
+            heading {
+                heading: <p>Nro Lote</p>
+            }
+            layout {
+                sequence: 178
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column NRO_OCC (
+            type: plainText
+            heading {
+                heading: Nro OCC
+                alignment: center
+            }
+            layout {
+                sequence: 328
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BB
+            }
+        )
+
+        column NRO_PLANILLA_REPARTO (
+            type: plainText
+            heading {
+                heading: Nro. Planilla Reparto
+                alignment: center
+            }
+            layout {
+                sequence: 388
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BI
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 318
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BA
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: <p>Monto Total c/ IVA</p>
+                alignment: center
+            }
+            layout {
+                sequence: 38
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column TOT_EXENTA (
+            type: plainText
+            heading {
+                heading: <p>Monto Total s/ IVA</p>
+                alignment: center
+            }
+            layout {
+                sequence: 48
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column TOT_GRAVADA (
+            type: plainText
+            heading {
+                heading: <p>Monto Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 18
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column TOT_IVA (
+            type: plainText
+            heading {
+                heading: <p>Total IVA</p>
+                alignment: center
+            }
+            layout {
+                sequence: 28
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column TRIPTICO (
+            type: plainText
+            heading {
+                heading: Nro. Tríptico
+                alignment: center
+            }
+            layout {
+                sequence: 218
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            fontSize: 18
+            pageHeaderText:
+                ```
+                &P0_DESC_EMPRESA. 
+                &PO_LOGIN_TIMESTAMP.
+                Venta Detalle Rubro-Familia
+                ```
+        }
+        pageFooter {
+            fontSize: 8
+            alignment: start
+            pageFooterText: USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+        }
+
+        savedReport 600374 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD_UB (
+                sequence: 16
+            )
+
+            displayColumn CLIENTE (
+                sequence: 21
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 7
+            )
+
+            displayColumn COD_FABRICANTE (
+                sequence: 6
+            )
+
+            displayColumn CONTROLADO (
+                sequence: 13
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 8
+            )
+
+            displayColumn DESC_LINEA (
+                sequence: 24
+            )
+
+            displayColumn DESC_MARCA (
+                sequence: 15
+            )
+
+            displayColumn DESC_RUBRO (
+                sequence: 14
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn FEC_OCC (
+                sequence: 27
+            )
+
+            displayColumn FEC_PEDIDO (
+                sequence: 26
+            )
+
+            displayColumn FEC_PLAZO (
+                sequence: 28
+            )
+
+            displayColumn FEC_TRIPTICO (
+                sequence: 12
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 9
+            )
+
+            displayColumn ID_TIP_CLIENTE (
+                sequence: 22
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 10
+            )
+
+            displayColumn ID_VENDEDOR (
+                sequence: 23
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn NRO_ITEM (
+                sequence: 5
+            )
+
+            displayColumn NRO_LICITACION (
+                sequence: 4
+            )
+
+            displayColumn NRO_LOTE (
+                sequence: 25
+            )
+
+            displayColumn NRO_OCC (
+                sequence: 29
+            )
+
+            displayColumn NRO_PLANILLA_REPARTO (
+                sequence: 30
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 20
+            )
+
+            displayColumn TOT_EXENTA (
+                sequence: 19
+            )
+
+            displayColumn TOT_GRAVADA (
+                sequence: 17
+            )
+
+            displayColumn TOT_IVA (
+                sequence: 18
+            )
+
+            displayColumn TRIPTICO (
+                sequence: 11
+            )
+
+            aggregate (
+                column: TOT_EXENTA
+            )
+
+            aggregate (
+                column: TOT_IVA
+            )
+
+            aggregate (
+                column: TOT_GRAVADA
+            )
+
+            aggregate (
+                column: TOT_COMPROBANTE
+            )
+
+        )
+
+    )
+
+    pageItem P267_CONTROLADO (
+        type: checkbox
+        label {
+            label: <P>Controlado</P>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P267_CORTES (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P267_FECHA_FIN (
+        type: datePicker
+        label {
+            label: <p>Hasta la fecha:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+    )
+
+    pageItem P267_FECHA_INI (
+        type: datePicker
+        label {
+            label: <P>Desde la fecha:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+                
+                ```
+        }
+    )
+
+    pageItem P267_ID_ARTCIULO (
+        type: popupLov
+        label {
+            label: <p>Articulo: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos-descripcion
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P267_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P267_MARCA (
+        type: popupLov
+        label {
+            label: <p>Marca: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-marcas
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button limpiar (
+        buttonName: LIMPIAR
+        label: Limpiar
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P267_FECHA_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P267_FECHA_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P267_FECHA_FIN,'/','');
+                            conv_fecha := substr(:P267_FECHA_FIN,1,2)||'/'||
+                                                      substr(:P267_FECHA_FIN,3,2)||'/'||
+                                                      lpad(substr(:P267_FECHA_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P267_FECHA_FIN := conv_fecha;
+                            ELSIF (length(:P267_FECHA_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P267_FECHA_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P267_FECHA_FIN
+                itemsToReturn: P267_FECHA_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P267_FECHA_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P267_FECHA_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P267_FECHA_INI,'/','');
+                            conv_fecha := substr(:P267_FECHA_INI,1,2)||'/'||
+                                                      substr(:P267_FECHA_INI,3,2)||'/'||
+                                                      lpad(substr(:P267_FECHA_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P267_FECHA_INI := conv_fecha;
+                            ELSIF (length(:P267_FECHA_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P267_FECHA_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P267_FECHA_INI
+                itemsToReturn: P267_FECHA_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P267_MARCA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :P267_RUBRO||:P267_FAMILIA||:P267_LINEA||:P267_MARCA
+                itemsToSubmit: [
+                    P267_ID_CLIENTE
+                    P267_ID_ARTCIULO
+                    P267_MARCA
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P267_CORTES
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: REFRESCAR
+        execution {
+            sequence: 50
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @venta-detalle-rubro-familia
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process limpiar (
+        name: LIMPIAR
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 58604707093018242
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+    branch (
+        name: Go To Page 269
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 269
+                items: {
+                    P267_FECHA_INI: &P267_FECHA_INI.
+                    P267_FECHA_FIN: &P267_FECHA_FIN.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

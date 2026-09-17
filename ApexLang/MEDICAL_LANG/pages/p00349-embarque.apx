@@ -1,0 +1,726 @@
+page 349 (
+    name: Embarque
+    alias: EMBARQUE
+    title: Embarque
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region embarque (
+        name: Embarque
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select E.ID,
+                       E.ID_EMPRESA,
+                       E.NRO_EMBARQUE,
+                       E.FEC_EMBARQUE,
+                       E.ID_PUERTO,
+                       E.DESCRIPCION,
+                       E.VERIFICADORA,
+                       E.TRANSPORTE,
+                       E.ID_VIA,
+                       E.FEC_PROB_LLEGADA,
+                       E.ESTADO,
+                       E.ANULADO,
+                       E.COD_USUARIO_AUD,
+                       P.NRO_COMPROBANTE AS PROFORMA,
+                           CASE E.ANULADO
+                        WHEN 'S' THEN 'fa fa-check u-success-text'
+                        WHEN 'N' THEN 'fa fa-remove u-danger-text'
+                       END AS ICONO_ANULADO,
+                       'RUTA',
+                       ID_PROVEEDOR_ORIGEN
+                  from CMW_EMBARQUES E,CMW_PROFORMAS_CABECERA P
+                 where E.ID_EMPRESA=:P0_ID_EMPRESA
+                   and E.FEC_EMBARQUE between :P349_FEC_INI and :P349_FEC_FIN
+                   and (E.ID_PROVEEDOR_ORIGEN = :P349_ID_PROVEEDOR_ORIGEN or :P349_ID_PROVEEDOR_ORIGEN is null)
+                   and (E.NRO_EMBARQUE = :P349_NRO_EMBARQUE or :P349_NRO_EMBARQUE is null)
+                 AND E.ID_PROFORMA=P.ID(+)
+                 ORDER BY FEC_EMBARQUE DESC, NRO_EMBARQUE DESC
+                ```
+            pageItemsToSubmit: [
+                P349_FEC_INI
+                P349_FEC_FIN
+                P349_ID_PROVEEDOR_ORIGEN
+                P349_NRO_EMBARQUE
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 345
+                items: {
+                    P345_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 18011337158006693
+        }
+
+        column 'RUTA' (
+            type: link
+            heading {
+                heading: Ruta
+                alignment: center
+            }
+            layout {
+                sequence: 184
+            }
+            link {
+                target: {
+                    page: 421
+                    items: {
+                        P421_ID: #ID#
+                    }
+                }
+                linkText: <img src="#IMAGE_PREFIX#app_ui/img/icons/apex-edit-view.png" class="apex-edit-view" alt="">
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ANULADO (
+            type: plainText
+            heading {
+                heading: Anulado
+            }
+            layout {
+                sequence: 94
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ICONO_ANULADO#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Usuario Auditor
+            }
+            layout {
+                sequence: 104
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+            }
+            layout {
+                sequence: 34
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 84
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column FEC_EMBARQUE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 4
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FEC_PROB_LLEGADA (
+            type: plainText
+            heading {
+                heading: Fec Prob Llegada
+                alignment: center
+            }
+            layout {
+                sequence: 14
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column ICONO_ANULADO (
+            type: plainText
+            heading {
+                heading: Icono Anulado
+                alignment: center
+            }
+            layout {
+                sequence: 164
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 114
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column ID_PROVEEDOR_ORIGEN (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Proveedor Origen</p>
+                alignment: center
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 194
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ID_PUERTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Puerto
+                alignment: center
+            }
+            lov {
+                lov: @lv-puertos
+            }
+            layout {
+                sequence: 124
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column ID_VIA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Via
+                alignment: center
+            }
+            lov {
+                lov: @lv-vias
+            }
+            layout {
+                sequence: 144
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column NRO_EMBARQUE (
+            type: plainText
+            heading {
+                heading: Numero
+                alignment: end
+            }
+            layout {
+                sequence: 3
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column PROFORMA (
+            type: plainText
+            heading {
+                heading: Proforma
+                alignment: center
+            }
+            layout {
+                sequence: 174
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column TRANSPORTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Transporte
+                alignment: center
+            }
+            lov {
+                lov: @lv-transporte
+            }
+            layout {
+                sequence: 134
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column VERIFICADORA (
+            type: plainText
+            heading {
+                heading: Verificadora
+            }
+            layout {
+                sequence: 44
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText:
+                ```
+                &P0_DESC_EMPRESA.
+                Embarque
+                ```
+        }
+        pageFooter {
+            pageFooterText: USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+        }
+
+        savedReport 180182 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn 'RUTA' (
+                sequence: 11
+            )
+
+            displayColumn ANULADO (
+                sequence: 10
+            )
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 9
+            )
+
+            displayColumn FEC_EMBARQUE (
+                sequence: 3
+            )
+
+            displayColumn FEC_PROB_LLEGADA (
+                sequence: 4
+            )
+
+            displayColumn ID_PROVEEDOR_ORIGEN (
+                sequence: 2
+            )
+
+            displayColumn ID_PUERTO (
+                sequence: 6
+            )
+
+            displayColumn ID_VIA (
+                sequence: 5
+            )
+
+            displayColumn NRO_EMBARQUE (
+                sequence: 1
+            )
+
+            displayColumn PROFORMA (
+                sequence: 8
+            )
+
+            displayColumn TRANSPORTE (
+                sequence: 7
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @embarque
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    pageItem P349_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P349_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Embarque:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P349_ID_PROVEEDOR_ORIGEN (
+        type: popupLov
+        label {
+            label: <p>Proveedor Origen:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P349_NRO_EMBARQUE (
+        type: numberField
+        label {
+            label: <p>Nro. Embarque:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @embarque
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 345
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button refrescar (
+        buttonName: REFRESCAR
+        label: Refrescar
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: triggerAction
+        }
+
+        triggerAction refrescar-reporte (
+            name: Refrescar Reporte
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @embarque
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction acciones-al-cargar-la-pagina (
+        name: Acciones al Cargar la pagina
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @embarque
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

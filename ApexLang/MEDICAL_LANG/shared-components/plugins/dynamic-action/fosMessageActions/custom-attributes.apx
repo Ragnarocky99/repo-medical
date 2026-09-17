@@ -1,0 +1,373 @@
+customAttribute attribute_01 (
+    apexlangName: action
+    attribute: 1
+    name: Action
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 10
+    }
+    default {
+        value: show-page-success
+    }
+    help {
+        helpText: <p>The action to be performed.</p>
+    }
+
+    entry clearErrors (
+        sequence: 40
+        display: Clear Errors
+        return: clear-errors
+        help {
+            helpText: <p>Clears all current error notifications.</p>
+        }
+    )
+
+    entry hidePageSuccess (
+        sequence: 20
+        display: Hide Page Success
+        return: hide-page-success
+        help {
+            helpText: <p>Hides the success notification if one is present.</p>
+        }
+    )
+
+    entry showError (
+        sequence: 30
+        display: Show Error
+        return: show-error
+        help {
+            helpText:
+                ```
+                <p>Displays an error notification.</p>
+                <p>It can be displayed on page, targeted to a specific item, or both.</p>
+                <p>By default, error notifications are added to a stack, which means you can call this action multiple times to display various errors. If you wish to clear the stack and only display this error, make sure to call the "Clear Errors" action first.</p>
+                ```
+        }
+    )
+
+    entry showPageSuccess (
+        sequence: 10
+        display: Show Page Success
+        return: show-page-success
+        help {
+            helpText:
+                ```
+                <p>Displays a success notification.</p>
+                <p>Note that if one already exists, it will be replaced.</p>
+                ```
+        }
+    )
+
+)
+
+customAttribute attribute_02 (
+    apexlangName: messageType
+    attribute: 2
+    name: Message Type
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 20
+    }
+    default {
+        value: static
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: inList
+        list: [
+            show-page-success
+            show-error
+        ]
+    }
+    help {
+        helpText: <p>The source type of the message to be displayed.</p>
+    }
+
+    entry javascriptExpression (
+        sequence: 20
+        display: JavaScript Expression
+        return: javascript-expression
+        help {
+            helpText: <p>A JavaScript Expression</p>
+        }
+    )
+
+    entry javascriptFunctionBody (
+        sequence: 30
+        display: JavaScript Function Body
+        return: javascript-function-body
+        help {
+            helpText: <p>A JavaScript function body returning a string</p>
+        }
+    )
+
+    entry staticText (
+        sequence: 10
+        display: Static Text
+        return: static
+        help {
+            helpText: <p>A static value. This value can also reference page items.</p>
+        }
+    )
+
+)
+
+customAttribute attribute_03 (
+    apexlangName: message
+    attribute: 3
+    name: Message
+    type: textarea
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 30
+    }
+    builder {
+        translatable: true
+    }
+    dependingOn {
+        attribute: @attribute_02/component
+        conditionType: =
+        value: static
+    }
+    help {
+        helpText:
+            ```
+            <p>The message to be displayed.</p>
+            <p>You can reference any page item by using the "&PAGE_ITEM." format. To escape the page item value, either set "Escape Special Characters" to "Yes", or use the "&PAGE_ITEM!HTML." substitution format.</p>
+            <p><b>Note: </b> The substitution will be done in the browser, with the current page item values.</p>
+            ```
+    }
+)
+
+customAttribute attribute_04 (
+    apexlangName: javascriptCode
+    attribute: 4
+    name: JavaScript Code
+    type: javaScriptCode
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 40
+    }
+    dependingOn {
+        attribute: @attribute_02/component
+        conditionType: inList
+        list: [
+            javascript-expression
+            javascript-function-body
+        ]
+    }
+    help {
+        helpText: <p>JavaScript Code resulting in a string.</p>
+    }
+    examples {
+        examples:
+            ```
+            <h4>JavaScript Expression</h4>
+            <pre>apex.item('P1_COUNT').getValue() + " records added"</pre>
+            
+            <h4>JavaScript Function Body</h4>
+            <pre>var count = apex.item('P1_COUNT').getValue();
+            return count + " record" + (count != 1 ? "s" : "") + " added";
+            </pre>
+            ```
+    }
+)
+
+customAttribute attribute_05 (
+    apexlangName: escapeSpecialCharacters
+    attribute: 5
+    name: Escape Special Characters
+    type: yesNo
+    appearance {
+        sequence: 50
+    }
+    default {
+        value: true
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: inList
+        list: [
+            show-page-success
+            show-error
+        ]
+    }
+    help {
+        helpText:
+            ```
+            <p>To prevent Cross-Site Scripting (XSS) attacks, always set this attribute to "Yes". If you need to render HTML tags in the message, set this attribute to "No".</p>
+            <p><b>Note:</b> You can still escape only certain page items, by using the &PAGE_ITEM!HTML. substitution string format.</p>
+            ```
+    }
+)
+
+customAttribute attribute_06 (
+    apexlangName: displayLocation
+    attribute: 6
+    name: Display Location
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 60
+    }
+    default {
+        value: inline:page
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: show-error
+    }
+    help {
+        helpText: <p>Select where the error message is displayed. Error messages can be displayed inline underneath an Associated Item label and/or in a Notification area, defined as part of the page template.</p>
+    }
+
+    entry inlineInNotification (
+        sequence: 30
+        display: Inline in Notification
+        return: page
+        help {
+            helpText: <p>In a notification</p>
+        }
+    )
+
+    entry inlineWithField (
+        sequence: 20
+        display: Inline with Field
+        return: inline
+        help {
+            helpText: <p>Inline with a specific Page Item</p>
+        }
+    )
+
+    entry inlineWithFieldAndInNotification (
+        sequence: 10
+        display: Inline with Field and in Notification
+        return: inline:page
+        help {
+            helpText: <p>Both inline with a specific Page Item and in a notification</p>
+        }
+    )
+
+)
+
+customAttribute attribute_07 (
+    apexlangName: associatedItemS
+    attribute: 7
+    name: Associated Item(s)
+    type: pageItems
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 70
+    }
+    dependingOn {
+        attribute: @attribute_06/component
+        conditionType: inList
+        list: [
+            inline
+            inline:page
+        ]
+    }
+    help {
+        helpText: <p>Displays the error notification inline with a page item. You can select multiple page items to associate the same message with them.</p>
+    }
+)
+
+customAttribute attribute_08 (
+    apexlangName: autodismiss
+    attribute: 8
+    name: Autodismiss
+    type: yesNo
+    appearance {
+        sequence: 80
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: inList
+        list: [
+            show-page-success
+            show-error
+        ]
+    }
+    help {
+        helpText: <p>By default, success notifications are displayed until the user closes them. Set this attribute to "Yes" to auto dismiss the notification after a specific amount of time.</p>
+    }
+)
+
+customAttribute attribute_09 (
+    apexlangName: autodismissAfter
+    attribute: 9
+    name: Autodismiss After
+    type: number
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 90
+    }
+    builder {
+        unit: seconds
+    }
+    default {
+        value: 10
+    }
+    dependingOn {
+        attribute: @attribute_08/component
+        conditionType: =
+        value: Y
+    }
+    help {
+        helpText: <p>The time in seconds until the notification will be dismissed.</p>
+    }
+)
+
+customAttribute attribute_10 (
+    apexlangName: clearOtherErrors
+    attribute: 10
+    name: Clear Other Errors
+    type: yesNo
+    appearance {
+        sequence: 100
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: show-error
+    }
+    help {
+        helpText: <p>Enable this option to clear any existing errors before showing your new error message.</p>
+    }
+)
+
+customAttribute attribute_11 (
+    apexlangName: pageItemS
+    attribute: 11
+    name: Page Item(s)
+    type: pageItems
+    appearance {
+        sequence: 110
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: clear-errors
+    }
+    help {
+        helpText: <p>Enter a list of page item(s) that you would like to clear errors for. Leave this attribute blank if you want to clear all errors.</p>
+    }
+)
+

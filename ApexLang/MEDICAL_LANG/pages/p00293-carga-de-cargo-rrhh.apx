@@ -1,0 +1,416 @@
+page 293 (
+    name: Carga de Cargos RRHH
+    alias: CARGA-DE-CARGO-RRHH
+    title: Cargos
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: document.getElementById("P293_COD_CARGO").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region cargo (
+        name: Cargo
+        type: form
+        source {
+            location: localDatabase
+            tableName: RHW_CARGOS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P293_COD_CARGO (
+        type: textField
+        label {
+            label: <p>Código Cargo: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 20
+            region: @cargo
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 8
+            labelColumnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 20
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @cargo
+            column: COD_CARGO
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(A.COD_CARGO)), 0)+1
+                from RHW_CARGOS A
+                WHERE A.ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    pageItem P293_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @cargo
+            slot: regionBody
+        }
+        source {
+            formRegion: @cargo
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P293_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @cargo
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 8
+            labelColumnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 60
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            formRegion: @cargo
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P293_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @cargo
+            slot: regionBody
+        }
+        source {
+            formRegion: @cargo
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P293_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @cargo
+            slot: regionBody
+        }
+        source {
+            formRegion: @cargo
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P293_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: [
+                t-Button--danger
+                borrar
+            ]
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P293_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P293_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 8533800236489890
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-cargo (
+        name: Initialize form Cargo
+        type: formInitialization
+        formRegion: @cargo
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 8533089358489890
+        }
+    )
+
+    process process-form-cargo (
+        name: Process form Cargo
+        type: formAutoRowProcessing
+        formRegion: @cargo
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 8533432077489890
+        }
+    )
+
+)
+

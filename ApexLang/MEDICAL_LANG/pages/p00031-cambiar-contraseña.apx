@@ -1,0 +1,262 @@
+page 31 (
+    name: Cambiar Contraseña
+    alias: CAMBIAR-CONTRASEÑA
+    title: Cambiar Contraseña - Sistema Inventiva
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P31_CLAVE_ANTERIOR (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P31_CLAVE_NUEVA (
+        type: password
+        label {
+            label: Clave Nueva
+            alignment: left
+        }
+        settings {
+            submitWhenEnterPressed: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P31_CONFIRMA_CLAVE (
+        type: password
+        label {
+            label: Confirmar Clave
+            alignment: left
+        }
+        settings {
+            submitWhenEnterPressed: false
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button ejecutar (
+        buttonName: Ejecutar
+        label: Ejecutar
+        layout {
+            sequence: 60
+            slot: contentBody
+            column: 6
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: Desea cambiar la contraseña?
+            style: warning
+        }
+    )
+
+    dynamicAction cambiar-contraseña (
+        name: Cambiar Contraseña
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Éxito
+                message: Se ha cambiado la contraseña.
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                         v_sql varchar2(300) := 'ALTER USER '||:APP_USER||' IDENTIFIED BY '||:P31_CONFIRMA_CLAVE; 
+                    BEGIN
+                        IF :P31_CLAVE_NUEVA = :P31_CONFIRMA_CLAVE THEN
+                            EXECUTE IMMEDIATE v_sql;
+                        ELSE 
+                            RAISE_APPLICATION_ERROR(-20000,'La nueva contraseña y la contraseña de confirmación no coinciden');
+                        end if;
+                        Exception
+                             when others then
+                                 raise_application_error(-20000, 'Error al setear. '||sqlerrm);
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P31_CLAVE_NUEVA
+                    P31_CONFIRMA_CLAVE
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process cambiar-clave (
+        name: Cambiar Clave
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                Declare
+                  l_anterior varchar2(100);
+                  l_nueva varchar2(100);
+                Begin
+                
+                -- Prepara la contraseña nueva
+                  select standard_hash(upper(:app_user) ||
+                                       upper(:P31_CLAVE_NUEVA),
+                                       'SHA256')
+                    into l_nueva
+                    from dual;
+                
+                
+                -- Prepara la contraseña anterior
+                
+                  select standard_hash(upper(:app_user) ||
+                                       upper(:P31_CLAVE_ANTERIOR),
+                                       'SHA256')
+                    into l_anterior
+                    from dual;
+                
+                  --- Verifica la contraseña anterior ---
+                  Declare
+                    vclave varchar2(100);
+                    vanterior exception;
+                  Begin
+                    select clave
+                      into vclave
+                      from bsw_usuarios
+                     where upper(cod_usuario) = upper(:app_user)
+                     and :P0_COD_EMPRESA=ID_EMPRESA;
+                  
+                    if nvl(vclave, 'X') != l_anterior then
+                      raise vanterior;
+                    end if;
+                  Exception
+                    when no_data_found then
+                       raise_application_error(-20000,
+                                              'No se encuentra el codigo de usuario ');  
+                    when vanterior then
+                      raise_application_error(-20000,
+                                              'Error al autenticar el usuario, intentelo de nuevo'||l_anterior);
+                  End;
+                
+                  --- Verifica que la contraseña y el control sean iguales
+                  Declare
+                    vnuevo exception;
+                  Begin
+                    if nvl(:P31_CLAVE_NUEVA, 'X') != NVL(:P31_CONFIRMA_CLAVE, 'Y') THEN
+                      raise vnuevo;
+                    end if;
+                  Exception
+                    when vnuevo then
+                      raise_application_error(-20001,
+                                              'La Contraseña nueva no coincide con el campo de control, verifique ');
+                  end;
+                
+                 Begin
+                    update bsw_usuarios
+                       set clave = l_nueva--:P31_CLAVE_NUEVA
+                     where upper(cod_usuario) = upper(:app_user)
+                     AND :P0_COD_EMPRESA=ID_EMPRESA;
+                  exception
+                    when others then
+                      raise_application_error(-20002,
+                                              'Error al actualizar la contraseña, verifique ' || SQLERRM);
+                  end;
+                Exception
+                  when others then
+                    raise_application_error(-20000, 'Error al actualizar la clave '||sqlerrm);
+                End;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Contraseña cambiada exitosamente!
+        }
+        advanced {
+            executionMappingIdentifier: 9659213363668923
+        }
+        serverSideCondition {
+            whenButtonPressed: @ejecutar
+            type: never
+        }
+    )
+
+    process close (
+        name: Close
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 47293111113787231
+        }
+        serverSideCondition {
+            whenButtonPressed: @ejecutar
+        }
+    )
+
+)
+

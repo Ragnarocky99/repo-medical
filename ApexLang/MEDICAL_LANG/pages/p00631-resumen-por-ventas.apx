@@ -1,0 +1,2918 @@
+page 631 (
+    name: Resumen por Ventas
+    alias: RESUMEN-POR-VENTAS
+    title: Resumen por Ventas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            /*.a-IRR-header {    background-color:#4047bc;color: white;}.a-IRR-headerLink {    font-weight: bold;color: white;}
+             */ 
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region datos (
+        name: Datos
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region grafico-linea (
+        name: Grafico/Linea
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-ventas-linea
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series linea (
+            name: Linea
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.ID_LINEA,
+                           V.COD_LINEA,
+                           V.DESC_LINEA,
+                           SUM(V.CANTIDAD) AS CANTIDAD,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.ID_LINEA, V.COD_LINEA, V.DESC_LINEA
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: COD_LINEA
+                label: DESC_LINEA
+                value: TOT_COMPROBANTE
+            }
+            serverSideCondition {
+                type: item=value
+                item: P631_TIPO_REPORTE
+                value: L
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region grafico-marca (
+        name: Grafico/Marca
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-ventas-marca
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series marca (
+            name: Marca
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.ID_MARCA,
+                           V.COD_MARCA,
+                           V.DESC_MARCA,
+                           SUM(V.CANTIDAD) AS CANTIDAD,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.ID_MARCA, V.COD_MARCA, V.DESC_MARCA
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: COD_MARCA
+                label: DESC_MARCA
+                value: TOT_COMPROBANTE
+            }
+            serverSideCondition {
+                type: item=value
+                item: P631_TIPO_REPORTE
+                value: M
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region gráfico-artículo (
+        name: Gráfico/Artículo
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-ventas-articulo
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: A
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series articulo (
+            name: Articulo
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.COD_ORIGEN_ART,
+                           V.DESC_ARTICULO,
+                           SUM(V.CANTIDAD) AS CANTIDAD,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.COD_ORIGEN_ART, V.DESC_ARTICULO
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: DESC_ARTICULO
+                label: COD_ORIGEN_ART
+                value: TOT_COMPROBANTE
+            }
+            serverSideCondition {
+                type: item=value
+                item: P631_COD_ORIGEN_ART
+                value: A
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region gráfico-cliente (
+        name: Gráfico/Cliente
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-ventas-cliente
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: C
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series cliente (
+            name: Cliente
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.ID_CLIENTE,
+                           V.COD_CLIENTE,
+                           V.DESC_CLIENTE,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.ID_CLIENTE, V.COD_CLIENTE, V.DESC_CLIENTE
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: COD_CLIENTE
+                label: DESC_CLIENTE
+                value: TOT_COMPROBANTE
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region gráfico-familia (
+        name: Gráfico/Familia
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-ventas-familia
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: F
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series familia (
+            name: Familia
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.ID_FAMILIA,
+                           V.COD_FAMILIA,
+                           V.DESC_FAMILIA,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.ID_FAMILIA, V.COD_FAMILIA, V.DESC_FAMILIA
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: COD_FAMILIA
+                label: DESC_FAMILIA
+                value: TOT_COMPROBANTE
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region gráfico-fecha (
+        name: Gráfico/Fecha
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-ventas-fecha
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: D
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series fecha (
+            name: Fecha
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.FEC_COMPROBANTE,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.FEC_COMPROBANTE
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: FEC_COMPROBANTE
+                label: FEC_COMPROBANTE
+                value: TOT_COMPROBANTE
+                labelTooltip: FEC_COMPROBANTE
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region gráfico-rubro (
+        name: Gráfico/Rubro
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-ventas-rubro
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series rubro (
+            name: Rubro
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.ID_RUBRO,
+                           V.COD_RUBRO,
+                           V.DESC_RUBRO,
+                           SUM(V.CANTIDAD) AS CANTIDAD,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.ID_RUBRO, V.COD_RUBRO, V.DESC_RUBRO
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: COD_RUBRO
+                label: DESC_RUBRO
+                value: TOT_COMPROBANTE
+            }
+            serverSideCondition {
+                type: item=value
+                item: P631_TIPO_REPORTE
+                value: R
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region gráfico-vendedor (
+        name: Gráfico/Vendedor
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-ventas-vendedor
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: V
+        }
+        chart {
+            type: lineWithArea
+        }
+        chartLayout {
+            height: 400
+        }
+        legend {
+            show: false
+        }
+
+        series vendedor (
+            name: Vendedor
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT V.COD_VENDEDOR, V.DESC_VENDEDOR,
+                           SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                    FROM VTV_VENTAS_BASE V
+                    WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                      AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                      AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                      AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                      AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                      AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                      AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                      AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                      having SUM(V.TOT_COMPROBANTE)!=0
+                    
+                    GROUP BY  V.COD_VENDEDOR, V.DESC_VENDEDOR
+                    ```
+                pageItemsToSubmit: [
+                    P631_FEC_DESDE
+                    P631_FEC_HASTA
+                    P631_COD_ORIGEN_ART
+                    P631_VENDEDOR
+                    P631_TIPO_REPORTE
+                    P631_CLIENTE
+                    P631_FAMILIA
+                    P631_RUBRO
+                    P631_MARCA
+                    P631_LINEA
+                ]
+            }
+            columnMapping {
+                seriesName: COD_VENDEDOR
+                label: DESC_VENDEDOR
+                value: TOT_COMPROBANTE
+            }
+            serverSideCondition {
+                type: item=value
+                item: P631_TIPO_REPORTE
+                value: V
+            }
+        )
+
+        axis x (
+            name: x
+            minorTicks {
+                show: false
+            }
+        )
+
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            minorTicks {
+                show: false
+            }
+        )
+
+    )
+
+    region reporte-de-ventas-articulo (
+        name: Reporte de Ventas/Articulo
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.COD_ORIGEN_ART,
+                       V.DESC_ARTICULO,
+                       SUM(V.CANTIDAD) AS CANTIDAD,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.COD_ORIGEN_ART, V.DESC_ARTICULO
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: A
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 21603203690747732
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: plainText
+            heading {
+                heading: Código Artículo
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Descripción Artículo
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Monto Total
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Ventas/Articulo
+        }
+
+        savedReport 229796 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 3
+            )
+
+            displayColumn COD_ORIGEN_ART (
+                sequence: 1
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 4
+            )
+
+        )
+
+    )
+
+    region reporte-de-ventas-cliente (
+        name: Reporte de Ventas/Cliente
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.ID_CLIENTE,
+                       V.COD_CLIENTE,
+                       V.DESC_CLIENTE,
+                       SUM(V.CANTIDAD) AS CANTIDAD_ITEMS,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                    AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.ID_CLIENTE, V.COD_CLIENTE, V.DESC_CLIENTE
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: C
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 22152991650654918
+        }
+
+        column CANTIDAD_ITEMS (
+            type: plainText
+            heading {
+                heading: Cantidad Items
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_CLIENTE (
+            type: plainText
+            heading {
+                heading: Código Cliente
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESC_CLIENTE (
+            type: plainText
+            heading {
+                heading: Nombre Cliente
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_CLIENTE (
+            type: hidden
+            heading {
+                heading: Id Cliente
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Monto Total
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Ventas/Cliente
+        }
+
+        savedReport 229854 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD_ITEMS (
+                sequence: 4
+            )
+
+            displayColumn COD_CLIENTE (
+                sequence: 2
+            )
+
+            displayColumn DESC_CLIENTE (
+                sequence: 3
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region reporte-de-ventas-familia (
+        name: Reporte de Ventas/Familia
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.ID_FAMILIA,
+                       V.COD_FAMILIA,
+                       V.DESC_FAMILIA,
+                       SUM(V.CANTIDAD) AS CANTIDAD,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.ID_FAMILIA, V.COD_FAMILIA, V.DESC_FAMILIA
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: F
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 22154130309654930
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_FAMILIA (
+            type: plainText
+            heading {
+                heading: Código Familia
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESC_FAMILIA (
+            type: plainText
+            heading {
+                heading: Descripción Familia
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_FAMILIA (
+            type: hidden
+            heading {
+                heading: Id Familia
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total Monto
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Ventas/Familia
+        }
+
+        savedReport 229993 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 4
+            )
+
+            displayColumn COD_FAMILIA (
+                sequence: 2
+            )
+
+            displayColumn DESC_FAMILIA (
+                sequence: 3
+            )
+
+            displayColumn ID_FAMILIA (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region reporte-de-ventas-fecha (
+        name: Reporte de Ventas/Fecha
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.FEC_COMPROBANTE,
+                       SUM(V.CANTIDAD) AS CANTIDAD_ITEMS,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.FEC_COMPROBANTE
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: D
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 21604773425747747
+        }
+
+        column CANTIDAD_ITEMS (
+            type: plainText
+            heading {
+                heading: Cantidad Items
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Monto Total
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Ventas/Fecha
+        }
+
+        savedReport 230185 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD_ITEMS (
+                sequence: 3
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    region reporte-de-ventas-rubro (
+        name: Reporte de Ventas/Rubro
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.ID_RUBRO,
+                       V.COD_RUBRO,
+                       V.DESC_RUBRO,
+                       SUM(V.CANTIDAD) AS CANTIDAD,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.ID_RUBRO, V.COD_RUBRO, V.DESC_RUBRO
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: R
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 22155346750654942
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_RUBRO (
+            type: plainText
+            heading {
+                heading: Código Rubro
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESC_RUBRO (
+            type: plainText
+            heading {
+                heading: Descripción Rubro
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_RUBRO (
+            type: hidden
+            heading {
+                heading: Id Rubro
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total Monto
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Ventas/Rubro
+        }
+
+        savedReport 230404 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 4
+            )
+
+            displayColumn COD_RUBRO (
+                sequence: 2
+            )
+
+            displayColumn DESC_RUBRO (
+                sequence: 3
+            )
+
+            displayColumn ID_RUBRO (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region reporte-de-ventas-vendedor (
+        name: Reporte de Ventas/Vendedor
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.COD_VENDEDOR,
+                       V.DESC_VENDEDOR,
+                       SUM(V.CANTIDAD) AS CANTIDAD,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.COD_VENDEDOR, V.DESC_VENDEDOR
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: V
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 22151838293654907
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COD_VENDEDOR (
+            type: plainText
+            heading {
+                heading: Código Vendedor
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column DESC_VENDEDOR (
+            type: plainText
+            heading {
+                heading: Nombre Vendedor
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Monto Total
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Ventas/Vendedor
+        }
+
+        savedReport 221669 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 3
+            )
+
+            displayColumn COD_VENDEDOR (
+                sequence: 1
+            )
+
+            displayColumn DESC_VENDEDOR (
+                sequence: 2
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 4
+            )
+
+        )
+
+    )
+
+    region reporte-ventas-linea (
+        name: Reporte Ventas/Linea
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.ID_LINEA,
+                       V.COD_LINEA,
+                       V.DESC_LINEA,
+                       SUM(V.CANTIDAD) AS CANTIDAD,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.ID_LINEA, V.COD_LINEA, V.DESC_LINEA
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: L
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 22217053158081316
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_LINEA (
+            type: plainText
+            heading {
+                heading: Código Línea
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESC_LINEA (
+            type: plainText
+            heading {
+                heading: Descripción Línea
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_LINEA (
+            type: hidden
+            heading {
+                heading: Id Linea
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total Monto
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte Ventas/Linea
+        }
+
+        savedReport 229999 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 4
+            )
+
+            displayColumn COD_LINEA (
+                sequence: 2
+            )
+
+            displayColumn DESC_LINEA (
+                sequence: 3
+            )
+
+            displayColumn ID_LINEA (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region reporte-ventas-marca (
+        name: Reporte Ventas/Marca
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT V.ID_MARCA,
+                       V.COD_MARCA,
+                       V.DESC_MARCA,
+                       SUM(V.CANTIDAD) AS CANTIDAD,
+                       SUM(V.TOT_COMPROBANTE) AS TOT_COMPROBANTE
+                FROM VTV_VENTAS_BASE V
+                WHERE V.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (V.FEC_COMPROBANTE BETWEEN :P631_FEC_DESDE AND :P631_FEC_HASTA )
+                  AND (V.COD_ORIGEN_ART = :P631_COD_ORIGEN_ART OR :P631_COD_ORIGEN_ART IS NULL)
+                  AND (V.ID_VENDEDOR = :P631_VENDEDOR OR :P631_VENDEDOR IS NULL)
+                  AND (V.ID_CLIENTE = :P631_CLIENTE OR :P631_CLIENTE IS NULL)
+                  AND (V.ID_FAMILIA = :P631_FAMILIA OR :P631_FAMILIA IS NULL)
+                  AND (V.ID_RUBRO = :P631_RUBRO OR :P631_RUBRO IS NULL)
+                  AND (V.ID_LINEA = :P631_LINEA OR :P631_LINEA IS NULL)
+                  AND (V.ID_MARCA = :P631_MARCA OR :P631_MARCA IS NULL)
+                  having SUM(V.TOT_COMPROBANTE)!=0
+                
+                GROUP BY  V.ID_MARCA, V.COD_MARCA, V.DESC_MARCA
+                ```
+            pageItemsToSubmit: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_TIPO_REPORTE
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P631_TIPO_REPORTE
+            value: M
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 22215811545081304
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_MARCA (
+            type: plainText
+            heading {
+                heading: Código Marca
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESC_MARCA (
+            type: plainText
+            heading {
+                heading: Descripción Marca
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_MARCA (
+            type: hidden
+            heading {
+                heading: Id Marca
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Monto Total
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte Ventas/Marca
+        }
+
+        savedReport 230398 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 4
+            )
+
+            displayColumn COD_MARCA (
+                sequence: 2
+            )
+
+            displayColumn DESC_MARCA (
+                sequence: 3
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    region resumen-de-venta (
+        name: Resumen de Venta
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P631_CLIENTE (
+        type: popupLov
+        label {
+            label: <p> Cliente: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P631_COD_ORIGEN_ART (
+        type: popupLov
+        label {
+            label: <p>Artículo: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 500
+            popupHeight: 400
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cod-origen-art
+            displayExtraValues: false
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 20
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-right-lg
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P631_FAMILIA (
+        type: popupLov
+        label {
+            label: <p>Familia</p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT V.DESC_FAMILIA||'('||V.COD_FAMILIA||')', V.ID_FAMILIA
+                FROM VTV_VENTAS_BASE V
+                WHERE ID_EMPRESA = :P0_COD_EMPRESA 
+                --AND V.ID_FAMILIA != :P638_FAMILIA
+                ```
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P631_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha Desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem P631_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P631_LINEA (
+        type: popupLov
+        label {
+            label: <p>Linea: </p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT V.DESC_LINEA||'('||V.COD_LINEA||')', V.ID_LINEA
+                FROM VTV_VENTAS_BASE V
+                WHERE ID_EMPRESA = :P0_COD_EMPRESA 
+                ```
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P631_MARCA (
+        type: popupLov
+        label {
+            label: <p>Marca: </p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT V.DESC_MARCA||'('||V.COD_MARCA||')', V.ID_MARCA
+                FROM VTV_VENTAS_BASE V
+                WHERE ID_EMPRESA = :P0_COD_EMPRESA 
+                ```
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P631_RUBRO (
+        type: popupLov
+        label {
+            label: <p>Rubro: </p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT V.DESC_RUBRO||'('||V.COD_RUBRO||')', V.ID_RUBRO
+                FROM VTV_VENTAS_BASE V
+                WHERE ID_EMPRESA = :P0_COD_EMPRESA 
+                ```
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P631_TIPO_REPORTE (
+        type: popupLov
+        label {
+            label: <p>Tipo Reporte: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Fecha;D,Artículo;A,Vendedor;V,Cliente;C,Familia;F,Rubro;R,Marca;M,Línea;L
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-left-lg
+                margin-right-lg
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P631_TRAER_IP (
+        type: hidden
+        layout {
+            sequence: 120
+            slot: body
+        }
+    )
+
+    pageItem P631_VENDEDOR (
+        type: popupLov
+        label {
+            label: <p> Vendedor</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vendedores
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    dynamicAction refresh (
+        name: REFRESH
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: [
+                P631_FEC_DESDE
+                P631_FEC_HASTA
+                P631_COD_ORIGEN_ART
+                P631_VENDEDOR
+                P631_CLIENTE
+                P631_FAMILIA
+                P631_RUBRO
+                P631_MARCA
+                P631_LINEA
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-ventas-articulo
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-10 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @gráfico-rubro
+            }
+            execution {
+                sequence: 100
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-11 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-ventas-vendedor
+            }
+            execution {
+                sequence: 110
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-12 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @gráfico-vendedor
+            }
+            execution {
+                sequence: 120
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-13 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-ventas-linea
+            }
+            execution {
+                sequence: 130
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-14 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grafico-linea
+            }
+            execution {
+                sequence: 140
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-15 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-ventas-marca
+            }
+            execution {
+                sequence: 150
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-16 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grafico-marca
+            }
+            execution {
+                sequence: 160
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @gráfico-artículo
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-3 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-ventas-cliente
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-4 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @gráfico-cliente
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-5 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-ventas-familia
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-6 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @gráfico-familia
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-7 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-ventas-fecha
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-8 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @gráfico-fecha
+            }
+            execution {
+                sequence: 80
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-9 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-ventas-rubro
+            }
+            execution {
+                sequence: 90
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction submit (
+        name: Submit
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P631_TIPO_REPORTE
+        }
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p631-tipo-reporte (
+        itemName: P631_TIPO_REPORTE
+        execution {
+            sequence: 20
+        }
+        computation {
+            type: expression
+            plsqlExpression: 'A'
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P631_TIPO_REPORTE
+        }
+    )
+
+    computation p631-traer-ip (
+        itemName: P631_TRAER_IP
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery: SELECT owa_util.get_cgi_env('REMOTE_ADDR') FROM DUAL;
+        }
+    )
+
+)
+

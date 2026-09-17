@@ -1,0 +1,1075 @@
+page 653 (
+    name: Carga Anticipo a Cliente
+    alias: CARGA-ANTICIPO-A-CLIENTE
+    title: Carga Anticipo a Cliente
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        width: 950
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P653_TIP_CAMBIO").readOnly = true;
+            document.getElementById("P653_TIP_COMPROBANTE").readOnly = true;
+            document.getElementById("P653_SER_COMPROBANTE").readOnly = true;
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+                text-align: left;
+            }
+            
+            .no-pointer{
+                pointer-events: none;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region ccw-anticipos-clientes-cab (
+        name: CCW_ANTICIPOS_CLIENTES_CAB
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID_EMPRESA,
+                       TIP_COMPROBANTE,
+                       SER_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       FEC_COMPROBANTE,
+                       ID_CLIENTE,
+                       ID_MONEDA,
+                       TIP_CAMBIO,
+                       MONTO_TOTAL,
+                       SALDO,
+                       ACTIVO,
+                       ID_SUCURSAL,
+                       COD_USUARIO,
+                       ID_CUENTA,
+                       ID,
+                       ID_TIPO_COMP,
+                       ID_SERIE_COMP,
+                       ID_SECTOR
+                  from CCW_ANTICIPOS_CLIENTES_CAB
+                ```
+            pageItemsToSubmit: P653_ID
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P653_ACTIVO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 150
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ACTIVO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_BANDERA_RECIBO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    pageItem P653_COD_USUARIO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 170
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: COD_USUARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p>Fecha:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: FEC_COMPROBANTE
+            dataType: date
+        }
+    )
+
+    pageItem P653_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 180
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P653_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 800
+            popupHeight: 800
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 90
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_CLIENTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_ID_CUENTA (
+        type: popupLov
+        label {
+            label: <p>Cuenta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+            popupWidth: 500
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas-contables-asentable
+            nullDisplayValue: -SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_CUENTA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_ID_EMPRESA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_EMPRESA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_ID_MONEDA (
+        type: popupLov
+        label {
+            label: <p>Moneda:&ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 110
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 4
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_MONEDA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_ID_SECTOR (
+        type: popupLov
+        label {
+            label: <p> Sector </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sector-ventas
+        }
+        layout {
+            sequence: 130
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_SECTOR
+            dataType: number
+        }
+    )
+
+    pageItem P653_ID_SERIE_COMP (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 200
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_SERIE_COMP
+            dataType: number
+        }
+    )
+
+    pageItem P653_ID_SUCURSAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 160
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_SUCURSAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_ID_TIPO_COMP (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 190
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: ID_TIPO_COMP
+            dataType: number
+        }
+    )
+
+    pageItem P653_MONTO_TOTAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 140
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: MONTO_TOTAL
+            dataType: number
+        }
+    )
+
+    pageItem P653_NRO_COMPROBANTE (
+        type: numberField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-left-none
+            ]
+            cssClasses: no-pointer
+            width: 30
+        }
+        advanced {
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P653_SALDO (
+        type: numberField
+        label {
+            label: <p>Saldo:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G999G999G999G990
+            width: 30
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: SALDO
+            dataType: number
+        }
+    )
+
+    pageItem P653_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-right-none
+            ]
+            cssClasses: no-pointer
+            width: 30
+        }
+        validation {
+            maxLength: 7
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P653_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Cambio:&ensp;</p
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: solo-mostrar
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P653_TIP_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Tipo:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @ccw-anticipos-clientes-cab
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+            width: 30
+        }
+        validation {
+            maxLength: 3
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @ccw-anticipos-clientes-cab
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    button aplicar-cambios (
+        buttonName: APLICAR_CAMBIOS
+        label: Aplicar Cambios
+        layout {
+            sequence: 20
+            region: @ccw-anticipos-clientes-cab
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P653_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button borrar (
+        buttonName: BORRAR
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @ccw-anticipos-clientes-cab
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Estás seguro de borrar el registro?
+            style: warning
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P653_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button guardar (
+        buttonName: GUARDAR
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @ccw-anticipos-clientes-cab
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @ccw-anticipos-clientes-cab
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-long-arrow-left
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 670
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    dynamicAction setear-cod-cliente-ref (
+        name: Setear COD_CLIENTE_REF
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P653_ID_CLIENTE
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select  c.cod_cliente
+                    from    ccw_clientes c
+                    where   id  = :P653_ID_CLIENTE
+                    ```
+                itemsToSubmit: P653_ID_CLIENTE
+            }
+            affectedElements {
+                selectionType: items
+                items: P653_COD_CLIENTE_REF
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-monto-total (
+        name: Setear Monto Total
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P653_SALDO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody: return :P653_SALDO;
+                itemsToSubmit: P653_SALDO
+            }
+            affectedElements {
+                selectionType: items
+                items: P653_MONTO_TOTAL
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-tipo-cambio (
+        name: Setear Tipo Cambio
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P653_ID_MONEDA
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    if not :P653_ID_MONEDA is null then
+                        return ftipos_cambio(:P653_ID_MONEDA, sysdate, 'F', 'V');
+                    end if;
+                    ```
+                itemsToSubmit: P653_ID_MONEDA
+                suppressChangeEvent: true
+            }
+            affectedElements {
+                selectionType: items
+                items: P653_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p653-activo (
+        itemName: P653_ACTIVO
+        execution {
+            sequence: 40
+        }
+        computation {
+            type: staticValue
+            staticValue: S
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-cod-usuario (
+        itemName: P653_COD_USUARIO
+        execution {
+            sequence: 60
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody: return :APP_USER;
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-fec-comprobante (
+        itemName: P653_FEC_COMPROBANTE
+        execution {
+            sequence: 20
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody: return sysdate;
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-id-cuenta (
+        itemName: P653_ID_CUENTA
+        execution {
+            sequence: 130
+        }
+        computation {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                BUSCA_CUENTA(P_COD_CUENTA => W_BUSCA_PARAMETRO('CO', 'COD_CUENTA_ANTICIPO_CLIENTE_'||:P0_ID_EMPRESA),
+                             P_EMPRESA    => :P0_ID_EMPRESA)
+                ```
+        }
+    )
+
+    computation p653-id-empresa (
+        itemName: P653_ID_EMPRESA
+        execution {
+            sequence: 30
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody: return :P0_ID_EMPRESA;
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-id-serie-comp (
+        itemName: P653_ID_SERIE_COMP
+        execution {
+            sequence: 120
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select  s.id
+                from    bsw_series_comprob s
+                where   tip_comprobante = 'ADL'
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-id-sucursal (
+        itemName: P653_ID_SUCURSAL
+        execution {
+            sequence: 50
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody: return :P0_ID_SUCURSAL;
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-id-tipo-comp (
+        itemName: P653_ID_TIPO_COMP
+        execution {
+            sequence: 110
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select  c.id
+                from    bsw_tipos_comprobantes c
+                where   tip_comprobante = 'ADL'
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-nro-comprobante (
+        itemName: P653_NRO_COMPROBANTE
+        execution {
+            sequence: 90
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select  nvl(max(c.nro_comprobante), 0) + 1
+                from    ccw_anticipos_clientes_cab c
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-ser-comprobante (
+        itemName: P653_SER_COMPROBANTE
+        execution {
+            sequence: 80
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select  s.ser_comprobante
+                from    bsw_series_comprob s
+                where   tip_comprobante = 'ADL'
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    computation p653-tip-comprobante (
+        itemName: P653_TIP_COMPROBANTE
+        execution {
+            sequence: 100
+        }
+        computation {
+            type: staticValue
+            staticValue: ADL
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P653_ID
+        }
+    )
+
+    process cargar-coleccion-recibo (
+        name: Cargar coleccion RECIBO
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    V_ID_SALDO NUMBER;
+                BEGIN
+                    IF :P653_BANDERA_RECIBO = 'S' THEN
+                        DBMS_LOCK.SLEEP(0.02);
+                        BEGIN
+                            SELECT  ID
+                            INTO    V_ID_SALDO
+                            FROM    CCW_SALDOS
+                            WHERE   ID_ANTICIPO = :P653_ID
+                            AND     TIPO_COMPROBANTE = W_BUSCA_PARAMETRO('CC', 'TIP_ANTI_CLIENTE_DEB');
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                RAISE_APPLICATION_ERROR(-20000, 'No se encontró el saldo correspondiente '||SQLERRM);
+                        END;
+                        APEX_COLLECTION.ADD_MEMBER(
+                            p_collection_name => 'SALDOS_CLIENTE_SELECCION',
+                            p_c001  => 'N',
+                            p_n001  => V_ID_SALDO,
+                            p_n002  => :P653_ID_MONEDA);
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 13253635674874235
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 13253298276874235
+        }
+    )
+
+    process dml-anticipo (
+        name: DML Anticipo
+        type: formAutoRowProcessing
+        formRegion: @ccw-anticipos-clientes-cab
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Operación realizada
+        }
+        advanced {
+            executionMappingIdentifier: 13247763247874234
+        }
+    )
+
+    process form-initializacion (
+        name: Form - Initializacion
+        type: formInitialization
+        formRegion: @ccw-anticipos-clientes-cab
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 13248100572874234
+        }
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 13254018335874235
+        }
+        serverSideCondition {
+            whenButtonPressed: @borrar
+        }
+    )
+
+)
+

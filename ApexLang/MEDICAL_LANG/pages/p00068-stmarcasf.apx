@@ -1,0 +1,523 @@
+page 68 (
+    name: Carga de Marcas
+    alias: STMARCASF
+    title: Carga de Marcas
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+                pointer-events: none;
+            }
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-marcas (
+        name: Carga de Marcas
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       COD_MARCA,
+                       DESCRIPCION,
+                       ABREVIATURA,
+                       ID_EMPRESA,
+                       COD_USUARIO_AUD,
+                       IND_REPLICA,
+                       PORC_DESCUENTO,
+                       ID_PAIS
+                       
+                  from STW_MARCAS
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P68_ABREVIATURA (
+        type: textField
+        label {
+            label: <p>Abreviatura:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-marcas
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 2
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: ABREVIATURA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P68_COD_MARCA (
+        type: displayOnly
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Marca:</a>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-marcas
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: COD_MARCA
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(A.COD_MARCA)),0)+1
+                from STW_MARCAS A
+                WHERE A.ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    pageItem P68_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 100
+            region: @carga-de-marcas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P68_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+            textCase: upper
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-marcas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P68_ID (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @carga-de-marcas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: STW_MARCAS_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P68_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 90
+            region: @carga-de-marcas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P68_ID_PAIS (
+        type: popupLov
+        label {
+            label: <p>Pais:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-paises
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-marcas
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: ID_PAIS
+            dataType: number
+        }
+    )
+
+    pageItem P68_IND_REPLICA (
+        type: switch
+        label {
+            label: <p>Réplica:</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            onLabel: SI
+            offValue: N
+            offLabel: NO
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-marcas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: IND_REPLICA
+            dataType: varchar2
+        }
+        comments {
+            comments: No se si tendra algun trigger, pero sin importar la seleccion del switch, esta guardando siempre N
+        }
+    )
+
+    pageItem P68_PORC_DESCUENTO (
+        type: hidden
+        layout {
+            sequence: 110
+            region: @carga-de-marcas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-marcas
+            column: PORC_DESCUENTO
+            dataType: number
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P68_ID
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P68_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P68_ID
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 10724949946898075
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-stmarcasf (
+        name: Initialize form STMARCASF
+        type: formInitialization
+        formRegion: @carga-de-marcas
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 10724163328898073
+        }
+    )
+
+    process process-form-stmarcasf (
+        name: Process form STMARCASF
+        type: formAutoRowProcessing
+        formRegion: @carga-de-marcas
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 10724584729898073
+        }
+    )
+
+)
+

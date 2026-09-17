@@ -1,0 +1,114 @@
+page 256 (
+    name: Imprimir Asientos Diarios
+    alias: IMPRIMIR-ASIENTOS-DIARIOS
+    title: Imprimir Asientos Diarios
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    branch (
+        name: Branch to PL/SQL Procedure
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                if :P255_TIPO_ASIENTO = 'P' THEN
+                    declare
+                              l_proc varchar2(100) := 'show report';
+                              l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                    BEGIN
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('LibroAsientosProvisorio'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => ('P_FEC_INI='||:P255_FEC_INI||'&'||'P_FEC_FIN='||:P255_FEC_FIN||'&'||'P_COD_EMPRESA='||:P0_COD_EMPRESA||'&'||'P_NUM_INI='||:P255_NUM_ASIENTO_INI||'&'||'P_NUM_FIN='||:P255_NUM_ASIENTO_FIN||'&'||'P_ID_MONEDA='||:P255_TIPO_MONEDA||'&'||'P_COD_USER='||:APP_USER)
+                                  
+                                  );
+                
+                          apex_application.stop_apex_engine();
+                
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                          NULL;
+                          when others then 
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                ELSE 
+                        declare
+                          l_proc varchar2(100) := 'show report';
+                          l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                        BEGIN
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('LibroAsientosDefinitivos_2'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => ('P_FEC_INI='||:P255_FEC_INI||'&'||'P_FEC_FIN='||:P255_FEC_FIN||'&'||'P_COD_EMPRESA='||:P0_COD_EMPRESA||'&'||'P_NUM_INI='||:P255_NUM_ASIENTO_INI||'&'||'P_NUM_FIN='||:P255_NUM_ASIENTO_FIN||'&'||'P_ID_MONEDA='||:P255_TIPO_MONEDA||'&'||'P_COD_USER='||:APP_USER)
+                                  );
+                          
+                
+                          apex_application.stop_apex_engine();
+                
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                                    NULL;
+                          when others then 
+                
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                END IF;
+                
+                
+                        
+                ```
+        }
+    )
+
+)
+

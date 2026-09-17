@@ -1,0 +1,942 @@
+page 665 (
+    name: Reporte de Autoriza OCC
+    alias: REPORTE-DE-AUTORIZA-OCC
+    title: Reporte de Autoriza OCC
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 225px;
+            height: 23px;
+            vertical-align: bottom;
+            border-style: dashed;
+            font-weight: lighter;
+            font-size: 13px;
+            text-align: center;
+            border-width: thin;
+            border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region reporte-de-autoriza-occ (
+        name: Reporte de Autoriza OCC
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT distinct P.COD_SUCURSAL,
+                       P.SUCURSAL DESC_SUCURSAL,
+                       P.ESTADO,
+                       P.TIP_COMPROBANTE,
+                       P.SER_COMPROBANTE,
+                       P.NRO_COMPROBANTE,
+                       P.NRO_OCC,
+                       P.FEC_COMPROBANTE,
+                       P.NOMBRE NOMBRE_CLIENTE,
+                       P.COD_ARTICULO,
+                       P.COD_FACBRICANTE,
+                       P.DESC_ARTICULO,
+                       P.PRESENTACION,
+                       P.UNIDAD_MEDIDA,
+                       P.MARCA,
+                       P.CANTIDAD_A_ENTREGAR,
+                       P.AUTORIZA_STOCK,
+                       P.AUTORIZA_CTACTE,
+                       --P.NRO_LOTE,
+                       --P.FEC_VENCIMIENTO
+                       lo2.nro_lote,
+                       lo2.fec_vencimiento,
+                       ex.cant_dispon as Cantidad_en_lote,
+                       su.descripcion       
+                  FROM
+                (SELECT PD.ID,
+                       PD.ID_EMPRESA,
+                       PD.ID_SUCURSAL,
+                       SU.COD_SUCURSAL,
+                       SU.DESCRIPCION SUCURSAL,
+                       NVL(PD.ESTADO,'EP') ESTADO,
+                       PD.TIP_COMPROBANTE,
+                       PD.SER_COMPROBANTE,
+                       PD.NRO_COMPROBANTE,
+                       CA.NRO_OCC,
+                      --- PD.FEC_COMPROBANTE,   
+                       PD.AUTORIZA_STOCK_FEC FEC_COMPROBANTE,  
+                       PD.ID_CLIENTE,
+                       PER.NOMBRE ,
+                       CA.ID_ARTICULO,
+                       AR.COD_ARTICULO,
+                       AR.COD_ORIGEN_ART COD_FACBRICANTE,
+                       AR.DESCRIPCION DESC_ARTICULO,
+                       AR.ID_ENVASE,
+                       EN.DESCRIPCION PRESENTACION,
+                       UM.DESCRIPCION UNIDAD_MEDIDA,
+                       AR.ID_MARCA,
+                       MC.DESCRIPCION MARCA,
+                       CA.CANTIDAD_A_ENTREGAR,
+                       DET.NRO_LOTE,
+                       LT.FEC_VENCIMIENTO,
+                       PD.AUTORIZA_STOCK,
+                       PD.AUTORIZA_CTACTE,
+                
+                       nvl((select 'N' 
+                        from vtw_pedidos_detalle pdd
+                        where pdd.id_pedido_cabecera = pd.id
+                          AND PDD.ID_ARTICULO IN ( SELECT E.ID_ARTICULO
+                                                        FROM STW_EXISTENCIA_ART E
+                                                        WHERE E.CANT_DISPON > 0)
+                        group by 'S'),'S') ind_sin_stock,
+                        
+                        nvl((select 'S' 
+                        from cmw_cotiza_articulos cca
+                        where cca.id_pedido = pd.id
+                          and (cca.nro_occ = '0' OR cca.nro_occ IS NULL) 
+                        group by 'S'),'N')ind_sin_occ,
+                        
+                        (SELECT COUNT(*)
+                          FROM CMW_COTIZA_ARTICULOS Z
+                         WHERE Z.ID_PEDIDO = pd.id
+                           AND (Z.NRO_OCC <> '0' OR Z.NRO_OCC IS NULL)) CANT_PEND_OCC,
+                         
+                         (SELECT COUNT(*)
+                          FROM CMW_COTIZA_ARTICULOS Z1
+                         WHERE Z1.ID_PEDIDO = pd.id
+                           AND (Z1.NRO_OCC <> '0' OR Z1.NRO_OCC IS NOT NULL)) CANT_COT_OCC,
+                           
+                         (SELECT SUM(Z2.CANT_ANULADA)
+                            FROM CMW_COTIZA_ARTICULOS Z2
+                           WHERE Z2.ID_PEDIDO = PD.ID) CANT_ANULADA
+                
+                FROM VTW_PEDIDOS_CABECERA PD,
+                     VTW_PEDIDOS_DETALLE  DET,
+                     CCW_CLIENTES         CL,
+                     BSW_PERSONAS         PER,
+                     BSW_SUCURSALES       SU,
+                     CMW_COTIZA_ARTICULOS CA,
+                     STW_ARTICULOS        AR,
+                     STW_UNIDADES_MEDIDA  UM,
+                     STW_ENVASES          EN,
+                     STW_MARCAS           MC,
+                     STW_LOTES            LT
+                WHERE PD.ID_EMPRESA = DET.ID_EMPRESA
+                  --AND PD.ID = DET.ID_PEDIDO_CABECERA
+                  AND PD.ID_CLIENTE = CL.ID
+                  AND CL.ID_PERSONA =  PER.ID
+                  AND PD.ID_EMPRESA = SU.ID_EMPRESA
+                  AND PD.ID_SUCURSAL = SU.ID
+                  AND PD.ID = CA.ID_PEDIDO
+                  AND DET.ID = CA.ID_PEDIDO_DET
+                  AND CA.ID_ARTICULO = AR.ID
+                  AND AR.ID_UNIDAD_MEDIDA = UM.ID
+                  AND AR.ID_ENVASE = EN.ID
+                  AND AR.ID_MARCA = MC.ID
+                  AND DET.ID_ARTICULO = LT.ID_ARTICULO
+                  --AND DET.ID_LOTE = LT.ID
+                  --AND PD.NRO_COMPROBANTE = 1018
+                  --AND AR.COD_ARTICULO = 1356
+                  ORDER BY PD.ID DESC
+                ) P,
+                stw_existencia_art ex,
+                stw_lotes lo2,
+                bsw_sucursales su
+                where ex.id_articulo = p.id_articulo
+                  and ex.cant_dispon > 0
+                  and lo2.id = ex.id_lote
+                  and su.id = ex.id_sucursal
+                
+                
+                  and P.IND_SIN_STOCK ='N'
+                  ---AND   P.ind_sin_occ = 'N'
+                  AND   P.ID IN (SELECT C1.ID_PEDIDO
+                                    FROM CMW_COTIZA_ARTICULOS C1
+                                   WHERE obtener_cantidad_pendiente(C1.ID_PEDIDO,C1.ID_ARTICULO,C1.ID_EMPRESA,C1.id) > 0)
+                
+                                    ---PARA EL CONTROL DE QUE TENGA OCC LO HAGA POR ARTICULO Y NO POR PEDIDO 
+                  --AND P.CANT_PEND_OCC <> 0  
+                  --AND P.CANT_COT_OCC > 0
+                  AND P.AUTORIZA_STOCK  = 'S'
+                  AND P.AUTORIZA_CTACTE = 'S'
+                  AND P.CANTIDAD_A_ENTREGAR>0
+                  AND P.Nro_Occ is not null
+                  AND NVL(P.CANT_ANULADA,0) < NVL(P.CANT_PEND_OCC,0)
+                  and ex.id_articulo = p.id_articulo
+                  and ex.cant_dispon > 0
+                  and lo2.id = ex.id_lote
+                  and su.id = ex.id_sucursal
+                ---having sum(ex.cant_dispon,0) 
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: page
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 67404902605367587
+        }
+
+        savedReport 674054 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COD_SUCURSAL
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @DESC_SUCURSAL
+                layout {
+                    width: 72
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 51.9375
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 47.938
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 69
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    width: 84
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 86
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @NOMBRE_CLIENTE
+                layout {
+                    width: 134
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 91
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @COD_FACBRICANTE
+                layout {
+                    width: 106
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 143
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @PRESENTACION
+                layout {
+                    width: 93
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @UNIDAD_MEDIDA
+                layout {
+                    width: 78
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MARCA
+                layout {
+                    width: 85
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_A_ENTREGAR
+                layout {
+                    width: 110
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    width: 70
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 85
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_EN_LOTE
+                layout {
+                    sequence: 18
+                }
+            )
+
+            sort (
+                column: @NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column AUTORIZA_CTACTE (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column AUTORIZA_STOCK (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANTIDAD_A_ENTREGAR (
+            type: numberField
+            heading {
+                heading: <p>Cant. a Entregar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_A_ENTREGAR
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_EN_LOTE (
+            type: numberField
+            heading {
+                heading: <p>Cantidad En Lote</p>
+                alignment: end
+            }
+            layout {
+                sequence: 220
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_EN_LOTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_FACBRICANTE (
+            type: textField
+            heading {
+                heading: <p>Cod Facbricante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COD_FACBRICANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: COD_SUCURSAL
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCRIPCION (
+            type: textField
+            heading {
+                heading: <p>Sucursal</p>
+            }
+            layout {
+                sequence: 190
+            }
+            appearance {
+                width: 100
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Desc Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+            }
+            validation {
+                valueRequired: true
+                maxLength: 400
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DESC_SUCURSAL (
+            type: textField
+            heading {
+                heading: <p>Sucursal</p>
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: DESC_SUCURSAL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: timestamp
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Venc.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+        )
+
+        column MARCA (
+            type: textField
+            heading {
+                heading: <p>Marca</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: MARCA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NOMBRE_CLIENTE (
+            type: textField
+            heading {
+                heading: <p>Cliente</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: NOMBRE_CLIENTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Nro. Comp.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 170
+            }
+            validation {
+                valueRequired: true
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: <p>Nro. OCC</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column PRESENTACION (
+            type: textField
+            heading {
+                heading: <p>Presentacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: PRESENTACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column UNIDAD_MEDIDA (
+            type: textField
+            heading {
+                heading: <p>Unidad M.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 140
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: UNIDAD_MEDIDA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Autoriza OCC
+        }
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Alerta, página en modficación
+                message: Se está trabajando en la página, lo que puede provocar errores al usarla.
+                style: information
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

@@ -1,0 +1,1264 @@
+page 263 (
+    name: Ordenes de Compra de proveedor - OCP
+    alias: ORDENES-DE-COMPRA-DE-PROVEEDOR-OCP
+    title: Ordenes de Compra de Proveedor - OCP
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            try {
+              var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+              var v_nro_occ = model.getFieldKey("NRO_OCC");
+               
+              
+              var numeroIngre = $v('P628_NRO_OCC');
+            
+              model.forEach(function(r, index, id) {
+                var meta = model.getRecordMetadata(id);
+                if ((meta.fields !== undefined) && (!meta.deleted)) {
+            
+                  model.setValue(r, v_nro_occ, numeroIngre);
+                }
+              });
+            
+            } catch (e) {
+              // Manejar errores aquí
+              console.error("Se produjo un error:", e);
+            }
+            
+            function calculaTotal(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cantidad = model.getFieldKey("PRECIO_TOTAL_COPIA");
+                var v_cantidad_aprobada = model.getFieldKey("CANTIDAD_APROBADA_COPIA") || ("CANTIDAD_COPIA");
+            
+                var v_total_cantidad          = 0;
+                var v_total_cant_aprobado     = 0;
+            
+                model.forEach(function(r, index, id) {
+                        v_total_cantidad           = v_total_cantidad     + parseFloat(r[v_cantidad].replace(/\./g,''));
+                        v_total_cant_aprobado      = v_total_cant_aprobado     + parseFloat(r[v_cantidad_aprobada].replace(/\./g,''));
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+               
+                    }
+                    
+                });
+            
+                if(isNaN(v_total_cantidad)){
+                     v_total_cantidad=1;
+                 }
+                 if(isNaN(v_total_cant_aprobado)){
+                     v_total_cant_aprobado=1;
+                 }
+            
+                 $s('P628_TOTAL_GENERAL',v_total_cantidad);
+                 $s('P628_CANTIDAD_TOTAL',v_total_cant_aprobado);
+            
+            
+            }
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 225px;
+            height: 23px;
+            vertical-align: bottom;
+            border-style: dashed;
+            font-weight: lighter;
+            font-size: 13px;
+            text-align: center;
+            border-width: thin;
+            border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region ordenes-de-compra (
+        name: Ordenes de Compra
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select P.ID,
+                       P.ID_EMPRESA,
+                       P.TIP_COMPROBANTE,
+                       P.SER_COMPROBANTE,
+                       P.NRO_COMPROBANTE,
+                       P.ID_SUCURSAL,
+                       P.FEC_COMPROBANTE,
+                       P.ID_PROVEEDOR,
+                       P.ID_CONDICION_COMPRA,
+                       P.TOT_COMPROBANTE,
+                       P.TOT_GRAVADAS,
+                       P.TOT_EXENTAS,
+                       P.TOT_IVA,
+                       P.DESCUENTO,
+                       P.ID_MONEDA,
+                       P.TIP_CAMBIO,
+                       P.VERIFICADORA,
+                       P.TRANSPORTE,
+                       P.ID_VIA,
+                       P.FEC_EMBARQUE,
+                       P.FEC_CONFIRMACION,
+                       ----P.ESTADO,
+                       /*CASE
+                        WHEN P.ESTADO = 'C' AND NVL(P.ANULADO,'N') != 'S' THEN
+                          'CERRADO'
+                        WHEN nvl(P.ESTADO,'P') = 'P' AND NVL(P.ANULADO,'N') != 'S' THEN
+                          'PENDIENTE'
+                        WHEN P.ANULADO = 'S' THEN
+                         'ANULADO'
+                        WHEN P.ESTADO IS NULL AND NVL(P.ANULADO,'N') != 'S' THEN
+                         'PARCIAL'
+                     end as estado,*/
+                       
+                       OBTENER_ESTADO_OCP(P.ID) ESTADO,
+                       P.FEC_ESTADO,
+                       P.ID_USUARIO,
+                       P.FEC_ALTA,
+                       CASE P.ANULADO
+                        WHEN 'S' THEN 'fa fa-check u-success-text'
+                        WHEN 'N' THEN 'fa fa-remove u-danger-text'
+                       END AS 
+                       ICONO_ANULADO,
+                       P.CAMBIO_MONEDA_PRECIO,
+                       P.TIP_COMPROBANTE_REF,
+                       P.SER_COMPROBANTE_REF,
+                       P.NRO_COMPROBANTE_REF,
+                       P.REFERENCIA,
+                       P.ID_PROVEEDOR_REF,
+                       P.COD_USUARIO_AUD,
+                       P.ID_ENTSAL_CAB,
+                       P.FAC_REFERENCIA,
+                       P.ID_SUCURSAL_CENTRAL,
+                       P.COMENTARIO,
+                       P.FEC_ANULACION,
+                       P.ANULADO,
+                      CASE P.TIPO 
+                      WHEN 'IMP' THEN 'IMPORTACION'
+                      WHEN 'LOC' THEN 'LOCAL'
+                      END AS TIPO_PEDIDO,
+                      sys.dbms_lob.getlength(P.FOTO_COMPROBANTE),
+                      P.PROFORMA
+                  from CMW_PEDIDOS_CABECERA P
+                 where P.ID_EMPRESA      = :P0_ID_EMPRESA
+                   AND P.ID_SUCURSAL = :P0_ID_SUCURSAL
+                   AND (P.ID_PROVEEDOR    = :P263_PROVEEDOR OR :P263_PROVEEDOR IS NULL)
+                   AND (P.FEC_COMPROBANTE  BETWEEN :P263_FEC_DESDE AND  :P263_FEC_HASTA)
+                   AND (P.NRO_COMPROBANTE = :P263_NRO_ORDEN OR :P263_NRO_ORDEN IS NULL)
+                   AND P.IND_TIPO_OC = 'ST'
+                 ORDER BY NRO_COMPROBANTE DESC
+                ```
+            pageItemsToSubmit: [
+                P263_PROVEEDOR
+                P263_NRO_ORDEN
+                P263_FEC_DESDE
+                P263_FEC_HASTA
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 7
+                items: {
+                    P7_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 59991505145785542
+        }
+
+        column ANULADO (
+            type: plainText
+            heading {
+                heading: Anulado
+                alignment: center
+            }
+            layout {
+                sequence: 138
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ICONO_ANULADO#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column CAMBIO_MONEDA_PRECIO (
+            type: hidden
+            heading {
+                heading: Cambio Moneda Precio
+            }
+            layout {
+                sequence: 27
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Usuario Auditor
+            }
+            layout {
+                sequence: 33
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column COMENTARIO (
+            type: hidden
+            heading {
+                heading: Comentario
+            }
+            layout {
+                sequence: 37
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            heading {
+                heading: Descuento
+            }
+            layout {
+                sequence: 14
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 178
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BA
+            }
+        )
+
+        column FAC_REFERENCIA (
+            type: hidden
+            heading {
+                heading: Fac Referencia
+            }
+            layout {
+                sequence: 35
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Fecha Alta
+                alignment: center
+            }
+            layout {
+                sequence: 25
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column FEC_ANULACION (
+            type: plainText
+            heading {
+                heading: Fecha Anulación
+                alignment: center
+            }
+            layout {
+                sequence: 38
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fec Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column FEC_CONFIRMACION (
+            type: hidden
+            heading {
+                heading: Fec Confirmacion
+            }
+            layout {
+                sequence: 21
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column FEC_EMBARQUE (
+            type: hidden
+            heading {
+                heading: Fec Embarque
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column FEC_ESTADO (
+            type: hidden
+            heading {
+                heading: Fec Estado
+            }
+            layout {
+                sequence: 23
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ICONO_ANULADO (
+            type: hidden
+            heading {
+                heading: Icono Anulado
+            }
+            layout {
+                sequence: 128
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CONDICION_COMPRA (
+            type: plainText
+            heading {
+                heading: Id Condicion Compra
+                alignment: center
+            }
+            layout {
+                sequence: 78
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 48
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column ID_ENTSAL_CAB (
+            type: hidden
+            heading {
+                heading: Id Entsal Cab
+            }
+            layout {
+                sequence: 34
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainText
+            heading {
+                heading: Id Moneda
+                alignment: center
+            }
+            layout {
+                sequence: 88
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Proveedor
+                alignment: center
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 68
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column ID_PROVEEDOR_REF (
+            type: plainText
+            heading {
+                heading: Id Proveedor Ref
+                alignment: center
+            }
+            layout {
+                sequence: 118
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Id Sucursal
+                alignment: center
+            }
+            layout {
+                sequence: 58
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column ID_SUCURSAL_CENTRAL (
+            type: hidden
+            heading {
+                heading: Id Sucursal Central
+            }
+            layout {
+                sequence: 36
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column ID_USUARIO (
+            type: plainText
+            heading {
+                heading: Id Usuario
+                alignment: center
+            }
+            layout {
+                sequence: 108
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column ID_VIA (
+            type: plainText
+            heading {
+                heading: Id Via
+                alignment: center
+            }
+            layout {
+                sequence: 98
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Comprobante
+                alignment: end
+            }
+            layout {
+                sequence: 5
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_COMPROBANTE_REF (
+            type: hidden
+            heading {
+                heading: Nro Comprobante Ref
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column PROFORMA (
+            type: plainText
+            heading {
+                heading: <p>Proforma</p>
+                alignment: center
+            }
+            layout {
+                sequence: 168
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AY
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+            }
+            layout {
+                sequence: 31
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Ser Comprobante
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column SER_COMPROBANTE_REF (
+            type: hidden
+            heading {
+                heading: Ser Comprobante Ref
+            }
+            layout {
+                sequence: 29
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column "SYS.DBMS_LOB.GETLENGTH(P.FOTO_COMPROBANTE)" (
+            type: displayImage
+            heading {
+                heading: Foto Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 158
+                columnAlignment: end
+            }
+            blobAttributes {
+                tableName: CMW_PEDIDOS_CABECERA
+                blobColumn: FOTO_COMPROBANTE
+                primaryKeyColumn1: ID
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        column TIPO_PEDIDO (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 148
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AW
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Cambio
+                alignment: end
+            }
+            layout {
+                sequence: 16
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tip Comprobante
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TIP_COMPROBANTE_REF (
+            type: hidden
+            heading {
+                heading: Tip Comprobante Ref
+            }
+            layout {
+                sequence: 28
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column TOT_EXENTAS (
+            type: hidden
+            heading {
+                heading: Tot Exentas
+            }
+            layout {
+                sequence: 12
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column TOT_GRAVADAS (
+            type: hidden
+            heading {
+                heading: Tot Gravadas
+            }
+            layout {
+                sequence: 11
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column TOT_IVA (
+            type: hidden
+            heading {
+                heading: Tot Iva
+            }
+            layout {
+                sequence: 13
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column TRANSPORTE (
+            type: hidden
+            heading {
+                heading: Transporte
+            }
+            layout {
+                sequence: 18
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column VERIFICADORA (
+            type: hidden
+            heading {
+                heading: Verificadora
+            }
+            layout {
+                sequence: 17
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Ordenes de Compra
+        }
+
+        savedReport 600196 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ANULADO (
+                sequence: 7
+            )
+
+            displayColumn ESTADO (
+                sequence: 10
+            )
+
+            displayColumn FEC_ANULACION (
+                sequence: 8
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 6
+            )
+
+            displayColumn ID_PROVEEDOR (
+                sequence: 5
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn PROFORMA (
+                sequence: 4
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn TIPO_PEDIDO (
+                sequence: 9
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 11
+            )
+
+            sort (
+                column: NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P263_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha desde</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem P263_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha hasta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+    )
+
+    pageItem P263_NRO_ORDEN (
+        type: textField
+        label {
+            label: <p>Nº Orden</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P263_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            displayExtraValues: false
+            nullDisplayValue: ---TODOS---
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @ordenes-de-compra
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 7
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P263_PROVEEDOR
+                P263_NRO_ORDEN
+                P263_FEC_DESDE
+                P263_FEC_HASTA
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @ordenes-de-compra
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

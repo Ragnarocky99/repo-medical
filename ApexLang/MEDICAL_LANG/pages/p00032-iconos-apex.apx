@@ -1,0 +1,79 @@
+page 32 (
+    name: Iconos APEX
+    alias: ICONOS-APEX
+    title: Iconos APEX - Sistema Inventiva
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function passBack(x){
+                console.log(x)
+              apex.item(P9_ICON_IMG).setValue(x)
+              close();
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region iconos (
+        name: Iconos
+        type: plSqlDynamicContent
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                  cursor c1 is
+                    select t.icon_name
+                          ,t.icon_library
+                          ,(case
+                             when t.icon_library = 'FONTAPEX' then
+                              '<div style="width:160px; height:160px; float:left; margin:5px; text-align:center; border: 1px solid black; display: inline-block;"><a href="javascript:passBack(''' ||
+                              t.icon_name || ''');"><span class="fa fa-3x ' || t.icon_name ||
+                              '"></span><br/><span style="font-size: 10px;">' || t.icon_name ||
+                              '</span></a></div>'
+                             else
+                              '<div style="width:160px; height:160px; float:left; margin:5px; text-align:center; border: 1px solid black;"><img alt="' ||
+                              t.icon_name || '" src="/i/menu/' || t.icon_name ||
+                              '" onclick="javascript:passBack(''' || t.icon_name || ''')" /><br/><span style="font-size: 10px;">' || t.icon_name ||
+                              '</span></div>'
+                           end) as html
+                    from   apex_220100.wwv_flow_standard_icons t
+                    order  by t.icon_name;
+                begin
+                  for r1 in c1 loop
+                    htp.p(r1.html);
+                  end loop;
+                end;
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+)
+

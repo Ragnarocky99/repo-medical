@@ -1,0 +1,452 @@
+page 333 (
+    name: Carga de Historico de Sueldos
+    alias: CARGA-DE-HISTORICO-DE-SUELDOS
+    title: Carga de Historico de Sueldos
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .readOnly{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-historico-de-sueldos (
+        name: Carga de Historico de Sueldos
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_EMPLEADO,
+                       FEC_SUELDO,
+                       SUELDO_BASE,
+                       SUELDO_FINAL,
+                       ID_SUCURSAL,
+                       COD_USUARIO_AUD
+                  from RHW_HIST_SUELDOS
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P333_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 100
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P333_FEC_SUELDO (
+        type: datePicker
+        label {
+            label: <p>Fecha Vigencia: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: FEC_SUELDO
+            dataType: date
+        }
+    )
+
+    pageItem P333_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P333_ID_EMPLEADO (
+        type: popupLov
+        label {
+            label: <p>Empleado: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados-activos
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: ID_EMPLEADO
+            dataType: number
+        }
+    )
+
+    pageItem P333_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P333_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 90
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P333_SUELDO_BASE (
+        type: numberField
+        label {
+            label: <p>Sueldo Base: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: SUELDO_BASE
+            dataType: number
+        }
+    )
+
+    pageItem P333_SUELDO_FINAL (
+        type: numberField
+        label {
+            label: <p>Sueldo Final: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-historico-de-sueldos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-historico-de-sueldos
+            column: SUELDO_FINAL
+            dataType: number
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P333_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P333_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 15226626876700612
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-historico-de-sueldos (
+        name: Initialize form Carga de Historico de Sueldos
+        type: formInitialization
+        formRegion: @carga-de-historico-de-sueldos
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 15225810767700612
+        }
+    )
+
+    process process-form-carga-de-historico-de-sueldos (
+        name: Process form Carga de Historico de Sueldos
+        type: formAutoRowProcessing
+        formRegion: @carga-de-historico-de-sueldos
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 15226278842700612
+        }
+    )
+
+)
+

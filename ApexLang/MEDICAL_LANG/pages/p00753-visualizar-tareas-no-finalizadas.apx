@@ -1,0 +1,931 @@
+page 753 (
+    name: Visualizar Tareas No Finalizadas
+    alias: VISUALIZAR-TAREAS-NO-FINALIZADAS
+    title: Visualizar Tareas No Finalizadas
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @drawer
+        templateOptions: [
+            #DEFAULT#
+            js-dialog-class-t-Drawer--pullOutEnd
+        ]
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region tareas-no-finalizadas (
+        name: Tareas No Finalizadas
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT SEG.ID,
+                       SEG.FEC_PROX_EVENTO,
+                       SEG.DEFINICION,
+                       SEG.OBSERVACION,
+                       SEG.RESPONSABLE,
+                       SEG.IND_FINALIZADO,
+                       SEG.ID_PEDIDO,
+                       SEG.ID_PEDIDO_DET,
+                       SEG.ID_ARTICULO,
+                       SEG.ID_COTIZA_ART,
+                       SEG.ID_APROBACION_LIC,
+                       SEG.ID_OFERTA,
+                       SEG.ID_EMPRESA,
+                       (SELECT PS.NOMBRE
+                          FROM CMW_COTIZA_ARTICULOS CA
+                          JOIN VTW_PEDIDOS_CABECERA PC ON PC.ID = CA.ID_PEDIDO
+                          JOIN CCW_CLIENTES         CL ON CL.ID = PC.ID_CLIENTE
+                          JOIN BSW_PERSONAS         PS ON PS.ID = CL.ID_SOPORTE
+                         WHERE CA.ID = SEG.ID_COTIZA_ART
+                       UNION ALL
+                       SELECT PS.NOMBRE
+                          FROM LCW_OFERTAS_APROBACIONES AP
+                          JOIN LCW_LICITACIONES_CAB     LC ON LC.ID = AP.ID_LICITACION_CAB
+                          JOIN CCW_CLIENTES             CL ON CL.ID = LC.ID_CLIENTE
+                          JOIN BSW_PERSONAS         PS ON PS.ID = CL.ID_SOPORTE
+                         WHERE AP.ID = SEG.ID_APROBACION_LIC
+                       ) SOPORTE
+                  FROM CLW_ACCIONES_SEGUI SEG
+                  --JOIN CLW_ACCIONES_SEGUI_DEFINICION ASD ON ASD.ID = SEG.DEFINICION
+                 WHERE /*NVL(SEG.IND_FINALIZADO, 'N') = 'N'
+                   AND */(SEG.ID_COTIZA_ART = :P753_ID_COTIZA_ART OR SEG.ID_APROBACION_LIC = :P753_ID_APROBACION_LIC)
+                --ORDER BY SEG.FEC_PROX_EVENTO DESC
+                ```
+            pageItemsToSubmit: [
+                P753_ID_COTIZA_ART
+                P753_ID_APROBACION_LIC
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+            ]
+            addRowIfEmpty: false
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+        }
+        componentAppearance {
+            fixedRowHeight: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 31152743408904935
+        }
+
+        savedReport 315268 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_APROBACION_LIC
+                layout {
+                    show: false
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_OFERTA
+                layout {
+                    show: false
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @FEC_PROX_EVENTO
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @DEFINICION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    width: 140
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @RESPONSABLE
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @IND_FINALIZADO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_DET
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_COTIZA_ART
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @SOPORTE
+                layout {
+                    sequence: 6
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column DEFINICION (
+            type: popupLov
+            heading {
+                heading: <p>Definicion</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-definicion-crm
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: DEFINICION
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID
+                execute: forEachRow
+            }
+        )
+
+        column FEC_PROX_EVENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Prox. Evento</>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_PROX_EVENTO
+                dataType: date
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID
+                execute: forEachRow
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_APROBACION_LIC (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: ID_APROBACION_LIC
+                dataType: number
+            }
+            default {
+                type: item
+                item: P753_ID_APROBACION_LIC
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            default {
+                type: item
+                item: P753_ID_ARTICULO
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COTIZA_ART (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_COTIZA_ART
+                dataType: number
+            }
+            default {
+                type: item
+                item: P753_ID_COTIZA_ART
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_OFERTA (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_OFERTA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P753_ID_OFERTA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_PEDIDO
+                dataType: number
+            }
+            default {
+                type: item
+                item: P753_ID_PEDIDO
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_PEDIDO_DET
+                dataType: number
+            }
+            default {
+                type: item
+                item: P753_ID_PEDIDO_DET
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_FINALIZADO (
+            type: checkbox
+            heading {
+                heading: <p>Finalizado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_FINALIZADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: expression
+                plsqlExpression:
+                    ```plsql
+                    :RESPONSABLE != TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER) OR
+                    NVL(:IND_FINALIZADO, 'N') = 'S'
+                    ```
+                execute: forEachRow
+            }
+        )
+
+        column OBSERVACION (
+            type: textarea
+            heading {
+                heading: <p>Observacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID
+                execute: forEachRow
+            }
+        )
+
+        column RESPONSABLE (
+            type: popupLov
+            heading {
+                heading: <p>Responsable</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-usuarios
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: RESPONSABLE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID
+                execute: forEachRow
+            }
+        )
+
+        column SOPORTE (
+            type: textarea
+            heading {
+                heading: <p>Soporte</p>
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: SOPORTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Tareas No Finalizadas
+        }
+    )
+
+    pageItem P753_ID_APROBACION_LIC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            region: @tareas-no-finalizadas
+            slot: regionBody
+        }
+    )
+
+    pageItem P753_ID_ARTICULO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @tareas-no-finalizadas
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P753_ID_COTIZA_ART (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @tareas-no-finalizadas
+            slot: regionBody
+        }
+    )
+
+    pageItem P753_ID_OFERTA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            region: @tareas-no-finalizadas
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P753_ID_PEDIDO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            region: @tareas-no-finalizadas
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P753_ID_PEDIDO_DET (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @tareas-no-finalizadas
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    dynamicAction setear-datos-oferta (
+        name: Setear Datos Oferta
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action oferta (
+            name: Oferta
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT OA.ID_OFERTA,
+                           LO.ID_ARTICULO
+                      FROM LCW_OFERTAS_APROBACIONES OA
+                      JOIN LCW_OFERTAS  LO ON LO.ID = OA.ID_OFERTA
+                     WHERE OA.ID = :P753_ID_APROBACION_LIC
+                    ```
+                itemsToSubmit: P753_ID_APROBACION_LIC
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P753_ID_OFERTA
+                    P753_ID_ARTICULO
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-pedido (
+        name: Setear Datos Pedido
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        clientSideCondition {
+            type: itemIsNotNull
+            item: P753_ID_COTIZA_ART
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action pedido (
+            name: Pedido
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT CA.ID_PEDIDO,
+                           CA.ID_PEDIDO_DET
+                    
+                      FROM CMW_COTIZA_ARTICULOS CA
+                     WHERE CA.ID = :P753_ID_COTIZA_ART
+                    ```
+                itemsToSubmit: P753_ID_COTIZA_ART
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P753_ID_PEDIDO
+                    P753_ID_PEDIDO_DET
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p753-id-articulo (
+        itemName: P753_ID_ARTICULO
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT CA.ID_ARTICULO
+                  FROM CMW_COTIZA_ARTICULOS CA
+                 WHERE CA.ID = :P753_ID_COTIZA_ART
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P753_ID_COTIZA_ART
+        }
+    )
+
+    computation p753-id-articulo-2 (
+        itemName: P753_ID_ARTICULO
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT LO.ID_ARTICULO
+                  FROM LCW_OFERTAS_APROBACIONES OA
+                  JOIN LCW_OFERTAS  LO ON LO.ID = OA.ID_OFERTA
+                 WHERE OA.ID = :P753_ID_APROBACION_LIC
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P753_ID_APROBACION_LIC
+        }
+    )
+
+    computation p753-id-oferta (
+        itemName: P753_ID_OFERTA
+        execution {
+            sequence: 50
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT OA.ID_OFERTA
+                  FROM LCW_OFERTAS_APROBACIONES OA
+                 WHERE OA.ID = :P753_ID_APROBACION_LIC
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P753_ID_APROBACION_LIC
+        }
+    )
+
+    computation p753-id-pedido (
+        itemName: P753_ID_PEDIDO
+        execution {
+            sequence: 30
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT CA.ID_PEDIDO
+                  FROM CMW_COTIZA_ARTICULOS CA
+                 WHERE CA.ID = :P753_ID_COTIZA_ART
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P753_ID_COTIZA_ART
+        }
+    )
+
+    computation p753-id-pedido-det (
+        itemName: P753_ID_PEDIDO_DET
+        execution {
+            sequence: 40
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT CA.ID_PEDIDO_DET
+                  FROM CMW_COTIZA_ARTICULOS CA
+                 WHERE CA.ID = :P753_ID_COTIZA_ART
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P753_ID_COTIZA_ART
+        }
+    )
+
+    process setear-campos (
+        name: Setear Campos
+        type: executeCode
+        editableRegion: @tareas-no-finalizadas
+        source {
+            plsqlCode:
+                ```plsql
+                :ID_ARTICULO       := :P753_ID_ARTICULO;
+                :ID_PEDIDO         := :P753_ID_PEDIDO;
+                :ID_PEDIDO_DET     := :P753_ID_PEDIDO_DET;
+                :ID_COTIZA_ART     := :P753_ID_COTIZA_ART;
+                :ID_OFERTA         := :P753_ID_OFERTA;
+                :ID_APROBACION_LIC := :P753_ID_APROBACION_LIC;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 31154076784904948
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process tareas-no-finalizadas-save-interactive-grid-data (
+        name: Tareas No Finalizadas - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @tareas-no-finalizadas
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 31153560865904943
+        }
+    )
+
+)
+

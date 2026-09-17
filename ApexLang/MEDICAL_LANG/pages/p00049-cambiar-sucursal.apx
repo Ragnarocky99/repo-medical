@@ -1,0 +1,128 @@
+page 49 (
+    name: Cambiar Sucursal
+    alias: CAMBIAR-SUCURSAL
+    title: Cambiar Sucursal
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region seleccione-sucursal (
+        name: Seleccione Sucursal
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P49_COD_SUCURSAL (
+        type: popupLov
+        label {
+            label: Cod Sucursal
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION||'('||COD_SUCURSAL||')',ID FROM BSW_SUCURSALES
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 10
+            region: @seleccione-sucursal
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction setear-sucursal (
+        name: Setear Sucursal
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P49_COD_SUCURSAL
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression: document
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    begin
+                       :P0_COD_SUCURSAL  := :P49_COD_SUCURSAL;
+                       :P0_ID_SUCURSAL  := :P49_COD_SUCURSAL;
+                       :P0_DESC_SUCURSAL := trae_nombre_sucursal(:P0_COD_EMPRESA, :P0_COD_SUCURSAL);
+                    Exception
+                        when others then
+                             raise_application_error(-20000, 'Error al asignar. '||sqlerrm);
+                    end;
+                    ```
+                itemsToSubmit: P49_COD_SUCURSAL
+                itemsToReturn: P49_COD_SUCURSAL
+                successMessage: "Asignado Correctamente  "
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    suppressChangeEvent
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            affectedElements {
+                selectionType: region
+                region: @/variables-globales
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+                stopExecutionOnError: false
+                waitForResult: false
+            }
+        )
+
+    )
+
+)
+

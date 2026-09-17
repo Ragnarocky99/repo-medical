@@ -1,0 +1,1274 @@
+page 210 (
+    name: Cierre de Cajas
+    alias: CIERRE-DE-CAJAS
+    title: Cierre de Cajas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            (function($) {
+            
+                function update(model) {
+                    var montoRealKey = model.getFieldKey("MONTO_REAL");
+                    //var cambioSaldoKey = model.getFieldKey("TIP_CAMBIO");
+                    total = 0;
+                    //total_importe = 0;
+            
+                    console.log(">> empieza calculo")
+                    model.forEach(function(record, index, id) {
+                        var monto_real = parseInt(record[montoRealKey].replace(/\./g,''));
+                        //var cambio_saldo = parseFloat(record[cambioSaldoKey].replace(/\./g,''));
+                            meta = model.getRecordMetadata(id);
+            
+                        if (!isNaN(monto_real) && !meta.deleted && !meta.agg) {
+                            total += monto_real;
+                            //total_importe += monto_cuota*cambio_saldo;
+                        }
+                    });
+                    
+                    console.log(">> setting sum MONTO_CUOTA column to " + total)
+                    $s("P210_MONTO_REAL", total);
+            
+                    //
+                    //var cambio_cobro = parseFloat(apex.item( "P170_TIP_CAMBIO" ).getValue().replace(',', '.'));
+                    //total_importe = total_importe/cambio_cobro;
+                    //apex.item( "P170_TOTAL" ).setValue(total);
+                    //apex.item( "P170_IMPORTE" ).setValue(total_importe);
+                    //$s("P170_TOTAL", total);
+                    //$s("P170_IMPORTE", total_importe);
+                    //$s("P170_IMPORTE", total_importe.toString());
+                }
+            
+                $(function() {
+                   
+                    $("#det").on("interactivegridviewmodelcreate", function(event, ui) {
+                        var sid,
+                            model = ui.model;
+            
+                        if ( ui.viewId === "grid" ) {
+                            sid = model.subscribe( {
+                                onChange: function(type, change) {
+                                    console.log(">> model changed ", type, change);
+                                    if ( type === "set" ) {
+                                         if (change.field === "MONTO_REAL" ) {
+                                            update( model );
+                                        }
+                                    } else if (type !== "move" && type !== "metaChange") {
+                                      update( model );
+                                    }
+                                },
+                                progressView: $("#P210_MONTO_REAL")
+                            } );
+                             update( model );           
+                            model.fetchAll(function() {});
+                        }
+                    });
+                });
+            })(apex.jQuery);
+            ```
+        executeWhenPageLoads: document.getElementById("P210_MONTO_REAL").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+                pointer-events: none;
+            }
+            
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #f13c0f;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region cierre-de-cajas (
+        name: Cierre de Cajas
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT HAB.ID,
+                       HAB.ID_EMPRESA,
+                       HAB.ID_SUCURSAL,
+                       HAB.ID_CAJA,
+                       HAB.NRO_HABILITACION,
+                       HAB.FEC_HABILITACION,
+                       HAB.FEC_CIERRE,
+                       HAB.ID_USUARIO,
+                       HAB.HORA_HABILITACION,
+                       HAB.HORA_CIERRE,
+                       HAB.FEC_ALTA,
+                       HAB.COD_SECTOR_VEN,
+                       HAB.COD_USUARIO_AUD,
+                       HAB.SALDO_INICIAL,
+                       HAB.ESTADO,
+                       HAB.IND_DEPOSITO,
+                       SUC.DESCRIPCION DESC_SUC,
+                       SUC.COD_SUCURSAL,
+                       CAJ.DESCRIPCION DESC_CAJ,
+                       CAJ.COD_CAJA, 
+                       US.COD_USUARIO
+                  FROM CCW_HABILITACIONES HAB, BSW_SUCURSALES SUC, CCW_CAJAS CAJ, BSW_USUARIOS US
+                  WHERE HAB.ID_EMPRESA  = :P0_COD_EMPRESA 
+                  AND   HAB.ID_SUCURSAL = :P0_COD_SUCURSAL
+                  AND   HAB.ID_USUARIO  = US.ID
+                  AND   US.COD_USUARIO  = :APP_USER
+                  AND   SUC.ID          = :P0_COD_SUCURSAL
+                  AND   HAB.ID_CAJA     = CAJ.ID
+                  AND   HAB.HORA_CIERRE IS NULL
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--hideHeader
+                t-Region--scrollBody
+            ]
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        reportLayout {
+            numberOfRows: 50
+        }
+        componentAppearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--stretch
+                t-Report--staticRowColors
+                t-Report--rowHighlight
+                t-Report--inline
+                t-Report--hideNoPagination
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+        performance {
+            maxRowsToProcess: 500
+        }
+        messages {
+            whenNoDataFound:
+                ```
+                
+                <div class="warning-msg">
+                  <center><i class="fa fa-warning"></i>
+                  No existe caja habilitada.</center>
+                </div>
+                ```
+        }
+
+        column COD_CAJA (
+            reportColumnQueryId: 20
+            derivedColumn: N
+            heading {
+                heading: Cód. Caja
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+        )
+
+        column COD_SECTOR_VEN (
+            reportColumnQueryId: 12
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 200
+            }
+        )
+
+        column COD_SUCURSAL (
+            reportColumnQueryId: 18
+            derivedColumn: N
+            heading {
+                heading: Cód. Sucursal
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+        )
+
+        column COD_USUARIO (
+            reportColumnQueryId: 21
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 230
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            reportColumnQueryId: 13
+            derivedColumn: N
+            heading {
+                heading: Cód. Usuario Aud.
+            }
+            layout {
+                sequence: 80
+            }
+        )
+
+        column DESC_CAJ (
+            reportColumnQueryId: 19
+            derivedColumn: N
+            heading {
+                heading: Descripción Caja
+            }
+            layout {
+                sequence: 60
+            }
+        )
+
+        column DESC_SUC (
+            reportColumnQueryId: 17
+            derivedColumn: N
+            heading {
+                heading: Descripción Sucursal
+            }
+            layout {
+                sequence: 30
+            }
+        )
+
+        column ESTADO (
+            reportColumnQueryId: 15
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 210
+            }
+        )
+
+        column FEC_ALTA (
+            reportColumnQueryId: 11
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 190
+            }
+        )
+
+        column FEC_CIERRE (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            heading {
+                heading: Fecha Cierre
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+        )
+
+        column FEC_HABILITACION (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            heading {
+                heading: Fecha Habilitación
+                alignment: end
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+        )
+
+        column HORA_CIERRE (
+            reportColumnQueryId: 10
+            derivedColumn: N
+            heading {
+                heading: Hora Cierre
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+        )
+
+        column HORA_HABILITACION (
+            reportColumnQueryId: 9
+            derivedColumn: N
+            heading {
+                heading: Hora Habilitación
+                alignment: end
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+        )
+
+        column ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 150
+            }
+        )
+
+        column ID_CAJA (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 180
+            }
+        )
+
+        column ID_EMPRESA (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 160
+            }
+        )
+
+        column ID_SUCURSAL (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 170
+            }
+        )
+
+        column ID_USUARIO (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            type: plainTextBasedOnLov
+            heading {
+                heading: Usuario Asignado
+            }
+            lov {
+                type: sharedComponent
+                lov: @bsw-usuarios-cod-usuario
+            }
+            layout {
+                sequence: 90
+            }
+        )
+
+        column IND_DEPOSITO (
+            reportColumnQueryId: 16
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 220
+            }
+        )
+
+        column NRO_HABILITACION (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Nro. Habilitación
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+        )
+
+        column SALDO_INICIAL (
+            reportColumnQueryId: 14
+            derivedColumn: N
+            heading {
+                heading: Saldo Inicial
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+        )
+
+    )
+
+    region detalles-cierre (
+        name: Detalles_Cierre
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT HD.ID,
+                       HD.ID_EMPRESA,
+                       HD.ID_HABILITACION,
+                       HD.ID_SUBTIPO_TRANS,
+                       HD.ID_MONEDA,
+                       HD.TIPO_CAMBIO,
+                       HD.CANTIDAD,
+                       HD.MONTO_REAL,
+                       HD.MONTO_SISTEMA,
+                       HD.OBSERVACION,
+                       HD.IND_VERIFICADO,
+                       HD.COD_USUARIO_AUD,
+                       HD.TIPO
+                
+                  FROM CCW_HABILITACIONES_DETALLE HD, CCW_HABILITACIONES HAB
+                  WHERE HD.ID_HABILITACION = HAB.ID
+                  AND HAB.FEC_CIERRE IS NULL
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: det
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P210_ID_HABILITACION
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        pagination {
+            showTotalCount: false
+        }
+        toolbar {
+            controls: saveButton
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 27292293099624125
+        }
+
+        savedReport 286958 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_HABILITACION
+                layout {
+                    show: false
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUBTIPO_TRANS
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_CAMBIO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_REAL
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_SISTEMA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @IND_VERIFICADO
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                duplicateCopiesExistingValue: false
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_COD_EMPRESA
+                duplicateCopiesExistingValue: false
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_HABILITACION (
+            type: textField
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID_HABILITACION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: selectList
+            heading {
+                heading: <p>Moneda</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @bsw-monedas-cod-moneda
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column ID_SUBTIPO_TRANS (
+            type: selectList
+            heading {
+                heading: <p>Subtipo Transacción</p>
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT '('||SUBTIPO_TRANS||') ' || DESCRIPCION, ID
+                    FROM BSW_SUBTIPOS_TRANS
+                    WHERE ID_TIPO_TRANS = :P210_ID_TRANS
+                    ORDER BY length(SUBTIPO_TRANS), SUBTIPO_TRANS
+                    ```
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID_SUBTIPO_TRANS
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                hide: false
+            }
+            comments {
+                comments:
+                    ```
+                    PAGINA 58 APLICACION SAMPLE INTERACTIVE GRID
+                    https://community.oracle.com/tech/developers/discussion/4283895/ig-interactive-grid-make-some-columns-read-only-depending-upon-the-value-of-a-certain-column
+                    ```
+            }
+        )
+
+        column IND_VERIFICADO (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: IND_VERIFICADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_REAL (
+            type: textField
+            heading {
+                heading: <p>Monto Real</p>
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO_REAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column MONTO_SISTEMA (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: MONTO_SISTEMA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: TIPO_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles_Cierre
+        }
+    )
+
+    region suma-total (
+        name: Suma_Total
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @detalles-cierre
+            slot: subRegions
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+    )
+
+    pageItem P210_ID_HABILITACION (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @detalles-cierre
+            slot: regionBody
+        }
+    )
+
+    pageItem P210_ID_TRANS (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @detalles-cierre
+            slot: regionBody
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('CC','TIPO_TRANS_CAJ')
+        }
+        comments {
+            comments: Page item para obtener el valor de ID_TRANS con W_BUSCA_PARAMETRO
+        }
+    )
+
+    pageItem P210_MONTO_DESGLOSE (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @suma-total
+            slot: regionBody
+        }
+    )
+
+    pageItem P210_MONTO_REAL (
+        type: numberField
+        label {
+            label: <p class="totales">Total:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @suma-total
+            slot: regionBody
+            alignment: left
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: [
+                cambio
+                totalesp
+            ]
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P210_ID_HABILITACION
+        }
+    )
+
+    button cerrar-caja (
+        buttonName: CERRAR_CAJA
+        label: Cerrar Caja
+        layout {
+            sequence: 10
+            slot: body
+            column: 11
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--stretch
+            ]
+            cssClasses: t-Button--danger
+            icon: fa fa-window-close-o
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P210_ID_HABILITACION
+        }
+    )
+
+    button llamar-desglose (
+        buttonName: Llamar_desglose
+        label: Detallar Monto
+        layout {
+            sequence: 30
+            slot: body
+            column: 11
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--stretch
+            ]
+            icon: fa fa-pencil-square-o
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 223
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P210_ID_HABILITACION
+        }
+    )
+
+    dynamicAction carga-id-habilitacion-nueva-fila (
+        name: Carga id_habilitacion_nueva_fila
+        execution {
+            sequence: 10
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalles-cierre
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT HB.ID
+                    FROM CCW_HABILITACIONES HB
+                    WHERE HB.FEC_CIERRE IS NULL
+                      AND HB.ID_USUARIO = TRAE_ID_USUARIO(P_EMPRESA =>  :P0_ID_EMPRESA
+                                                         ,P_COD_USUARIO => :APP_USER)
+                    ```
+                itemsToSubmit: ID_HABILITACION
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_HABILITACION
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction subtipo-efectivo (
+        name: Subtipo = Efectivo
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles-cierre
+            columns: ID_SUBTIPO_TRANS
+        }
+        clientSideCondition {
+            type: itemColumn=value
+            column: ID_SUBTIPO_TRANS
+            value: 538
+        }
+
+        action native-disable (
+            action: disable
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_REAL
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-enable (
+            action: enable
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_REAL
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+            }
+        )
+
+    )
+
+    validation validartotal (
+        name: ValidarTotal
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: item!=Value
+            item: P210_MONTO_REAL
+            value: 0
+        }
+        error {
+            errorMessage: Inserte monto para poder cerrar caja.
+            displayLocation: inlineWithField
+            associatedItem: @P210_MONTO_REAL
+        }
+    )
+
+    computation p210-id-habilitacion (
+        itemName: P210_ID_HABILITACION
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT HB.ID
+                FROM CCW_HABILITACIONES HB
+                WHERE HB.FEC_CIERRE IS NULL
+                  AND HB.ID_USUARIO = TRAE_ID_USUARIO(P_EMPRESA =>  :P0_ID_EMPRESA
+                                                     ,P_COD_USUARIO => :APP_USER)
+                ```
+        }
+    )
+
+    process actualizar-fec-hora-cierre (
+        name: Actualizar_Fec_Hora_Cierre
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                update ccw_habilitaciones set hora_cierre = to_char(sysdate, 'HH24:MI:SS'),
+                fec_cierre = sysdate, saldo_cierre = to_number(replace(:P210_MONTO_REAL, '.',''))
+                where id = :P210_ID_HABILITACION;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 26776745714219940
+        }
+    )
+
+    process detalles-cierre-save-interactive-grid-data (
+        name: Detalles_Cierre - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles-cierre
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 31348570028905306
+        }
+    )
+
+    branch (
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 207
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @cerrar-caja
+        }
+    )
+
+)
+

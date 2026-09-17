@@ -1,0 +1,652 @@
+page 279 (
+    name: Lista de Notas de Credito-Compra
+    alias: LISTA-DE-NOTAS-DE-CREDITO-COMPRA
+    title: Lista de Notas de Credito-Compra
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region nota-de-credito-compra (
+        name: Nota de Credito-Compra
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       C.ID_SUCURSAL,
+                       C.FEC_COMPROBANTE,
+                       C.ID_PROVEEDOR,
+                       C.ID_CONDICION_COMPRA,
+                       C.TIP_COMPROBANTE_REF,
+                       C.SER_COMPROBANTE_REF,
+                       C.NRO_COMPROBANTE_REF,
+                       C.TOT_COMPROBANTE,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.ESTADO,
+                       C.FEC_ESTADO,
+                       C.REFERENCIA,
+                       C.NOM_PROVEEDOR,
+                       C.NRO_TIMBRADO,
+                       REPLACE(REPLACE(C.ASIENTOS,'*'),'nct') ASIENTOS,
+                       (SELECT D.ID
+                        FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(C.ASIENTOS,'*'),'nct'))
+                          AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(C.FEC_COMPROBANTE)
+                          AND D.ID_EMPRESA  = C.ID_EMPRESA) ASIENTOS_ID
+                
+                
+                  from CMW_COMPRAS_CABECERA C
+                  WHERE ID_EMPRESA= :P0_ID_EMPRESA
+                 AND  TIP_COMPROBANTE=W_BUSCA_PARAMETRO('CM','TIPO_NOTACRE_CM')
+                  ORDER BY FEC_COMPROBANTE
+                
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 268
+                items: {
+                    P268_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 64709576326001689
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 149
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTOS_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BN
+            }
+        )
+
+        column ASIENTOS_ID (
+            type: plainText
+            heading {
+                heading: Asientos Id
+                alignment: center
+            }
+            layout {
+                sequence: 159
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BO
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 39
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fec Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column FEC_ESTADO (
+            type: plainText
+            heading {
+                heading: Fec Estado
+                alignment: center
+            }
+            layout {
+                sequence: 49
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CONDICION_COMPRA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: "Condición "
+                alignment: center
+            }
+            lov {
+                lov: @lv-condiciones-compra
+            }
+            layout {
+                sequence: 109
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BI
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 119
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BK
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 29
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BJ
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            heading {
+                heading: Id Proveedor
+            }
+            layout {
+                sequence: 99
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BH
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 89
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BG
+            }
+        )
+
+        column NOM_PROVEEDOR (
+            type: plainText
+            heading {
+                heading: Proveedor
+            }
+            layout {
+                sequence: 69
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Comprobante
+                alignment: end
+            }
+            layout {
+                sequence: 5
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Nro Comprobante Ref
+                alignment: end
+            }
+            layout {
+                sequence: 12
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column NRO_TIMBRADO (
+            type: plainText
+            heading {
+                heading: Nro Timbrado
+                alignment: end
+            }
+            layout {
+                sequence: 79
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+            }
+            layout {
+                sequence: 59
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Ser Comprobante
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column SER_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Ser Comprobante Ref
+            }
+            layout {
+                sequence: 11
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Tip Cambio
+                alignment: end
+            }
+            layout {
+                sequence: 19
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tip Comprobante
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TIP_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Tip Comprobante Ref
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: end
+            }
+            layout {
+                sequence: 13
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Nota de Credito-Compra
+        }
+
+        savedReport 647384 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 18
+            )
+
+            displayColumn ESTADO (
+                sequence: 11
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn FEC_ESTADO (
+                sequence: 12
+            )
+
+            displayColumn ID_CONDICION_COMPRA (
+                sequence: 17
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 9
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 16
+            )
+
+            displayColumn NOM_PROVEEDOR (
+                sequence: 14
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn NRO_COMPROBANTE_REF (
+                sequence: 7
+            )
+
+            displayColumn NRO_TIMBRADO (
+                sequence: 15
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 13
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn SER_COMPROBANTE_REF (
+                sequence: 6
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 10
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn TIP_COMPROBANTE_REF (
+                sequence: 5
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 8
+            )
+
+            sort (
+                column: FEC_COMPROBANTE
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @nota-de-credito-compra
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 268
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+)
+

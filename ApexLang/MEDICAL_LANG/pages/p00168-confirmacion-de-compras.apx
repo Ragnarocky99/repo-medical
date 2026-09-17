@@ -1,0 +1,1772 @@
+page 168 (
+    name: Confirmacion de Compras
+    alias: CONFIRMACION-DE-COMPRAS
+    title: Confirmacion de Compras
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region facturas-de-compras (
+        name: Facturas de Compras
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.ID_SUCURSAL,
+                       C.FEC_COMPROBANTE,
+                       C.ID_PROVEEDOR,
+                       C.TOT_COMPROBANTE,
+                       C.TOT_EXENTAS,
+                       C.TOT_IVA,
+                       C.DESCUENTO,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.ESTADO,
+                       C.FEC_ESTADO,
+                       C.ID_USUARIO,
+                       C.FEC_ALTA,
+                       C.REFERENCIA,
+                       C.ID_PROVEEDOR_REF,
+                       C.NOM_PROVEEDOR,
+                       C.RUC,
+                       C.TOT_AJUSTE,
+                       C.COD_USUARIO_AUD,
+                       C.ID_EMBARQUE,
+                       C.ID_PEDIDO,
+                       C.IND_COBRO_TARJETA,
+                       C.IND_CAJA_CHICA,
+                       C.NRO_TIMBRADO,
+                       REPLACE(REPLACE(ASIENTOS,'*'),'compras') ASIENTOS,
+                       (SELECT D.ID
+                        FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(C.ASIENTOS,'*'),'compras'))
+                          AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(C.FEC_COMPROBANTE)
+                          AND D.ID_EMPRESA  = C.ID_EMPRESA) ASIENTO_ID,
+                       C.NRO_COMPROBANTE_PROV,
+                       C.ID_CENTRO_COSTO,
+                       C.FEC_VENC_TIMBRADO,
+                       C.ID_CENTRO_COSTO AS NOMBRE_CENTRO,
+                       C.ID_SUCURSAL AS NOMBRE_SUCURSAL,
+                       C.ID_PROVEEDOR AS NOMBRE_PROVEEDOR,
+                       C.ID_PROVEEDOR AS RUC_PROVEEDOR,
+                       sys.dbms_lob.getlength(C.FOTO_COMPROBANTE),
+                       'VER FACTURA',
+                       NULL AS NUM_ORDEN_PAGO,
+                       ---TRAE_NUM_ORDEN_PAGO(C.ID) AS NUM_ORDEN_PAGO,
+                       ID_NUM_ORDEN_PAGO(C.ID_EMPRESA,C.ID,C.TIP_COMPROBANTE) AS ID_NUM_ORDEN_PAGO,
+                       ID_MOV_CAJ_CP(C.ID_EMPRESA,C.ID) AS ID_MOV_CAJ_CP,
+                       TRAE_NRO_MOV_CAJ(C.ID_EMPRESA,C.ID) AS NRO_MOV_CAJA,
+                       TRAE_SALDO_CM(C.ID_EMPRESA,C.ID) AS SALDO_CM
+                
+                  from CMW_COMPRAS_CABECERA C
+                  WHERE C.ID_EMPRESA=:P0_COD_EMPRESA
+                      AND (C.ID_PROVEEDOR=:P168_ID_PROVEEDOR OR :P168_ID_PROVEEDOR IS NULL)
+                      AND (C.ID_SUCURSAL=:P168_ID_SUCURSAL OR :P168_ID_SUCURSAL IS NULL)
+                      AND (C.ID_CENTRO_COSTO=:P168_ID_CENTRO_COSTO OR :P168_ID_CENTRO_COSTO IS NULL)
+                      AND (C.FEC_COMPROBANTE BETWEEN :P168_FEC_COMPROBANTE_DESDE AND :P168_FEC_COMPROBANTE_HASTA OR (:P168_FEC_COMPROBANTE_DESDE IS NULL AND :P168_FEC_COMPROBANTE_HASTA IS NULL ))
+                      AND (C.FEC_ALTA BETWEEN :P168_FEC_CARGA_DESDE AND :P168_FEC_CARGA_HASTA OR (:P168_FEC_CARGA_DESDE IS NULL AND :P168_FEC_CARGA_HASTA IS NULL))
+                      AND (C.ESTADO=:P168_ESTADO OR :P168_ESTADO IS NULL)
+                      AND (C.REFERENCIA like '%'||:P168_REFERENCIA ||'%' OR :P168_REFERENCIA IS NULL)
+                      AND (C.COD_USUARIO_AUD = :P168_USU_CARGA OR :P168_USU_CARGA IS NULL)
+                  ORDER BY FEC_COMPROBANTE DESC
+                ```
+            pageItemsToSubmit: [
+                P168_ID_PROVEEDOR
+                P168_ID_SUCURSAL
+                P168_ID_CENTRO_COSTO
+                P168_FEC_COMPROBANTE_DESDE
+                P168_FEC_COMPROBANTE_HASTA
+                P168_FEC_CARGA_DESDE
+                P168_FEC_CARGA_HASTA
+                P168_ESTADO
+                P168_USU_CARGA
+                P168_REFERENCIA
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 155
+                items: {
+                    P155_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            lazyLoading: true
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 31926134380617249
+        }
+
+        column 'VERFACTURA' (
+            type: hidden
+            heading {
+                heading: VER
+            }
+            layout {
+                sequence: 430
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BH
+            }
+        )
+
+        column ASIENTOS (
+            type: hidden
+            heading {
+                heading: Asientos
+            }
+            layout {
+                sequence: 440
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BI
+            }
+        )
+
+        column ASIENTO_ID (
+            type: hidden
+            heading {
+                heading: Asiento Id
+            }
+            layout {
+                sequence: 460
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BK
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Cod Usuario Aud
+                alignment: center
+            }
+            layout {
+                sequence: 140
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            heading {
+                heading: Descuento
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column FEC_ALTA (
+            type: hidden
+            heading {
+                heading: Fec Alta
+            }
+            layout {
+                sequence: 260
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column FEC_ESTADO (
+            type: hidden
+            heading {
+                heading: Fec Estado
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column FEC_VENC_TIMBRADO (
+            type: hidden
+            heading {
+                heading: Fec Venc Timbrado
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cód. Centro
+                alignment: center
+            }
+            lov {
+                lov: @ce-cod
+            }
+            layout {
+                sequence: 370
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column ID_EMBARQUE (
+            type: hidden
+            heading {
+                heading: Id Embarque
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @siglas-monedas
+            }
+            layout {
+                sequence: 210
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column ID_MOV_CAJ_CP (
+            type: hidden
+            heading {
+                heading: Id Mov Caj Cp
+            }
+            layout {
+                sequence: 490
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BS
+            }
+        )
+
+        column ID_NUM_ORDEN_PAGO (
+            type: hidden
+            heading {
+                heading: Id Num Orden Pago
+            }
+            layout {
+                sequence: 480
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BR
+            }
+        )
+
+        column ID_PEDIDO (
+            type: hidden
+            heading {
+                heading: Id Pedido
+            }
+            layout {
+                sequence: 330
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cód. Proveedor
+                alignment: center
+            }
+            lov {
+                lov: @pro-cod
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID_PROVEEDOR_REF (
+            type: hidden
+            heading {
+                heading: Id Proveedor Ref
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cód. Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @cod-su
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_USUARIO (
+            type: hidden
+            heading {
+                heading: Id Usuario
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column IND_CAJA_CHICA (
+            type: hidden
+            heading {
+                heading: Ind Caja Chica
+            }
+            layout {
+                sequence: 350
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column IND_COBRO_TARJETA (
+            type: hidden
+            heading {
+                heading: Ind Cobro Tarjeta
+            }
+            layout {
+                sequence: 340
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column NOMBRE_CENTRO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Nombre Centro
+                alignment: center
+            }
+            lov {
+                lov: @no-centro
+            }
+            layout {
+                sequence: 390
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BD
+            }
+        )
+
+        column NOMBRE_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: "Nombre "
+                alignment: center
+            }
+            lov {
+                lov: @pro-nom
+            }
+            layout {
+                sequence: 410
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BF
+            }
+        )
+
+        column NOMBRE_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Nombre Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @no-su
+            }
+            layout {
+                sequence: 400
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BE
+            }
+        )
+
+        column NOM_PROVEEDOR (
+            type: hidden
+            heading {
+                heading: Nom Proveedor
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column NRO_COMPROBANTE_PROV (
+            type: plainText
+            heading {
+                heading: Nro Comprobante Prov
+                alignment: center
+            }
+            layout {
+                sequence: 450
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BJ
+            }
+        )
+
+        column NRO_MOV_CAJA (
+            type: link
+            heading {
+                heading: Caja
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 238
+                    items: {
+                        P238_ID: #ID_MOV_CAJ_CP#
+                    }
+                }
+                linkText: #NRO_MOV_CAJA#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BO
+            }
+        )
+
+        column NRO_TIMBRADO (
+            type: plainText
+            heading {
+                heading: Nro Timbrado
+                alignment: center
+            }
+            layout {
+                sequence: 360
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column NUM_ORDEN_PAGO (
+            type: plainText
+            heading {
+                heading: Num Orden Pago
+            }
+            layout {
+                sequence: 500
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BT
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Factura
+                alignment: center
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column RUC (
+            type: hidden
+            heading {
+                heading: Ruc
+            }
+            layout {
+                sequence: 300
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column RUC_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: RUC
+                alignment: center
+            }
+            lov {
+                lov: @pro-ruc
+            }
+            layout {
+                sequence: 420
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BG
+            }
+        )
+
+        column SALDO_CM (
+            type: plainText
+            heading {
+                heading: Saldo
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BQ
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            heading {
+                heading: Ser Comprobante
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column "SYS.DBMS_LOB.GETLENGTH(C.FOTO_COMPROBANTE)" (
+            type: displayImage
+            heading {
+                heading: Foto Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 470
+                columnAlignment: end
+            }
+            blobAttributes {
+                tableName: CMW_COMPRAS_CABECERA
+                blobColumn: FOTO_COMPROBANTE
+                primaryKeyColumn1: ID
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BM
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            heading {
+                heading: Tip Cambio
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tip. Comp.
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TOT_AJUSTE (
+            type: hidden
+            heading {
+                heading: Tot Ajuste
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: center
+            }
+            layout {
+                sequence: 130
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column TOT_EXENTAS (
+            type: hidden
+            heading {
+                heading: Tot Exentas
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column TOT_IVA (
+            type: hidden
+            heading {
+                heading: Tot Iva
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Facturas de Compras
+        }
+
+        savedReport 323055 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn ID_CENTRO_COSTO (
+                sequence: 2
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 10
+            )
+
+            displayColumn ID_PROVEEDOR (
+                sequence: 7
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 5
+            )
+
+            displayColumn NOMBRE_CENTRO (
+                sequence: 3
+            )
+
+            displayColumn NOMBRE_PROVEEDOR (
+                sequence: 8
+            )
+
+            displayColumn NOMBRE_SUCURSAL (
+                sequence: 6
+            )
+
+            displayColumn NRO_MOV_CAJA (
+                sequence: 14
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 11
+            )
+
+            displayColumn RUC_PROVEEDOR (
+                sequence: 9
+            )
+
+            displayColumn SALDO_CM (
+                sequence: 13
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 12
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P168_ESTADO (
+        type: selectList
+        label {
+            label: <p>Estado:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Pendiente;P,Confirmado;C
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: expression
+            plsqlExpression: NULL
+        }
+    )
+
+    pageItem P168_FEC_CARGA_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fec.Carga.Desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_FEC_CARGA_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fec.Carga.Hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_FEC_COMPROBANTE_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fec.Comp.Desde</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_FEC_COMPROBANTE_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fec.Comp.Hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_ID_CENTRO_COSTO (
+        type: popupLov
+        label {
+            label: <p>Centro Costo:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_NOM_PROVEEDOR (
+        type: textField
+        label {
+            label: <p>Nombre:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_REFERENCIA (
+        type: textField
+        label {
+            label: <p> Nro comp:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 11
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P168_RUC (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            preText: <p>RUC:</p>
+        }
+    )
+
+    pageItem P168_USU_CARGA (
+        type: selectList
+        label {
+            label: <p>Usu Carga: </p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT COD_USUARIO AS DISPLAY ,COD_USUARIO AS RETURN FROM BSW_USUARIOS
+                WHERE ID_EMPRESA=:P0_ID_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 100
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    button buscar (
+        buttonName: Buscar
+        label: Buscar
+        layout {
+            sequence: 10
+            region: @botones
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-search
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @facturas-de-compras
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 155
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button limpiar (
+        buttonName: Limpiar
+        label: Limpiar
+        layout {
+            sequence: 20
+            region: @botones
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction cargar-datos-del-proveedor (
+        name: Cargar Datos del Proveedor
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P168_ID_PROVEEDOR
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                    SELECT P.NOMBRE,P.RUC 
+                    INTO :P168_NOM_PROVEEDOR,:P168_RUC
+                    FROM
+                    BSW_PERSONAS P,CMW_PROVEEDORES V
+                    WHERE P.ID=V.ID_PERSONA
+                    AND V.ID_EMPRESA=:P0_COD_EMPRESA
+                    AND V.ID=:P168_ID_PROVEEDOR;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN 
+                    RAISE_APPLICATION_ERROR(-20000,'No se pudo cargar los datos del proveedor');
+                    null;
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de proveedores y persona'||sqlerrm);
+                    NULL;
+                    END;
+                    ```
+                itemsToSubmit: P168_ID_PROVEEDOR
+                itemsToReturn: [
+                    P168_NOM_PROVEEDOR
+                    P168_RUC
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P168_FEC_CARGA_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P168_FEC_CARGA_DESDE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P168_FEC_CARGA_DESDE,'/','');
+                            conv_fecha := substr(:P168_FEC_CARGA_DESDE,1,2)||'/'||
+                                                      substr(:P168_FEC_CARGA_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P168_FEC_CARGA_DESDE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P168_FEC_CARGA_DESDE := conv_fecha;
+                            ELSIF (length(:P168_FEC_CARGA_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P168_FEC_CARGA_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P168_FEC_CARGA_DESDE
+                itemsToReturn: P168_FEC_CARGA_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P168_FEC_COMPROBANTE_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P168_FEC_COMPROBANTE_DESDE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P168_FEC_COMPROBANTE_DESDE,'/','');
+                            conv_fecha := substr(:P168_FEC_COMPROBANTE_DESDE,1,2)||'/'||
+                                                      substr(:P168_FEC_COMPROBANTE_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P168_FEC_COMPROBANTE_DESDE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P168_FEC_COMPROBANTE_DESDE := conv_fecha;
+                            ELSIF (length(:P168_FEC_COMPROBANTE_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P168_FEC_COMPROBANTE_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P168_FEC_COMPROBANTE_DESDE
+                itemsToReturn: P168_FEC_COMPROBANTE_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convertir-fec (
+        name: CONVERTIR_FEC
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P168_FEC_CARGA_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P168_FEC_CARGA_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P168_FEC_CARGA_HASTA,'/','');
+                            conv_fecha := substr(:P168_FEC_CARGA_HASTA,1,2)||'/'||
+                                                      substr(:P168_FEC_CARGA_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P168_FEC_CARGA_HASTA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P168_FEC_CARGA_HASTA := conv_fecha;
+                            ELSIF (length(:P168_FEC_CARGA_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P168_FEC_CARGA_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P168_FEC_CARGA_HASTA
+                itemsToReturn: P168_FEC_CARGA_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convertir-fecha (
+        name: CONVERTIR_FECHA
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P168_FEC_COMPROBANTE_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P168_FEC_COMPROBANTE_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P168_FEC_COMPROBANTE_HASTA,'/','');
+                            conv_fecha := substr(:P168_FEC_COMPROBANTE_HASTA,1,2)||'/'||
+                                                      substr(:P168_FEC_COMPROBANTE_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P168_FEC_COMPROBANTE_HASTA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P168_FEC_COMPROBANTE_HASTA := conv_fecha;
+                            ELSIF (length(:P168_FEC_COMPROBANTE_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P168_FEC_COMPROBANTE_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P168_FEC_COMPROBANTE_HASTA
+                itemsToReturn: P168_FEC_COMPROBANTE_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: Refresh Grid
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @buscar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @facturas-de-compras
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process limpiar-pantalla (
+        name: LImpiar Pantalla
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 32284291389487812
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+)
+

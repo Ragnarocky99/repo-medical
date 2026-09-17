@@ -1,0 +1,919 @@
+page 173 (
+    name: Movimientos de Articulos
+    alias: MOVIMIENTOS-DE-ARTICULOS
+    title: Ficha de Entrada/Salida de Articulos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region ficha-entrada-salida (
+        name: Ficha Entrada Salida
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--slimPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region movimientos-de-articulos (
+        name: Movimientos de Articulos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select M.ID,
+                       M.ID_EMPRESA,
+                       M.COD_SUCURSAL,
+                       M.COD_ARTICULO,
+                       M.DESC_ART,
+                       M.DESC_SUCURSAL,
+                       M.DESC_MOTIVO,
+                       M.NUMERO,
+                       M.CANT_ENT,
+                       M.CANT_SAL,
+                       M.COD_MOTIVO_ENT_SAL,
+                       M.ID_ARTICULO ARTICULO,
+                       M.fec_alta,
+                       M.NROLOTE,
+                       --M.ID_SUCURSAL_CENTRAL,
+                       M.SALDO
+                
+                  from STW_TMP_FICHA_ARTICULOS M
+                  where ID_EMPRESA = :P0_ID_EMPRESA
+                   AND M.ip_maquina = owa_util.get_cgi_env('REMOTE_ADDR')
+                   AND M.FEC_ALTA BETWEEN TO_DATE(:P173_FECHA_DESDE,'DD/MM/YYYY') AND TO_DATE(:P173_FECHA_HASTA,'DD/MM/YYYY')
+                   AND (ID_ARTICULO = :P173_ARTICULO OR :P173_ARTICULO IS NULL)
+                   AND (M.COD_SUCURSAL = :P173_SUCURSAL_DESDE or :P173_SUCURSAL_DESDE IS NULL)
+                
+                order by M.ID_ARTICULO, M.COD_SUCURSAL, M.FEC_ALTA DESC
+                ```
+            pageItemsToSubmit: [
+                P173_SUCURSAL_DESDE
+                P173_ARTICULO
+                P173_FECHA_DESDE
+                P173_FECHA_HASTA
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        messages {
+            whenNoDataFound: No se ha encontrado ningún dato.
+            whenMoreDataFound: El recuento máximo de filas de este informe es #MAX_ROW_COUNT# filas. Aplique un filtro para reducir el número de registros de la consulta.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 118445659484551086
+        }
+
+        column ARTICULO (
+            type: hidden
+            heading {
+                heading: Articulo
+            }
+            layout {
+                sequence: 14
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column CANT_ENT (
+            type: plainText
+            heading {
+                heading: Cant. Ent.
+                alignment: center
+            }
+            layout {
+                sequence: 69
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column CANT_SAL (
+            type: plainText
+            heading {
+                heading: Cant. Sal.
+                alignment: center
+            }
+            layout {
+                sequence: 79
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cód. Artículo
+            }
+            layout {
+                sequence: 5
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column COD_MOTIVO_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Cód. Motivo
+            }
+            layout {
+                sequence: 11
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column COD_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Cód. Sucursal
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESC_ART (
+            type: plainText
+            heading {
+                heading: Desc Art
+            }
+            layout {
+                sequence: 6
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column DESC_MOTIVO (
+            type: plainText
+            heading {
+                heading: Desc. Motivo
+            }
+            layout {
+                sequence: 8
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column DESC_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Desc. Sucursal
+            }
+            layout {
+                sequence: 7
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Fec Alta
+                alignment: center
+            }
+            layout {
+                sequence: 49
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: DD-MM-YYYY HH24:MI:SS
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column ID (
+            type: plainText
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 89
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 2
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column NROLOTE (
+            type: plainText
+            heading {
+                heading: Nro. Lote
+                alignment: center
+            }
+            layout {
+                sequence: 59
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column NUMERO (
+            type: plainText
+            heading {
+                heading: Numero
+            }
+            layout {
+                sequence: 99
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column SALDO (
+            type: plainText
+            heading {
+                heading: Saldo
+                alignment: center
+            }
+            layout {
+                sequence: 39
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText:
+                ```
+                Movimientos de Artículos
+                &P0_DESC_EMPRESA. - &P0_DESC_SUCURSAL.
+                ```
+        }
+        pageFooter {
+            pageFooterText: USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+        }
+
+        savedReport 390712 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANT_ENT (
+                sequence: 9
+            )
+
+            displayColumn CANT_SAL (
+                sequence: 10
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn COD_MOTIVO_ENT_SAL (
+                sequence: 6
+            )
+
+            displayColumn COD_SUCURSAL (
+                sequence: 1
+            )
+
+            displayColumn DESC_ART (
+                sequence: 5
+            )
+
+            displayColumn DESC_MOTIVO (
+                sequence: 7
+            )
+
+            displayColumn DESC_SUCURSAL (
+                sequence: 2
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 3
+            )
+
+            displayColumn NROLOTE (
+                sequence: 12
+            )
+
+            displayColumn NUMERO (
+                sequence: 8
+            )
+
+            displayColumn SALDO (
+                sequence: 11
+            )
+
+        )
+
+    )
+
+    pageItem P173_ARTICULO (
+        type: popupLov
+        label {
+            label: <p>Articulo:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P173_FECHA_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha Desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            postText: &nbsp<p>    Hasta</p>
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem P173_FECHA_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta<p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(sysdate) from dual
+                
+                ```
+        }
+    )
+
+    pageItem P173_SUCURSAL_DESDE (
+        type: popupLov
+        label {
+            label: <p> Sucursal Desde:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery: SELECT DESCRIPCION, COD_SUCURSAL FROM BSW_SUCURSALES
+            displayExtraValues: false
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button ejecutar (
+        buttonName: ejecutar
+        label: Ejecutar
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            column: 1
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-dynamic-content
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button limpiar (
+        buttonName: Limpiar
+        label: Limpiar
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar paginacion
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @ficha-entrada-salida
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P173_FECHA_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P173_FECHA_DESDE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P173_FECHA_DESDE,'/','');
+                            conv_fecha := substr(:P173_FECHA_DESDE,1,2)||'/'||
+                                                      substr(:P173_FECHA_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P173_FECHA_DESDE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P173_FECHA_DESDE := conv_fecha;
+                            ELSIF (length(:P173_FECHA_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P173_FECHA_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P173_FECHA_DESDE
+                itemsToReturn: P173_FECHA_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convertir-fecha (
+        name: CONVERTIR_FECHA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P173_FECHA_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P173_FECHA_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P173_FECHA_HASTA,'/','');
+                            conv_fecha := substr(:P173_FECHA_HASTA,1,2)||'/'||
+                                                      substr(:P173_FECHA_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P173_FECHA_HASTA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P173_FECHA_HASTA := conv_fecha;
+                            ELSIF (length(:P173_FECHA_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P173_FECHA_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P173_FECHA_HASTA
+                itemsToReturn: P173_FECHA_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction procesar (
+        name: procesar
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action llama-proceso (
+            name: llama_proceso
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare
+                      vnumero      number := 2;
+                      vid_articulo number;
+                      vmensaje     varchar2(1000);
+                    begin
+                      -- Call the procedure
+                      stw_ficha_articulo(p_ip_maquina => owa_util.get_cgi_env('REMOTE_ADDR'),
+                                         p_id_empresa => :P0_ID_EMPRESA,
+                                         p_id_articulo => :P173_ARTICULO,
+                                         p_id_sucursal => :P173_SUCURSAL_DESDE,
+                                         p_fec_ini => :P173_FECHA_DESDE,
+                                         p_fec_fin => :P173_FECHA_HASTA,
+                                         p_mensaje => vmensaje);
+                    end;
+                    DBMS_LOCK.SLEEP(0.3);
+                    ```
+                itemsToSubmit: [
+                    P173_SUCURSAL_DESDE
+                    P173_ARTICULO
+                    P173_FECHA_DESDE
+                    P173_FECHA_HASTA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action mensaje (
+            name: MENSAJE
+            action: alert
+            settings {
+                message: Proceso Concluido
+                style: success
+                icon: fa-alert
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @movimientos-de-articulos
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 60015034017299489
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+    process new-session-clear (
+        name: New_session_clear
+        type: clearSessionState
+        execution {
+            sequence: 10
+            point: newSession
+        }
+        advanced {
+            executionMappingIdentifier: 60014661810299489
+        }
+    )
+
+    branch (
+        name: Go To Page 177
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 177
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

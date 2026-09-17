@@ -1,0 +1,945 @@
+page 186 (
+    name: Recalculo de Stock
+    alias: RECALCULO-DE-STOCK
+    title: Recalculo de Stock
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region existencia-art (
+        name: Existencia Art.
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_ARTICULO,
+                       ID_SUCURSAL,
+                       CANT_DISPON,
+                       --CANT_BLOQUEO,
+                       FEC_ULTIMO_INVENT,
+                       --CANT_MINIMA,
+                       --CANT_MAXIMA,
+                       ID_EMPRESA,
+                       --SER_ARTICULO,
+                       --COD_USUARIO_AUD,
+                       --ID_UNIDAD_MEDIDA,
+                       ID_LOTE
+                from STW_EXISTENCIA_ART
+                where (id_sucursal = :P186_SUCURSAL or :P186_SUCURSAL is null)
+                  and (id_articulo = :P186_ARTICULOS or :P186_ARTICULOS is null)
+                  and (id_lote     = :P186_LOTE or :P186_LOTE is null)
+                ```
+            pageItemsToSubmit: [
+                P186_LOTE
+                P186_SUCURSAL
+                P186_ARTICULOS
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @recalculo-de-stock
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 139906482674662875
+        }
+
+        column CANT_DISPON (
+            type: plainText
+            heading {
+                heading: Cant. Disponible
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FEC_ULTIMO_INVENT (
+            type: hidden
+            heading {
+                heading: Ultimo Invent
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_ARTICULO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Artículo
+                alignment: center
+            }
+            lov {
+                lov: @lv-articulos
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_LOTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Lote
+                alignment: center
+            }
+            lov {
+                lov: @lv-lotes-racalc
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Existencia Art.
+        }
+
+        savedReport 88081 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANT_DISPON (
+                sequence: 4
+            )
+
+            displayColumn ID_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn ID_LOTE (
+                sequence: 3
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    region recalculo-de-stock (
+        name: Recalculo de Stock
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem 186_EJECUTAR (
+        type: hidden
+        layout {
+            sequence: 120
+            region: @recalculo-de-stock
+            slot: regionBody
+        }
+    )
+
+    pageItem P186_ARTICULOS (
+        type: popupLov
+        label {
+            label: <p>Articulo</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 20
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P186_FAMILIA (
+        type: popupLov
+        label {
+            label: <p>Familia</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-familias-articulos
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 40
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P186_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p><b style="color:red">*</b>Fec. Hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_FEC_FINAL_EJERCICIO
+        }
+    )
+
+    pageItem P186_FEC_INI (
+        type: datePicker
+        label {
+            label: <p><b style="color:red">*</b>Fec. Inicio:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P186_LOTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @recalculo-de-stock
+            slot: regionBody
+        }
+    )
+
+    pageItem P186_MARCA (
+        type: popupLov
+        label {
+            label: <p>Marca</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-marcas
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 90
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P186_MENSAJE_PROCEDIMIENTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P186_RUBRO (
+        type: popupLov
+        label {
+            label: <p>Rubro</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-rubros-articulos
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 30
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P186_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 10
+            region: @recalculo-de-stock
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button recalcularstock (
+        buttonName: recalcularstock
+        label: Procesar
+        layout {
+            sequence: 100
+            region: @recalculo-de-stock
+            slot: regionBody
+            column: 1
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapBottom
+            ]
+            icon: fa-dynamic-content
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 110
+            region: @recalculo-de-stock
+            slot: regionBody
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapBottom
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: P186_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P186_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P186_FEC_FIN,'/','');
+                            conv_fecha := substr(:P186_FEC_FIN,1,2)||'/'||
+                                                      substr(:P186_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:P186_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P186_FEC_FIN := conv_fecha;
+                            ELSIF (length(:P186_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P186_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P186_FEC_FIN
+                itemsToReturn: P186_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P186_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P186_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P186_FEC_INI,'/','');
+                            conv_fecha := substr(:P186_FEC_INI,1,2)||'/'||
+                                                      substr(:P186_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:P186_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P186_FEC_INI := conv_fecha;
+                            ELSIF (length(:P186_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P186_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P186_FEC_INI
+                itemsToReturn: P186_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction ejecutar (
+        name: ejecutar
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @recalcularstock
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: &P186_MENSAJE_PROCEDIMIENTO.
+                style: information
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    let timerInterval
+                    Swal.fire({
+                      title: 'Espere porfavor...',
+                      html: 'No cierre la ventana del navegador',
+                      timer: 5000,
+                      timerProgressBar: true,
+                      didOpen: () => {
+                        Swal.showLoading()
+                        timerInterval = setInterval(() => {
+                          const content = Swal.getHtmlContainer()
+                          if (content) {
+                            const b = content.querySelector('b')
+                            if (b) {
+                              b.textContent = Swal.getTimerLeft()
+                            }
+                          }
+                        }, 100)
+                      },
+                      willClose: () => {
+                        clearInterval(timerInterval)
+                      }
+                    }).then((result) => {
+                      /* Read more about handling dismissals below */
+                      if (result.dismiss === Swal.DismissReason.timer) {
+                        //console.log('I was closed by the timer')
+                      }
+                    })
+                    ```
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if(apex.item("EJECUTAR").getValue() == 'Pago realizado satisfactoriamente.'){
+                    Swal.fire(
+                      apex.item("EJECUTAR").getValue(),
+                      '',
+                      'success'
+                    )
+                    }else{
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Error',
+                      text: apex.item("EJECUTAR").getValue(),
+                      //footer: '<a href>Why do I have this issue?</a>'
+                    })
+                    }
+                    ```
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia-art
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                spinnerColor: #647edc
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action recalculo-stock (
+            name: RECALCULO_STOCK
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        V_MENSAJE VARCHAR(250);
+                    BEGIN
+                        stw_recalcula_stock(p_id_empresa => :P0_ID_EMPRESA,
+                                          p_id_sucursal => :P186_SUCURSAL,
+                                          p_id_articulo => :P186_ARTICULOS,
+                                          p_id_linea => NULL,
+                                          p_id_marca => :P186_MARCA,
+                                          p_id_origen => NULL,
+                                          p_fec_inicial => :P186_FEC_INI,
+                                          p_fec_final => :P186_FEC_FIN,
+                                          pmensaje => V_MENSAJE);
+                    
+                        :P186_MENSAJE_PROCEDIMIENTO := V_MENSAJE;
+                    /*EXCEPTION
+                        WHEN OTHERS THEN
+                        :P186_MENSAJE_PROCEDIMIENTO := SQLERRM;*/
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P186_MENSAJE_PROCEDIMIENTO
+                    P186_FEC_INI
+                    P186_FEC_FIN
+                    P0_ID_EMPRESA
+                    P186_SUCURSAL
+                    P186_ARTICULOS
+                    P186_MARCA
+                ]
+                itemsToReturn: P186_MENSAJE_PROCEDIMIENTO
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: refresh_grid
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia-art
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid-2 (
+        name: REFRESH_GRID
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: [
+                P186_SUCURSAL
+                P186_ARTICULOS
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia-art
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid-per-item (
+        name: refresh_grid_per_item
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: [
+                SUCURSAL
+                ARTICULOS
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia-art
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

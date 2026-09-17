@@ -1,0 +1,1610 @@
+page 370 (
+    name: Generación de Liquidaciones
+    alias: GENERACION-DE-LIQUIDACIONES
+    title: Generación de Liquidaciones
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 190px;
+                height: 25px;
+                pointer-events: none;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: left;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region generación-de-liquidaciones (
+        name: Generación de Liquidaciones
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select L.ID,
+                L.ID_EMPRESA,
+                L.SER_LIQUID,
+                L.NRO_LIQUID,
+                L.TIP_LIQUID,
+                L.FEC_LIQUID,
+                L.FEC_DESDE,
+                L.FEC_HASTA,
+                L.FEC_PROCESO,
+                L.ID_TIP_LIQUID,
+                L.IND_VACACIONES,
+                L.IND_LIQ_FINAL,
+                L.DIAS_VACACIONES,
+                L.ID_CENTRO_PAGO,
+                L.TIP_CAMBIO_US,
+                L.TIPO_LIQ,
+                L.FEC_PAGO,
+                L.CERRADO,
+                L.FEC_CIERRE,
+                L.COMENTARIO,
+                L.ID_SUCURSAL,
+                L.COD_USUARIO_AUD,
+                L.ID_EMPLEADO
+                FROM RHW_LIQUIDACIONES L
+                WHERE L.ID_EMPRESA=:P0_ID_EMPRESA
+                ORDER BY ID DESC;
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    region variables (
+        name: Variables
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P370_ANIO (
+        type: textField
+        label {
+            label: <p>Año: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 280
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CANTAFBAS (
+        type: textField
+        label {
+            label: Cantafbas
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CENTRO_COSTO (
+        type: popupLov
+        label {
+            label: <P>Centro de Costo: &ensp;</P>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CERRADO (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: CERRADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P370_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 210
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P370_COMENTARIO (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: COMENTARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P370_COMPL_SUELDO (
+        type: textField
+        label {
+            label: Compl Sueldo
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_AGUIN (
+        type: textField
+        label {
+            label: Conc Aguin
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_ASOCIACION (
+        type: textField
+        label {
+            label: Conc Asociacion
+            alignment: left
+        }
+        layout {
+            sequence: 270
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_BONIF (
+        type: textField
+        label {
+            label: Conc Bonif
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_EN_USS (
+        type: textField
+        label {
+            label: Conc En Uss
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_HONORARIOS (
+        type: textField
+        label {
+            label: Conc Honorarios
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_HONORARIOS_SIN_IVA (
+        type: textField
+        label {
+            label: Conc Honorarios Sin Iva
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_IPS (
+        type: textField
+        label {
+            label: Conc Ips
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_IVA (
+        type: textField
+        label {
+            label: Conc Iva
+            alignment: left
+        }
+        layout {
+            sequence: 250
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_REDON (
+        type: textField
+        label {
+            label: Conc Redon
+            alignment: left
+        }
+        layout {
+            sequence: 290
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CONC_SUELDO (
+        type: textField
+        label {
+            label: Conc Sueldo
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_CREO_CABECERA (
+        type: textField
+        label {
+            label: Creo Cabecera
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_DIAS_VACACIONES (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: DIAS_VACACIONES
+            dataType: number
+        }
+    )
+
+    pageItem P370_FEC_CIERRE (
+        type: hidden
+        layout {
+            sequence: 120
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: FEC_CIERRE
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P370_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Periodo desde: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 15
+        }
+        advanced {
+            customAttributes: TABINDEX= "12"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: FEC_DESDE
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P370_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Periodo hasta: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 15
+        }
+        advanced {
+            customAttributes: TABINDEX= "13"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: FEC_HASTA
+            dataType: date
+        }
+    )
+
+    pageItem P370_FEC_LIQUID (
+        type: datePicker
+        label {
+            label: <p>Fecha Liquid.: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 15
+        }
+        advanced {
+            customAttributes: TABINDEX= "11"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: FEC_LIQUID
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P370_FEC_PAGO (
+        type: hidden
+        layout {
+            sequence: 110
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: FEC_PAGO
+            dataType: date
+        }
+    )
+
+    pageItem P370_FEC_PROCESO (
+        type: hidden
+        layout {
+            sequence: 220
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: FEC_PROCESO
+            dataType: date
+        }
+    )
+
+    pageItem P370_ID (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P370_ID_CENTRO_PAGO (
+        type: popupLov
+        label {
+            label: <p>Centro de Pago: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centros-pagos
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 50
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 15
+        }
+        advanced {
+            customAttributes: TABINDEX= "9"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: ID_CENTRO_PAGO
+            dataType: number
+        }
+    )
+
+    pageItem P370_ID_EMPLEADO (
+        type: popupLov
+        label {
+            label: <P>Empleado: &ensp;</P>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados-activos
+        }
+        layout {
+            sequence: 100
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX= "4"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: ID_EMPLEADO
+            dataType: number
+        }
+    )
+
+    pageItem P370_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P370_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P370_ID_TIP_LIQUID (
+        type: hidden
+        layout {
+            sequence: 230
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: ID_TIP_LIQUID
+            dataType: number
+        }
+    )
+
+    pageItem P370_IND_LIQ_FINAL (
+        type: hidden
+        layout {
+            sequence: 250
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: IND_LIQ_FINAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P370_IND_VACACIONES (
+        type: hidden
+        layout {
+            sequence: 240
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: IND_VACACIONES
+            dataType: varchar2
+        }
+    )
+
+    pageItem P370_JORNAL_MES (
+        type: textField
+        label {
+            label: Jornal Mes
+            alignment: left
+        }
+        layout {
+            sequence: 180
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_LIMITE_BONIF (
+        type: textField
+        label {
+            label: Limite Bonif
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_MES (
+        type: textField
+        label {
+            label: <P>Mes: &ensp;</P>
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_MONTAFBAS (
+        type: textField
+        label {
+            label: Montafbas
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_MONTO_1 (
+        type: textField
+        label {
+            label: Monto 1
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_MONTO_2 (
+        type: textField
+        label {
+            label: Monto 2
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_NRO_LIQUID (
+        type: numberField
+        label {
+            label: <p>Nro Liquidación: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 1
+        }
+        advanced {
+            customAttributes: TABINDEX = "3"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: NRO_LIQUID
+            dataType: number
+        }
+    )
+
+    pageItem P370_PLAN_CONCEPTOS (
+        type: textField
+        label {
+            label: Plan Conceptos
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_PORC_BONIF (
+        type: textField
+        label {
+            label: Porc Bonif
+            alignment: left
+        }
+        layout {
+            sequence: 190
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_PORC_IPS (
+        type: textField
+        label {
+            label: Porc Ips
+            alignment: left
+        }
+        layout {
+            sequence: 280
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_PORC_IVA (
+        type: textField
+        label {
+            label: Porc Iva
+            alignment: left
+        }
+        layout {
+            sequence: 240
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_PORC_RETENCION (
+        type: textField
+        label {
+            label: Porc Retencion
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_SALARIO_MINIMO (
+        type: textField
+        label {
+            label: Salario Minimo
+            alignment: left
+        }
+        layout {
+            sequence: 300
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_SER_LIQUID (
+        type: textField
+        label {
+            label: <p>Serie Liquidación: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 60
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 1
+        }
+        advanced {
+            customAttributes: TABINDEX= "2"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: SER_LIQUID
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('RH','RH_SER_DEBCRED')
+        }
+    )
+
+    pageItem P370_TIPO_LIQ (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: TIPO_LIQ
+            dataType: varchar2
+        }
+    )
+
+    pageItem P370_TIP_CAMBIO_US (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 170
+            region: @generación-de-liquidaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: TIP_CAMBIO_US
+            dataType: number
+        }
+    )
+
+    pageItem P370_TIP_LIQUID (
+        type: popupLov
+        label {
+            label: <p>Tipo Liquidación: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tipliq
+            displayExtraValues: false
+        }
+        layout {
+            sequence: 10
+            region: @generación-de-liquidaciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 15
+        }
+        advanced {
+            customAttributes: tabindex = "1"
+        }
+        source {
+            formRegion: @generación-de-liquidaciones
+            column: TIP_LIQUID
+            dataType: varchar2
+        }
+    )
+
+    pageItem P370_TOTAL_HABER (
+        type: textField
+        label {
+            label: Total Haber
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_TOTAL_SALDO_ROJO (
+        type: textField
+        label {
+            label: Total Saldo Rojo
+            alignment: left
+        }
+        layout {
+            sequence: 210
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_TOT_EMPLEADO (
+        type: textField
+        label {
+            label: Tot Empleado
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_TOT_HABER_IPS (
+        type: textField
+        label {
+            label: Tot Haber Ips
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P370_TOT_HABER_PARA_DEMANDA (
+        type: textField
+        label {
+            label: Tot Haber Para Demanda
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button execute (
+        buttonName: EXECUTE
+        label: Generar Liquidacion
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P370_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    dynamicAction tip-cambio-us (
+        name: TIP_CAMBIO_US
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                     begin
+                      Select tipo_cambio_dia
+                        into :P370_TIP_CAMBIO_US
+                        from BSW_monedas
+                       where cod_moneda = '3' ;
+                     exception
+                      when others then
+                           :P370_TIP_CAMBIO_US := 1;
+                      end ;
+                     EXCEPTION 
+                     	WHEN OTHERS THEN
+                     	 RAISE_APPLICATION_ERROR(-20000,'ERROR ' || sqlerrm);
+                    
+                    ```
+                itemsToReturn: P370_TIP_CAMBIO_US
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p370-nro-liquid (
+        itemName: P370_NRO_LIQUID
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery: "SELECT NVL(MAX(TO_NUMBER(NRO_LIQUID)), 0) + 1 FROM RHW_LIQUIDACIONES;  "
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P370_ID
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 21991963446439184
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process ejecutar (
+        name: Ejecutar
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                 --break;
+                  IF :P370_CERRADO = 'S' THEN
+                 RAISE_APPLICATION_ERROR(-20000, 'LA LIQUIDACION SELECCIONADA YA SE ENCUENTRA CERRADA, FAVOR VALIDAR');
+                 END IF;
+                  if nvl(:P370_NRO_LIQUID,0) <= 0 then
+                   BEGIN
+                    Select max( nro_liquid )
+                      into :P370_NRO_LIQUID
+                      from rhw_cabecera_liq
+                     where id_empresa = :P0_ID_EMPRESA
+                       and ser_liquid  = :P370_SER_LIQUID;
+                
+                    :P370_NRO_LIQUID := nvl( :P370_NRO_LIQUID, 0 ) + 1;
+                    
+                   EXCEPTION
+                    when others then
+                      :P370_NRO_LIQUID := 1;
+                   END;
+                  end if;
+                  declare vencontro varchar2(1) ;
+                  begin  
+                     vencontro := 'N' ;
+                     Select 'S'
+                       into vencontro 
+                       from rhw_liquidaciones 
+                      where id_empresa = :P0_ID_EMPRESA
+                        and ser_liquid = :P370_SER_LIQUID
+                        and nro_liquid = :P370_NRO_LIQUID ;
+                     if vencontro = 'S' then
+                        update rhw_liquidaciones
+                           set fec_proceso = sysdate,
+                               fec_liquid = :P370_FEC_LIQUID,
+                               tip_cambio_us = :P370_TIP_CAMBIO_US,
+                               fec_pago   = :P370_FEC_PAGO,
+                               fec_desde  = :P370_FEC_DESDE,
+                               fec_hasta  = :P370_FEC_HASTA,
+                               id_centro_pago = :P370_ID_CENTRO_PAGO,
+                               id_sucursal = :P370_ID_SUCURSAL,
+                               tip_liquid   = :P370_TIP_LIQUID
+                         where id_empresa = :P0_ID_EMPRESA
+                           and ser_liquid = :P370_SER_LIQUID
+                           and nro_liquid = :P370_NRO_LIQUID ;    
+                     end if;  
+                  exception
+                     when no_data_found then
+                          insert into rhw_liquidaciones ( ID_EMPRESA, SER_LIQUID, NRO_LIQUID,
+                                                         FEC_LIQUID,FEC_PROCESO, TIP_CAMBIO_US,
+                                                         fec_pago, fec_desde, fec_hasta, id_centro_pago,
+                                                         id_sucursal, tip_liquid )
+                                                values ( :P0_ID_EMPRESA, :P370_SER_LIQUID, :P370_NRO_LIQUID,
+                                                         :P370_FEC_LIQUID, sysdate, :P370_TIP_CAMBIO_US,
+                                                         :P370_FEC_LIQUID, :P370_FEC_DESDE, :P370_FEC_HASTA,
+                                                         :P370_ID_CENTRO_PAGO, :P0_ID_SUCURSAL, :P370_TIP_LIQUID ) ;
+                     when others then 
+                          RAISE_APPLICATION_ERROR(-20000, 'Error en la tabla de liquidaciones' || sqlerrm );
+                  end ;
+                end;
+                
+                declare
+                   vmarca_Reloj   varchar2 ( 1 ) ;
+                   vacumula_hor   varchar2 ( 1 ) ;
+                   vsereno        varchar2 ( 1 ) ;
+                BEGIN
+                	verif_existencia_liquidacion( :P0_ID_EMPRESA, :P370_TIPO_LIQ, :P370_TIP_LIQUID, :P370_FEC_LIQUID) ;
+                  BEGIN
+                    select nvl(s.monto, 0) 
+                      into :P370_SALARIO_MINIMO
+                      from rhw_salario_minimo s
+                     where s.id_empresa = :P0_ID_EMPRESA
+                       and nvl(s.estado, 'T') = 'P'
+                		       and s.fec_vigencia = ( select max( sa.fec_vigencia )
+                		                                from rhw_salario_minimo sa
+                		                               where sa.id_empresa = s.id_empresa
+                		                                 and nvl(sa.estado, 'T') = 'P' 
+                		                                 and to_char( fec_vigencia, 'yyyymm' ) <= :P370_ANIO || :P370_MES ) ;
+                  EXCEPTION
+                    when others then
+                       :P370_SALARIO_MINIMO := 0 ;
+                       RAISE_APPLICATION_ERROR(-20000, 'Error en el proceso de captura de sueldo minimo ' || sqlerrm);
+                  END ;
+                  :P370_LIMITE_BONIF := to_number( ltrim( rtrim( w_busca_parametro( 'RH', 'RH_LIMITE_BONIF' ) ) ) );-- parche 25/05/2018 FME
+                  :P370_LIMITE_BONIF := nvl( :P370_SALARIO_MINIMO, 0 ) * nvl( :P370_LIMITE_BONIF, 0 ) ;
+                IF   :P370_NRO_LIQUID IS NULL THEN
+                  BEGIN
+                    Select max( nro_liquid )
+                      into :P370_NRO_LIQUID
+                      from rhw_cabecera_liq
+                     where id_empresa  = :P0_ID_EMPRESA
+                       and id_sucursal = :P0_ID_SUCURSAL
+                       and ser_liquid   = :P370_SER_LIQUID;
+                
+                    :P370_NRO_LIQUID := nvl( :P370_NRO_LIQUID, 0 ) + 1;
+                  EXCEPTION
+                    when others then
+                      :P370_NRO_LIQUID := 1;
+                  END;
+                END IF;
+                  declare 
+                    vencontro varchar2(1) ;
+                  begin  
+                     vencontro := 'N' ;
+                     Select 'S'
+                       into vencontro 
+                       from rhw_liquidaciones 
+                      where id_empresa  = :P0_ID_EMPRESA
+                        and id_sucursal = :P0_ID_SUCURSAL
+                        and ser_liquid   = :P370_SER_LIQUID
+                        and nro_liquid   = :P370_NRO_LIQUID ;
+                     if vencontro = 'S' then
+                        update rhw_liquidaciones
+                           set fec_proceso = sysdate,
+                               fec_liquid  = :P370_FEC_LIQUID,
+                               tip_cambio_us = :P370_TIP_CAMBIO_US
+                         where id_empresa   = :P0_ID_EMPRESA
+                           and id_sucursal  = :P0_ID_SUCURSAL 
+                           and ser_liquid    = :P370_SER_LIQUID
+                           and nro_liquid    = :P370_NRO_LIQUID ;    
+                     end if;  
+                  exception
+                     when no_data_found then
+                          insert into rhw_liquidaciones ( id_empresa, id_sucursal, ser_liquid, nro_liquid,
+                                                         fec_liquid,fec_proceso, tip_cambio_us, tipo_liq, tip_liquid )
+                                                values ( :P0_ID_EMPRESA, :P0_ID_SUCURSAL, :P370_SER_LIQUID, :P370_NRO_LIQUID,
+                                                         :P370_FEC_LIQUID, sysdate, :P370_TIP_CAMBIO_US, :P370_TIPO_LIQ, '28' ) ;
+                     when others then 
+                          RAISE_APPLICATION_ERROR(-20000, 'Error en la tabla de liquidaciones' || sqlerrm )  ;
+                  end ;
+                 
+                   ------------------------------------------------
+                  -- Hace el calculo de provision de vacaciones --
+                  --   en caso que la liquidacion sea mensual   --
+                  ------------------------------------------------
+                  IF :P370_TIP_LIQUID = 'M' THEN
+                    actualiza_vacaciones(:P370_ID_EMPRESA, :P0_ID_SUCURSAL, :P370_ID_EMPLEADO, :P370_FEC_LIQUID, :P370_NRO_LIQUID,
+                    :P370_SER_LIQUID);
+                    --actualiza_vacaciones_reales;
+                   NULL;
+                  END IF;
+                  LIQUID_EMPLEADO(:P0_ID_EMPRESA, :P370_ID_EMPLEADO, :P370_ID_SUCURSAL, :P370_CENTRO_COSTO,
+                  :P370_CONC_SUELDO, :P370_FEC_DESDE, :P370_FEC_HASTA, :P370_TIP_LIQUID, :P370_FEC_LIQUID,
+                  :P370_CONC_ASOCIACION, :P370_ANIO, :P370_MES, :P370_ID_CENTRO_PAGO, :P370_CANTAFBAS,
+                  :P370_MONTAFBAS, :P370_CREO_CABECERA, :P370_SALARIO_MINIMO, :P370_TIPO_LIQ, :P370_NRO_LIQUID,
+                  :P370_SER_LIQUID, :P370_TOT_EMPLEADO, :P370_MONTO_1, :P370_MONTO_2, :P370_TOT_HABER_IPS, 
+                  :P370_CONC_HONORARIOS, :P370_CONC_HONORARIOS_SIN_IVA, :P370_CONC_EN_USS, :P370_TOTAL_HABER,
+                  :P370_COMPL_SUELDO, :P370_CONC_AGUIN, :P370_CONC_BONIF, :P370_JORNAL_MES, :P370_PORC_BONIF,
+                  :P370_LIMITE_BONIF, :P370_PORC_IPS, :P370_TOT_HABER_PARA_DEMANDA, :P370_TIP_CAMBIO_US, 
+                  :P370_PLAN_CONCEPTOS, :P370_TOTAL_SALDO_ROJO, :P370_CONC_IPS, :P370_PORC_IVA, :P370_CONC_IVA,
+                  :P370_PORC_RETENCION, :P370_PORC_RETENCION, :P370_CONC_REDON, :APP_USER, :P370_ID) ;  
+                  BORRA_CAB;
+                EXCEPTION
+                  when others then
+                    RAISE_APPLICATION_ERROR (-20000, 'Error en el proceso  '|| sqlerrm);
+                    rollback;
+                END;
+                
+                
+                
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 47292027535787220
+        }
+        serverSideCondition {
+            whenButtonPressed: @execute
+        }
+    )
+
+    process initialize-form-carga-de-liquidaciones (
+        name: Initialize form Carga de Liquidaciones
+        type: formInitialization
+        formRegion: @generación-de-liquidaciones
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 21991159315439184
+        }
+    )
+
+    process parametros (
+        name: PARAMETROS
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                :P370_CONC_SUELDO := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro('RH', 'RH_CONC_SUELDO'));
+                :P370_CONC_BONIF := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_BONIF' ));
+                --:variables.ips_defecto              := Busca_parametro( 'RH', 'RH_SIN_ESTADO_IPS' );
+                :P370_PORC_RETENCION           := W_Busca_parametro( 'CP', 'PORC_RET_IVA' );
+                :P370_porc_bonif               := W_Busca_parametro( 'RH', 'RH_PORC_BONIF' );
+                --:VARIABLES.activo_ips               := Busca_parametro( 'RH', 'RH_IPS_ENTRADA' );
+                --:VARIABLES.conc_comple              := Busca_parametro( 'RH', 'RH_CONC_COMPLEMENTO' );
+                :P370_conc_asociacion          := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_Busca_parametro( 'RH', 'RH_CONC_ASOCIACION' ));
+                :P370_conc_ips                 := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_Busca_parametro( 'RH', 'RH_CONC_IPS' ));
+                :P370_porc_ips                 := W_Busca_parametro( 'RH', 'RH_PORC_IPS' );
+                :P370_conc_iva                 := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_Busca_parametro( 'RH', 'RH_CONC_IVA' ));
+                :P370_porc_iva                 := W_Busca_parametro( 'RH', 'RH_PORC_IVA' );
+                :P370_conc_redon               := W_Busca_parametro( 'RH', 'RH_CONC_REDON' );
+                --:P370_conc_he_noips            := Busca_parametro( 'RH', 'RH_CONC_HOR_EXT'  );
+                --:P370_conc_comis               := Busca_parametro( 'RH', 'RH_CONC_COMIS'  );
+                :P370_conc_aguin               := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_Busca_parametro( 'RH', 'RH_CONC_AGUIN' ));
+                :P370_limite_bonif             := to_number( ltrim( rtrim( W_Busca_parametro( 'RH', 'RH_LIMITE_BONIF' ) ) ) );
+                :P370_jornal_mes               := to_number( ltrim( rtrim( W_Busca_parametro( 'RH', 'RH_JORNAL_MES' ) ) ) );
+                --:P370_jornalero                := busca_parametro( 'RH', 'JORNALERO') ;
+                :P370_conc_honorarios          := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_HONORARIOS')) ;
+                --:P370_conc_superior            := busca_parametro( 'RH', 'RH_CONC_SUPERIOR') ;
+                :P370_plan_conceptos           := W_busca_parametro ( 'RH', 'PLA_P_CALC_SAL_ROJ_A' );
+                :P370_conc_honorarios_sin_iva  := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro ( 'RH', 'RH_PROF_SIN_IVA' ));
+                :P370_conc_en_uss              := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro ( 'RH', 'RH_CONC_USS' ));
+                --:P370_procesar_pagos           := W_busca_per_forma( :variables.cod_empresa, user, 'PERMITE_REPROCESAR_PAGOS', :variables.cod_forma );
+                :P370_compl_sueldo             := W_busca_parametro( 'RH', 'RH_CONC_COMPL') ;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 44250885919144029
+        }
+    )
+
+)
+

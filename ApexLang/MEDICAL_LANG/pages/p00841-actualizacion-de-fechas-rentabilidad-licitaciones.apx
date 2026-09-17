@@ -1,0 +1,595 @@
+page 841 (
+    name: Actualizacion de Fechas - Rentabilidad Licitaciones
+    alias: ACTUALIZACION-DE-FECHAS-RENTABILIDAD-LICITACIONES
+    title: Actualizacion de Fechas - Rentabilidad Licitaciones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @rentabilidad-total
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region rentabilidad-total (
+        name: Rentabilidad Total
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT T.*
+                  FROM (
+                      SELECT ROWID,
+                       (SELECT NRO_LICITACION FROM LCW_LICITACIONES_CAB WHERE ID = ID_LICITACION_CAB) NRO_LICITACION,
+                       (SELECT NRO_ID_LICITACION FROM LCW_LICITACIONES_CAB WHERE ID = ID_LICITACION_CAB) NRO_ID_LICITACION,
+                       (SELECT NRO_ITEM FROM LCW_LICITACIONES_DET WHERE ID = ID_LICITACION_DET) NRO_ITEM,
+                       (SELECT NRO_LOTE FROM LCW_LICITACIONES_DET WHERE ID = ID_LICITACION_DET) NRO_LOTE,
+                       FEC_ALTA,
+                       ESTADO,
+                       FEC_ESTADO,
+                       FEC_ULT_ACTUALIZACION
+                  FROM LCW_HISTORICO_RENTABILIDAD_TOTAL
+                  ) T
+                 WHERE (T.NRO_LICITACION = :P841_NRO_LICITACION OR :P841_NRO_LICITACION IS NULL)
+                   AND (T.NRO_ITEM = :P841_NRO_ITEM OR :P841_NRO_ITEM IS NULL)
+                   AND (T.FEC_ESTADO BETWEEN :P841_FEC_INI AND :P841_FEC_FIN OR :P841_FEC_INI IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P841_FEC_INI
+                P841_FEC_FIN
+                P841_NRO_LICITACION
+                P841_NRO_ITEM
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 79177797725686106
+        }
+
+        savedReport 815031 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ULT_ACTUALIZACION
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ALTA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ESTADO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ROWID
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LICITACION
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ID_LICITACION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    sequence: 5
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column ESTADO (
+            type: textField
+            heading {
+                heading: <p>Estado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 50
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_ALTA (
+            type: datePicker
+            heading {
+                heading: <p>Alta</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: dd/MM/yyyy HH24:MI
+            }
+            source {
+                databaseColumn: FEC_ALTA
+                dataType: date
+            }
+        )
+
+        column FEC_ESTADO (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Estado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_ESTADO
+                dataType: date
+            }
+        )
+
+        column FEC_ULT_ACTUALIZACION (
+            type: datePicker
+            heading {
+                heading: <p>Ult. Actualizacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_ULT_ACTUALIZACION
+                dataType: date
+            }
+        )
+
+        column NRO_ID_LICITACION (
+            type: textField
+            heading {
+                heading: <p>ID Licitacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 15
+            }
+            source {
+                databaseColumn: NRO_ID_LICITACION
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_ITEM (
+            type: numberField
+            heading {
+                heading: <p>Nro. Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NRO_ITEM
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_LICITACION (
+            type: numberField
+            heading {
+                heading: <p>Nro. Licitacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NRO_LICITACION
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ROWID (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ROWID
+                dataType: rowid
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Rentabilidad Total
+        }
+    )
+
+    pageItem P841_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P841_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Estado: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P841_NRO_ITEM (
+        type: numberField
+        label {
+            label: <p>Nro. Item:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P841_NRO_LICITACION (
+        type: numberField
+        label {
+            label: <p>Nro. Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction refrescar-reporte (
+        name: Refrescar Reporte
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @rentabilidad-total
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process rentabilidad-total-save-interactive-grid-data (
+        name: Rentabilidad Total - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @rentabilidad-total
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 79179141193686120
+        }
+    )
+
+)
+

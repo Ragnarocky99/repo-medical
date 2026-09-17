@@ -1,0 +1,407 @@
+page 458 (
+    name: Carga de Centros de Costos Informe RR.HH.
+    alias: CARGA-DE-CENTROS-DE-COSTOS-INFORME-RR-HH
+    title: Carga de Centros de Costos Informe RR.HH.
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region carga (
+        name: Carga
+        type: form
+        source {
+            location: localDatabase
+            tableName: RHW_CENTRO_COSTO_INFORMES
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--hideHeader
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P458_COD_CENTRO_INFORME (
+        type: numberField
+        label {
+            label: <p><b style="color:red">*</b>Código:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @carga
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga
+            column: COD_CENTRO_INFORME
+            dataType: number
+        }
+    )
+
+    pageItem P458_DESCRIPCION (
+        type: textField
+        label {
+            label: <p><b style="color:red">*</b>Descripción:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 65
+        }
+        source {
+            formRegion: @carga
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P458_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P458_ID_CENTRO_COSTO (
+        type: popupLov
+        label {
+            label: <p><b style="color:red">*</b>Cen. Cos. RR.HH.: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-pago-rh
+        }
+        layout {
+            sequence: 70
+            region: @carga
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga
+            column: ID_CENTRO_COSTO
+            dataType: number
+        }
+    )
+
+    pageItem P458_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P458_ID_SUCURSAL (
+        type: numberField
+        label {
+            label: <p><b style="color:red">*</b>Sucursal:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @carga
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    button borrar (
+        buttonName: BORRAR
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @botones
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Seguro que desea eliminar el registro?
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P458_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button cancelar (
+        buttonName: CANCELAR
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @botones
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button crear (
+        buttonName: CREAR
+        label: Crear
+        layout {
+            sequence: 10
+            region: @botones
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P458_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button guardar (
+        buttonName: GUARDAR
+        label: Aplicar cambios
+        layout {
+            sequence: 10
+            region: @botones
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P458_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    process carga-de-centros-costos-informe-row-processing (
+        name: Carga de Centros Costos Informe - Row Processing
+        type: formAutoRowProcessing
+        formRegion: @carga
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 54644748828712723
+        }
+    )
+
+    process cerrar (
+        name: CERRAR
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 54644931213712725
+        }
+        serverSideCondition {
+            whenButtonPressed: @cancelar
+        }
+    )
+
+    process initialize-form-carga-de-centros-de-costos-informe-rr-hh (
+        name: Initialize form Carga de Centros de Costos Informe RR.HH.
+        type: formInitialization
+        formRegion: @carga
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 54643621452712712
+        }
+    )
+
+    process limpiar (
+        name: LIMPIAR
+        type: clearSessionState
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 54644844760712724
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREAR,ELIMINAR
+        }
+    )
+
+)
+

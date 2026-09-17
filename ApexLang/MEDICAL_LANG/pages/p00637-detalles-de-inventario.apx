@@ -1,0 +1,658 @@
+page 637 (
+    name: Detalles de Inventario
+    alias: DETALLES-DE-INVENTARIO
+    title: Detalles de Inventario
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .anulado {
+                color: red;
+            }
+            .presupuestado {
+            color: orangered;
+            }
+            .cotizado{
+                color: green;
+            }
+            .confirmado {
+                color: #3f46bb;
+            }
+            .EnDeposito{
+                color: brown;
+            }
+            .EntregadoCliente{
+                color: aqua;
+            }
+            .OrdenCompra{
+                color: yellowgreen;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalles-de-inventario (
+        name: Detalles de Inventario
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select --A.ID,
+                       A.Cod_Articulo as Cod_Articulo,
+                       A.Cod_Origen_Art as Cod_Fabricante,
+                       A.Descripcion,
+                       --A.Id_Envase as Presentacion,
+                       EN.Descripcion as Presentacion,
+                       U.Descripcion /*A.Id_Unidad_Medida*/ as Unidad_de_Medida,
+                       M.Descripcion /*A.Id_Marca*/ as Marca,
+                       R.Descripcion /*A.Id_Rubro*/ as Categoria_de_Producto,
+                       L.NRO_LOTE as Lote,
+                       L.Fec_Vencimiento as Fecha_Vencimiento,--A.Ind_Maneja_Lote as Lote,
+                       S.Descripcion /*E.ID_SUCURSAL*/ as Sucursal,
+                       sum(E.Cant_Dispon) as Stock,
+                       e.nro_estante,
+                       e.nro_fila
+                from stw_articulos A,
+                     stw_existencia_art E,
+                     stw_lotes L,
+                     stw_unidades_medida U,
+                     stw_marcas M,
+                     stw_rubro R,
+                     bsw_sucursales S,
+                     stw_envases EN
+                where E.ID_ARTICULO = A.ID
+                and   L.Id_Articulo = A.ID
+                and   A.Id_Unidad_Medida = U.ID(+)
+                and   A.Id_Marca = M.ID(+)
+                and   A.Id_Rubro = R.ID(+)
+                and   E.Id_Sucursal = S.ID
+                and   A.Id_Envase = EN.ID(+)
+                and   E.Id_Lote = L.id(+)
+                --and   A.Cod_Articulo = 103
+                
+                group by A.ID, 
+                         A.Cod_Articulo,
+                         A.Cod_Origen_Art,
+                         A.Descripcion,
+                         EN.Descripcion,
+                         U.Descripcion,
+                         M.Descripcion,
+                         R.Descripcion,
+                         L.NRO_LOTE,
+                         L.Fec_Vencimiento,
+                         S.Descripcion,
+                         e.nro_estante,
+                         e.nro_fila
+                         --E.Cant_Dispon
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 65412731752608689
+        }
+
+        savedReport 654132 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @NRO_ESTANTE
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NRO_FILA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @COD_FABRICANTE
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @PRESENTACION
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @UNIDAD_DE_MEDIDA
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MARCA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @CATEGORIA_DE_PRODUCTO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @LOTE
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_VENCIMIENTO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @SUCURSAL
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @STOCK
+                layout {
+                    sequence: 13
+                }
+            )
+
+        )
+
+        column CATEGORIA_DE_PRODUCTO (
+            type: textField
+            heading {
+                heading: <p>Categoría De Producto</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: CATEGORIA_DE_PRODUCTO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: textField
+            heading {
+                heading: <p>Cod Fabricante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COD_FABRICANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESCRIPCION (
+            type: textarea
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 400
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FECHA_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FECHA_VENCIMIENTO
+                dataType: date
+            }
+        )
+
+        column LOTE (
+            type: textField
+            heading {
+                heading: <p>Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 60
+            }
+            source {
+                databaseColumn: LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column MARCA (
+            type: textField
+            heading {
+                heading: <p>Marca</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: MARCA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_ESTANTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Estante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: NRO_ESTANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_FILA (
+            type: textField
+            heading {
+                heading: <p>Nro. Fila</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: NRO_FILA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column PRESENTACION (
+            type: numberField
+            heading {
+                heading: <p>Presentación</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: PRESENTACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+        )
+
+        column STOCK (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: STOCK
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SUCURSAL (
+            type: textField
+            heading {
+                heading: <p>Sucursal</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: SUCURSAL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column UNIDAD_DE_MEDIDA (
+            type: textField
+            heading {
+                heading: <p>Unidad De Medida</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: UNIDAD_DE_MEDIDA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles de Inventario
+        }
+    )
+
+)
+

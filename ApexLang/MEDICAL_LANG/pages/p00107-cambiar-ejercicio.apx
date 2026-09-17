@@ -1,0 +1,117 @@
+page 107 (
+    name: Cambiar Ejercicio
+    alias: CAMBIAR-EJERCICIO
+    title: Cambiar Ejercicio
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region cambiar-ejercicio (
+        name: Cambiar Ejercicio
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P107_EJERCICIOS (
+        type: popupLov
+        label {
+            label: Ejercicios
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-ejercicios-bs
+        }
+        layout {
+            sequence: 10
+            region: @cambiar-ejercicio
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction setear-ejercicio (
+        name: Setear Ejercicio
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P107_EJERCICIOS
+        }
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    begin
+                       :P0_COD_EJERCICIO  := :P107_EJERCICIOS;
+                       SELECT FEC_INICIO,FEC_FINAL
+                         INTO :P0_FEC_INICIAL_EJERCICIO,:P0_FEC_FINAL_EJERCICIO   
+                        FROM COW_EJERCICIOS
+                       WHERE  ID_EMPRESA=:P0_COD_EMPRESA 
+                       AND COD_EJERCICIO=:P107_EJERCICIOS;
+                    Exception
+                        when others then
+                             raise_application_error(-20000, 'Error al asignar. '||sqlerrm);
+                    end;
+                    ```
+                itemsToSubmit: P107_EJERCICIOS
+                itemsToReturn: P107_EJERCICIOS
+                successMessage: Asignado Correctamente
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    suppressChangeEvent
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            affectedElements {
+                selectionType: region
+                region: @/variables-globales
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

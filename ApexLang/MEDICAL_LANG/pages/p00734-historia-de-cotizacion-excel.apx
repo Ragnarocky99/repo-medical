@@ -1,0 +1,316 @@
+page 734 (
+    name: Historial de Cotizacion Excel
+    alias: HISTORIA-DE-COTIZACION-EXCEL
+    title: Historial de Cotizacion Excel
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region info (
+        name: Info
+        type: helpText
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P734_EXCEL (
+        type: fileUpload
+        label {
+            alignment: left
+        }
+        display {
+            displayAs: blockDropzone
+            dropzoneDesc: Suba aqui su archivo excel utilizando la plantilla
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 20
+            region: @info
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P734_FORMATO_IMG (
+        type: displayImage
+        label {
+            alignment: left
+        }
+        settings {
+            basedOn: url
+        }
+        layout {
+            sequence: 10
+            region: @info
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: staticValue
+            staticValue: #APP_FILES#Formato_Excel_Hist_cotiza.png
+        }
+        help {
+            inlineHelpText:
+                ```html
+                <strong>A continuación se presentará el formato aceptado para subir el Excel. No se validará otra plantilla. <br>
+                Presione <a href="#APP_FILES#Formato_Hist_Cotiza.xlsx" title="Descargar" download> Aquí </a> para descargar</strong>
+                ```
+        }
+    )
+
+    pageItem P734_MENSAJE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @info
+            slot: regionBody
+        }
+    )
+
+    dynamicAction subir-archivo (
+        name: Subir Archivo
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P734_EXCEL
+        }
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process proceso-alimentar-historico (
+        name: Proceso alimentar historico
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                    vid_articulo         stw_articulos.id%type;
+                    vid_proveedor        cmw_proveedores.id%type;
+                    vid_moneda           bsw_monedas.id%type;
+                    vid_condicion_compra cmw_condiciones_compras.id%type;
+                    vid_tipo_entrega     cmw_tipo_entrega.id%type;
+                    vexiste              varchar2(1);
+                    vcantidad            number := 0;
+                begin
+                    for r1 in (select *
+                                 from apex_application_temp_files f, 
+                                      table( apex_data_parser.parse(
+                                                p_content                     => f.blob_content,
+                                                p_add_headers_row             => 'n',
+                                                p_file_name                   => f.filename) 
+                                            ) p
+                                 where f.name = :P734_EXCEL 
+                                   and p.line_number > 1
+                              )
+                    loop
+                        -- Verificamos campos que no esten vacios
+                        if r1.col002 is null or r1.col004 is null then
+                            raise_application_error(-20000, 'No se puede dejar vacio la cantidad o el costo. Linea '||r1.line_number);
+                        end if;
+                
+                        -- Buscamos el articulo
+                        begin
+                            select ar.id
+                              into vid_articulo
+                              from stw_articulos ar
+                             where replace(upper(ar.cod_articulo), ' ', '') = replace(upper(r1.col001), ' ', '');
+                        exception
+                            when no_data_found then
+                                raise_application_error(-20000, 'No se encuentra el articulo con codigo '||nvl(r1.col001, 'vacio')||' en la linea '||r1.line_number);
+                            when others then
+                                raise_application_error(-20000, sqlerrm);
+                        end;
+                
+                        -- Buscamos el proveedor
+                        begin
+                            select pr.id
+                              into vid_proveedor
+                              from cmw_proveedores pr
+                              join bsw_personas    pe on pe.id = pr.id_persona
+                             where (replace(upper(pe.nomb_fantasia), ' ', '') = replace(upper(r1.col003), ' ', '') or
+                                    replace(upper(pe.nombre), ' ', '')        = replace(upper(r1.col003), ' ', '') or
+                                    replace(upper(pr.cod_proveedor), ' ', '') = replace(upper(r1.col003), ' ', ''));
+                        exception
+                            when no_data_found then
+                                raise_application_error(-20000, 'No se encontro el proveedor con codigo/nombre '||nvl(r1.col003, 'vacio')||' en la linea '||r1.line_number);
+                            when others then
+                                raise_application_error(-20000, sqlerrm);
+                        end;
+                
+                        -- Buscamos los moneda
+                        begin
+                            select id
+                              into vid_moneda
+                              from bsw_monedas
+                             where (replace(upper(descripcion), ' ', '') = replace(upper(r1.col005), ' ', '') or
+                                    replace(upper(cod_moneda), ' ', '') = replace(upper(r1.col005), ' ', ''));
+                        exception
+                            when no_data_found then
+                                raise_application_error(-20000, 'No se encontro la moneda con codigo/nombre '||nvl(r1.col005, 'vacio')||' en la linea '||r1.line_number);
+                            when others then
+                                raise_application_error(-20000, sqlerrm);
+                        end;
+                
+                       -- Buscamos la condicion de compra
+                        begin
+                            select id
+                              into vid_condicion_compra
+                              from cmw_condiciones_compras
+                             where (replace(upper(descripcion), ' ', '')          = replace(upper(r1.col006), ' ', '') or
+                                    replace(upper(cod_condicion_compra), ' ', '') = replace(upper(r1.col006), ' ', ''));
+                        exception
+                            when no_data_found then
+                                raise_application_error(-20000, 'No se encontro la condicion de compra con codigo/nombre '||nvl(r1.col006, 'vacio')||' en la linea '||r1.line_number);
+                            when others then
+                                raise_application_error(-20000, sqlerrm);
+                        end;
+                
+                        -- Buscamos el plazo de entrega
+                        begin
+                            select id
+                              into vid_tipo_entrega
+                              from cmw_tipo_entrega
+                             where (replace(upper(descripcion), ' ', '')      = replace(upper(r1.col007), ' ', '') or
+                                    replace(upper(cod_tipo_entrega), ' ', '') = replace(upper(r1.col007), ' ', ''));
+                        exception
+                            when no_data_found then
+                                raise_application_error(-20000, 'No se encontro el plazo de entrega con codigo/nombre '||nvl(r1.col007, 'vacio')||' en la linea '||r1.line_number);
+                            when others then
+                                raise_application_error(-20000, sqlerrm);
+                        end;
+                
+                        -- Verificamos que no exista
+                        begin
+                            select 'S'
+                              into vexiste
+                              from cmw_historico_cotiza_auto
+                             where id_articulo     = vid_articulo
+                               and id_proveedor    = vid_proveedor
+                               and id_tipo_entrega = vid_tipo_entrega;
+                        exception
+                            when no_data_found then
+                                vexiste := 'N';
+                            when others then
+                                raise_application_error(-20000, 'Error buscando si existe la cotizacion. Err '||sqlerrm);
+                        end;
+                
+                        if vexiste = 'N' then
+                            insert into cmw_historico_cotiza_auto(id_articulo, id_proveedor, id_moneda, costo, id_tipo_entrega,
+                                                                  cantidad, id_condicion_compra, fec_pedido, ind_excel)
+                            values(vid_articulo, vid_proveedor, vid_moneda, replace(r1.col004, '.', ','), vid_tipo_entrega,
+                                   replace(r1.col002, '.', ','), vid_condicion_compra, sysdate, 'S');
+                            vcantidad := vcantidad + 1;
+                        end if;
+                    end loop;
+                
+                    :P734_MENSAJE := 'Proceso concluido con exito. Se procesaron '||vcantidad||' registros';
+                exception
+                    when others then
+                        raise_application_error(-20000, sqlerrm);
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: &P734_MENSAJE.
+        }
+        advanced {
+            executionMappingIdentifier: 13334977334355347
+        }
+    )
+
+    branch (
+        name: Go To Page 730
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 730
+                action: clearRegions
+            }
+        }
+    )
+
+)
+

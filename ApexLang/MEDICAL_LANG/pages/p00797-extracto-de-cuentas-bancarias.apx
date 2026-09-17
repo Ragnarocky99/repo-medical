@@ -1,0 +1,380 @@
+page 797 (
+    name: Resumen de Cuentas Bancarias
+    alias: EXTRACTO-DE-CUENTAS-BANCARIAS
+    title: Resumen de Cuentas Bancarias
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region extracto-de-cuentas (
+        name: Extracto de Cuentas
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT BANCO,
+                       NRO_CUENTA,
+                       REFERENCIA REFERENCIA_CTA_BANCO,
+                       DESCRIPCION MONEDA,
+                       TOT_CREDITO - TOT_DEBITO MONTO_NETO
+                  FROM CHVW_EXTRACTO_BANCARIO
+                  WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                    AND NVL(FEC_BANCO, LAST_DAY(FEC_VENCIMIENTO)) <= :P797_FEC_FIN
+                    AND NVL(ANULADO, 'N') != 'S'
+                ```
+            pageItemsToSubmit: [
+                P797_FEC_INI
+                P797_FEC_FIN
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 58262182917437916
+        }
+
+        column BANCO (
+            type: plainText
+            heading {
+                heading: Banco
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column MONEDA (
+            type: plainText
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column MONTO_NETO (
+            type: plainText
+            heading {
+                heading: Monto Neto
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column NRO_CUENTA (
+            type: plainText
+            heading {
+                heading: Nro. Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column REFERENCIA_CTA_BANCO (
+            type: plainText
+            heading {
+                heading: Referencia Cta. Banco
+                alignment: center
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Extracto de Cuentas
+        }
+
+        savedReport 583362 (
+            visibility: primaryDefault
+            view {
+                groupBy: true
+                default: groupBy
+                rowsPerPage: 50
+            }
+
+            displayColumn BANCO (
+                sequence: 1
+            )
+
+            displayColumn MONEDA (
+                sequence: 3
+            )
+
+            displayColumn MONTO_NETO (
+                sequence: 4
+            )
+
+            displayColumn NRO_CUENTA (
+                sequence: 2
+            )
+
+            displayColumn REFERENCIA_CTA_BANCO (
+                sequence: 5
+            )
+
+            groupByColumn (
+                column: BANCO
+                layout {
+                    sequence: 1
+                }
+            )
+
+            groupByColumn (
+                column: NRO_CUENTA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            groupByColumn (
+                column: REFERENCIA_CTA_BANCO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            groupByColumn (
+                column: MONEDA
+                layout {
+                    sequence: 4
+                }
+            )
+
+            groupByAggregate (
+                aggregate {
+                    column: MONTO_NETO
+                }
+                appearance {
+                    formatMask: 999G999G999G999G990D00
+                }
+                layout {
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P797_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P797_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-de-cuentas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

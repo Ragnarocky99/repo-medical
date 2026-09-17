@@ -1,0 +1,980 @@
+page 741 (
+    name: Aprobacion de Articulos para Stock
+    alias: APROBACION-DE-ARTICULOS-PARA-STOCK
+    title: Aprobacion de Articulos para Stock
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region aprobaciones (
+        name: Aprobaciones
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT PD.ID,
+                       PC.ID_SUCURSAL,
+                       PC.FEC_COMPROBANTE,
+                       PC.NRO_COMPROBANTE NRO_OCP,
+                       PC.ID_PROVEEDOR,
+                       AR.COD_ARTICULO,
+                       AR.COD_ORIGEN_ART,
+                       PD.DESC_ARTICULO,
+                       PD.PRECIO_UNITARIO_C_IVA COSTO_UNITARIO,
+                       PD.CANTIDAD,
+                       PD.MONTO_TOTAL_C_IVA,
+                       PD.IND_APROBADO,
+                       NVL((SELECT SUM(NVL(EA.CANT_DISPON, 0))
+                              FROM STW_EXISTENCIA_ART EA
+                             WHERE EA.ID_ARTICULO = AR.ID
+                               AND EA.ID_LOTE     = LO.ID
+                               AND EA.ID_SUCURSAL IN (
+                                   SELECT ID
+                                     FROM BSW_SUCURSALES
+                                    WHERE ID_SUCURSAL_CENTRAL = PC.ID_SUCURSAL
+                               )), 0) STOCK,
+                       OBTENER_CANTIDAD_BLOQUEO(AR.ID, SU.ID_SUCURSAL_CENTRAL, 'S') CANT_BLOQUEO,
+                       PC.ID ID_PEDIDO_CAB
+                  FROM CMW_PEDIDOS_DETALLE     PD
+                  JOIN CMW_PEDIDOS_CABECERA    PC ON PC.ID = PD.ID_PEDIDO_CAB
+                  JOIN STW_ARTICULOS           AR ON AR.ID = PD.ID_ARTICULO
+                  JOIN STW_LOTES               LO ON AR.ID = LO.ID_ARTICULO AND LO.NRO_LOTE = PD.NRO_LOTE
+                LEFT JOIN CMW_COMPRAS_CABECERA CC ON PC.ID = CC.ID_COMPROBANTE_REF
+                  JOIN BSW_SUCURSALES          SU ON SU.ID = PC.ID_SUCURSAL
+                 WHERE NVL(PC.ANULADO, 'N') != 'S'
+                   AND NVL(PD.IND_PARA_STOCK, 'N') = 'S'
+                   AND PC.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND PC.FEC_COMPROBANTE BETWEEN :P741_FEC_INI AND :P741_FEC_FIN
+                   AND (PD.ID_ARTICULO = :P741_ID_ARTICULO OR :P741_ID_ARTICULO IS NULL)
+                   AND (PC.ID_PROVEEDOR = :P741_ID_PROVEEDOR OR :P741_ID_PROVEEDOR IS NULL)
+                   AND (NVL(PD.IND_APROBADO, 'N') = :P741_IND_APROBADO OR :P741_IND_APROBADO IS NULL)
+                   AND NVL(PD.ANULADO, 'N') != 'S'
+                   AND CC.ID IS NULL
+                   AND (PC.NRO_COMPROBANTE = :P741_NRO_OCP OR :P741_NRO_OCP IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P741_FEC_INI
+                P741_FEC_FIN
+                P741_ID_PROVEEDOR
+                P741_ID_ARTICULO
+                P741_IND_APROBADO
+                P741_NRO_OCP
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 21702774841388234
+        }
+
+        savedReport 231010 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COSTO_UNITARIO
+                layout {
+                    width: 109
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 101
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_C_IVA
+                layout {
+                    width: 125
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @COD_ORIGEN_ART
+                layout {
+                    width: 122
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @STOCK
+                layout {
+                    width: 80
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    width: 277
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 106
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 330
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @IND_APROBADO
+                layout {
+                    width: 82
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 91
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    width: 116
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @CANT_BLOQUEO
+                layout {
+                    width: 104
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCP
+                layout {
+                    width: 70
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_CAB
+                layout {
+                    sequence: 16
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column CANT_BLOQUEO (
+            type: numberField
+            heading {
+                heading: <p>Bloqueo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: CANT_BLOQUEO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cód. Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: textField
+            heading {
+                heading: <p>Cód. Fabricante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COD_ORIGEN_ART
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column COSTO_UNITARIO (
+            type: numberField
+            heading {
+                heading: <p>Costo Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: COSTO_UNITARIO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            validation {
+                maxLength: 300
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha OCP</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+                queryOnly: true
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_CAB (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: ID_PEDIDO_CAB
+                dataType: number
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: selectList
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: selectList
+            heading {
+                heading: <p>Sucursal</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column IND_APROBADO (
+            type: checkbox
+            heading {
+                heading: <p>Aprobado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_APROBADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column MONTO_TOTAL_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Monto Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_TOTAL_C_IVA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column NRO_OCP (
+            type: link
+            heading {
+                heading: <p>Nro. OCP</p>
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 7
+                    items: {
+                        P7_ID: &ID_PEDIDO_CAB.
+                    }
+                }
+                linkText: &NRO_OCP.
+            }
+            source {
+                databaseColumn: NRO_OCP
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column STOCK (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: STOCK
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Aprobaciones
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P741_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P741_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo OCP:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -12 * 5)
+        }
+    )
+
+    pageItem P741_ID_ARTICULO (
+        type: popupLov
+        label {
+            label: <p>Articulo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupHeight: 800
+            additionalOutputs: 300
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P741_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P741_IND_APROBADO (
+        type: selectList
+        label {
+            label: <p>Estado:&ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC2:Aprobados;S,No aprobados;N
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P741_NRO_OCP (
+        type: numberField
+        label {
+            label: <p>Nro. OCP:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction change-filtros (
+        name: Change - Filtros
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: [
+                P741_ID_PROVEEDOR
+                P741_ID_ARTICULO
+                P741_IND_APROBADO
+                P741_NRO_OCP
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @aprobaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-grilla (
+        name: Refrescar grilla
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @aprobaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process aprobaciones-save-interactive-grid-data (
+        name: Aprobaciones - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @aprobaciones
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 21703500970388242
+        }
+    )
+
+)
+

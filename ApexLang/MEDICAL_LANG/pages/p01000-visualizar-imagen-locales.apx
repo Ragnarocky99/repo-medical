@@ -1,0 +1,110 @@
+page 1000 (
+    name: Visualizar Imagen (Locales)
+    alias: VISUALIZAR-IMAGEN-LOCALES
+    title: Visualizar Imagen (Locales)
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region new (
+        name: New
+        type: staticContent
+        source {
+            htmlCode: <img src="&P1000_SRC." height="500" width="685">
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P1000_ID (
+        type: hidden
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P1000_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+    )
+
+    pageItem P1000_ID_LOCAL (
+        type: hidden
+        layout {
+            sequence: 60
+            slot: contentBody
+        }
+    )
+
+    pageItem P1000_SRC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    computation p1000-src (
+        itemName: P1000_SRC
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                v_src varchar2(100);
+                BEGIN
+                    SELECT '/i/IMAGENES_APEX/'||ID_LOCAL||'-'||ID||'.jpg' 
+                    into v_src  
+                    FROM
+                    ACW_IMG_LOCALES
+                    WHERE ID_LOCAL=:P1000_ID_LOCAL
+                    AND  ID =:P1000_ID
+                    AND ID_EMPRESA=:P0_ID_EMPRESA;
+                    RETURN V_SRC;
+                     EXCEPTION WHEN OTHERS THEN
+                        RETURN NULL;
+                END;
+                ```
+        }
+    )
+
+)
+

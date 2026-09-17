@@ -1,0 +1,186 @@
+plugin getIgData (
+    name: Get IG Data
+    staticId: CA.INSUM.GETIGDATA
+    type: dynamicAction
+    component {
+        standardAttributes: defaultFireOnInitialization
+    }
+    source {
+        plsqlCode:
+            ```plsql
+            function render 
+              ( p_dynamic_action in apex_plugin.t_dynamic_action
+              , p_plugin         in apex_plugin.t_plugin 
+              )
+            return apex_plugin.t_dynamic_action_render_result
+            as
+                k_crlf           varchar2(20) := chr(13) ||chr(10);
+                l_result         apex_plugin.t_dynamic_action_render_result;
+                l_js_val1        varchar2(32767);
+                l_js_val2        varchar2(32767);
+                l_columns        varchar2(32767);
+                l_paths          varchar2(32767);    
+                l_console_query  varchar2(32767) := 
+            q'{
+            select
+            #COLUMNS#
+                   a.INSUM$ROW
+              from json_table (:#ITEM# , '$[*]'
+                     columns 
+            #PATHS#
+                       INSUM$ROW                       number         path '$.INSUM$ROW'
+                             ) a }'; 
+                
+                --attributes
+                l_static_id         p_dynamic_action.attribute_01%type := p_dynamic_action.attribute_01;
+                l_item_name         p_dynamic_action.attribute_02%type := p_dynamic_action.attribute_02;
+                l_rows_to_return    p_dynamic_action.attribute_03%type := p_dynamic_action.attribute_03;
+                l_include_columns   p_dynamic_action.attribute_04%type := p_dynamic_action.attribute_04;
+                l_exclude_columns   p_dynamic_action.attribute_05%type := p_dynamic_action.attribute_05;
+                
+                l_include           boolean;
+                l_count             number;
+            
+            begin
+                
+                --debug
+                if apex_application.g_debug 
+                then
+                    apex_plugin_util.debug_dynamic_action
+                      ( p_plugin         => p_plugin
+                      , p_dynamic_action => p_dynamic_action
+                      );
+                end if;
+            
+                for i in (
+                            select igc.name, igc.data_type
+                              from APEX_APPL_PAGE_IG_COLUMNS igc
+                              inner join apex_application_page_regions pr on pr.region_id = igc.region_id
+                              where igc.application_id = :APP_ID
+                                and (igc.page_id = :APP_PAGE_ID or igc.page_id = 0)
+                                and pr.static_id = l_static_id
+                                and igc.name not like 'APEX$%'
+                              order by igc.display_sequence
+                         ) loop
+                    
+                    
+                    if l_include_columns is null then
+                        if l_exclude_columns is null then
+                            l_include := true;
+                        else
+                            select count(*)
+                              into l_count
+                              from table(apex_string.split(l_exclude_columns,','))
+                              where trim(column_value) = i.name;
+            
+                            l_include := (l_count = 0);
+                        end if;
+                    else
+                        select count(*)
+                          into l_count
+                          from table(apex_string.split(l_include_columns,','))
+                          where trim(column_value) = i.name;
+                        
+                        l_include := (l_count > 0);
+                    end if;
+            
+                    if l_include then
+                        l_js_val1 :=  l_js_val1 || ' var col' || i.name || ' = igModel.getFieldKey("'|| i.name ||'");' || k_crlf;
+                        l_js_val2 :=  l_js_val2 || ' igRecord.' || i.name || ' = igRow[col'|| i.name ||'];' || k_crlf;
+            
+                        l_columns := l_columns || '       a.' || i.name || ',' || k_crlf;
+                        l_paths := l_paths || '           ' || rpad(i.name,30) || '  varchar2(4000) path ''$.' || i.name || ''',' || k_crlf;
+                    end if;
+                end loop;
+                
+                l_console_query := replace(l_console_query, '#COLUMNS#', rtrim(l_columns,k_crlf));
+                l_console_query := replace(l_console_query, '#ITEM#', l_item_name);
+                l_console_query := replace(l_console_query, '#PATHS#', rtrim(l_paths,k_crlf));
+                
+                l_console_query := 'apex.debug(`' || l_console_query || '`);';
+                
+                l_result.javascript_function :='function(){'
+                    ||     l_console_query
+                    ||     '  apex.debug("getIGData"); ' || k_crlf
+                    ||     '  var myIGArray = []; ' || k_crlf
+                    ||     '  var igGrid = apex.region("' || l_static_id || '").widget().interactiveGrid("getViews").grid; ' || k_crlf        
+                    ||     '  var igModel = apex.region("' || l_static_id || '").widget().interactiveGrid("getViews", "grid").model; ' || k_crlf
+                    ||     l_js_val1  
+                    ||     case when l_rows_to_return = 'ALL' then
+                                    '  var igModel2 = igModel;' || k_crlf
+                                else 
+                                    '  var igModel2 = igGrid.getSelectedRecords();' || k_crlf       
+                                end
+                    ||     '  let i = 0;'
+                    ||     l_js_val1  
+                    ||     'igModel2.forEach(function(igRow) {'  || k_crlf
+                    ||     '  var igRecord = new Object(); '  || k_crlf
+                    ||     '  i++; '  || k_crlf
+                    ||     '  ' || l_js_val2  || k_crlf
+                    ||     '  igRecord.INSUM$ROW = i;'  || k_crlf
+                    ||     '  myIGArray.push(igRecord);' || k_crlf
+                    ||     '});'  || k_crlf  || k_crlf
+                    ||     '$s("' || l_item_name || '", JSON.stringify(myIGArray));' || k_crlf
+                    || '}';
+                    
+                return l_result;
+            end render;
+            ```
+    }
+    callbacks {
+        apiInterface: function
+        renderProcedureName: render
+    }
+    advanced {
+        category: component
+        substituteAttributeValues: true
+    }
+    information {
+        version: 0.1
+        helpText:
+            ```
+            Places the data from an Interactive Grid into a page item as a JSON string. That page item can then be submitted for processing as server side code within a Dynamic Action step or as an item to submit for a report region. <strong>The select statement used to process the data will be shown in the browser console.</strong> The INSUM$ROW column is always added as an indicator of the way the data was sorted at the time it was taken from the IG. An example is shown below.
+            <pre>
+            select
+                   a.ID,
+                   a.FIRST_NAME,
+                   a.LAST_NAME,
+                   a.INSUM$ROW
+              from json_table (:P1_GRID_DATA , '$[*]'
+                     columns 
+                       ID                              varchar2(4000) path '$.ID',
+                       FIRST_NAME                      varchar2(4000) path '$.FIRST_NAME',
+                       LAST_NAME                       varchar2(4000) path '$.LAST_NAME',
+                       INSUM$ROW                       number         path '$.INSUM$ROW'
+                             ) a 
+            </pre>
+            
+            This may be used within an "Execute PL/SQL Code" Dynamic Action as shown below:
+            
+            <pre>
+            begin
+              for i in (
+                        select
+                          a.ID,
+                          a.FIRST_NAME,
+                          a.LAST_NAME,
+                          a.INSUM$ROW
+                        from json_table (:P1_GRID_DATA , '$[*]'
+                            columns 
+                              ID                              varchar2(4000) path '$.ID',
+                              FIRST_NAME                      varchar2(4000) path '$.FIRST_NAME',
+                              LAST_NAME                       varchar2(4000) path '$.LAST_NAME',
+                              INSUM$ROW                       number         path '$.INSUM$ROW'
+                             ) a 
+                                    )
+                  ) loop
+            
+                my_procedure(i.id, i.first_name, i.last_name);
+            
+              end loop;
+            end;
+            </pre>
+            ```
+    }
+)
+

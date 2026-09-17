@@ -1,0 +1,488 @@
+page 85 (
+    name: Carga de Permisos
+    alias: CARGA-DE-PERMISOS
+    title: Carga de Permisos
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-permisos (
+        name: Carga de Permisos
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_PERMISO,
+                       ID_PAGINA,
+                       ID_EMPRESA,
+                       ID_USUARIO,
+                       ACTIVO
+                  from BSW_PERMISOS_FORMAS
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P85_ACTIVO (
+        type: checkbox
+        label {
+            label: <p>Activo</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-permisos
+            slot: regionBody
+            alignment: left
+            column: 3
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-permisos
+            column: ACTIVO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P85_ID (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @carga-de-permisos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-permisos
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P85_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @carga-de-permisos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-permisos
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P85_ID_PAGINA (
+        type: popupLov
+        label {
+            label: <p>Pagina</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-paginas
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-permisos
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-permisos
+            column: ID_PAGINA
+            dataType: number
+        }
+    )
+
+    pageItem P85_ID_PERMISO (
+        type: popupLov
+        label {
+            label: <p>Permiso</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT PARAMETRO,ID FROM BSW_PERMISOS_OPCIONES 
+                WHERE ID_EMPRESA=:P0_ID_EMPRESA
+                AND ID_PAGINA=:P85_ID_PAGINA
+                ```
+        }
+        cascadingLov {
+            parentItems: P85_ID_PAGINA
+            itemsToSubmit: P85_ID_PAGINA
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-permisos
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-permisos
+            column: ID_PERMISO
+            dataType: number
+        }
+    )
+
+    pageItem P85_ID_USUARIO (
+        type: popupLov
+        label {
+            label: <p>Usuario</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-usuarios
+        }
+        layout {
+            sequence: 10
+            region: @carga-de-permisos
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-permisos
+            column: ID_USUARIO
+            dataType: number
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P85_ID
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P85_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P85_ID
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 56155678472071981
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-permisos (
+        name: Initialize form Carga de Permisos
+        type: formInitialization
+        formRegion: @carga-de-permisos
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 56154819564071981
+        }
+    )
+
+    process process-form-carga-de-permisos (
+        name: Process form Carga de Permisos
+        type: formAutoRowProcessing
+        formRegion: @carga-de-permisos
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 56155262378071981
+        }
+    )
+
+)
+

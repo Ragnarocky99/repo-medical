@@ -1,0 +1,232 @@
+page 699 (
+    name: LISTADO OP CM
+    alias: LISTADO-OP-CM
+    title: LISTADO OP CM
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region filtros (
+        name: FILTROS
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region listado-op-cm (
+        name: LISTADO_OP_CM
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.SER_ORDEN_PAGO,
+                       C.NUM_ORDEN_PAGO,
+                       C.FEC_EMISION,
+                       C.SUMA_TOTAL
+                  FROM CPW_CABECERA_ORDEN_PAGO C,
+                       CPW_DETALLE_ORDEN_PAGO  D
+                 WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND C.ID_EMPRESA = D.ID_EMPRESA
+                   AND C.ID = D.ID_ORDEN_PAGO_CAB 
+                   AND NVL(C.ESTADO,'P') <> 'A'
+                  --- AND D.NUM_COMPROBANTE = '67'
+                   AND D.ID_COMPROBANTE_CM = :P699_ID_COMPROBANTE
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        heading {
+            fixedTo: region
+            fixedReportHeight: 300
+        }
+        advanced {
+            savedReportMappingIdentifier: 28571340311475757
+        }
+
+        savedReport 142804 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @SER_ORDEN_PAGO
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NUM_ORDEN_PAGO
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @FEC_EMISION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @SUMA_TOTAL
+                layout {
+                    sequence: 4
+                }
+            )
+
+        )
+
+        column FEC_EMISION (
+            type: datePicker
+            heading {
+                heading: Fec Emision
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: FEC_EMISION
+                dataType: date
+            }
+        )
+
+        column NUM_ORDEN_PAGO (
+            type: numberField
+            heading {
+                heading: Num Orden Pago
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NUM_ORDEN_PAGO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_ORDEN_PAGO (
+            type: textField
+            heading {
+                heading: Ser Orden Pago
+            }
+            layout {
+                sequence: 10
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: SER_ORDEN_PAGO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SUMA_TOTAL (
+            type: numberField
+            heading {
+                heading: Suma Total
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: SUMA_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: LISTADO_OP_CM
+        }
+    )
+
+    pageItem P699_ID_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+        }
+    )
+
+)
+

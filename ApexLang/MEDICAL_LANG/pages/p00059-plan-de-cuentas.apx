@@ -1,0 +1,942 @@
+page 59 (
+    name: Plan de Cuentas
+    alias: PLAN-DE-CUENTAS
+    title: Plan de Cuentas - Sistema Inventiva
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @plan-de-cuentas
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region plan-de-cuentas (
+        name: Plan de Cuentas
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT PC.ID,
+                       PC.ID_EMPRESA,
+                       PC.COD_CUENTA,
+                       PC.NOMBRE_CUENTA,
+                       PC.ABREVIATURA,
+                       PC.NIVEL_DE_CUENTA,
+                       PC.CUENTA_TOTALIZADORA,
+                       PC.IMPRIMIBLE,
+                       PC.ASENTABLE,
+                       CASE PC.ASENTABLE
+                        WHEN 'S' THEN 'fa fa-check u-success-text'
+                        WHEN 'N' THEN 'fa fa-remove u-danger-text'
+                       END ASENTABLE_ICON,
+                       PC.TIPO_CUENTA,
+                       PC.DEBITO_ACTUAL,
+                       PC.CREDITO_ACTUAL,
+                       PC.COD_PLAN_CUENTA,
+                       PC.COD_USUARIO_AUD,
+                       PC.ID_MONEDA,
+                       PC.ID_PLAN_CUE_TOTALIZADORA,
+                       PC.ID_PLAN_CUENTA,
+                       CS.COD_CUENTA COD_CUENTA_SET,
+                       CS.NOMBRE_CUENTA NOMBRE_CUENTA_SET
+                
+                FROM COW_PLAN_CUENTAS PC
+                LEFT JOIN COW_PLAN_CUENTAS_SET CS ON CS.ID = PC.ID_CUENTA_SET
+                WHERE PC.ID_EMPRESA=:P0_COD_EMPRESA
+                   --AND ( (REPLACE(PC.COD_CUENTA,'.','') LIKE '%'|| :P59_COD_CUENTA ||'%') OR (PC.COD_CUENTA LIKE '%'|| :P59_COD_CUENTA ||'%') OR :P59_COD_CUENTA IS NULL )
+                   AND ( (PC.cOD_CUENTA LIKE :P59_COD_CUENTA ||'%') OR :P59_COD_CUENTA IS NULL )
+                   AND ( UPPER(PC.NOMBRE_CUENTA) LIKE UPPER('%'|| :P59_NOMBRE_CUENTA ||'%') OR :P59_NOMBRE_CUENTA IS NULL )
+                   AND ( PC.ASENTABLE = :P59_ASENTABLE OR :P59_ASENTABLE IS NULL )
+                   AND ( PC.TIPO_CUENTA = :P59_TIPO_CUENTA OR :P59_TIPO_CUENTA IS NULL )
+                   
+                ORDER BY PC.COD_CUENTA
+                  /*  regexp_replace(
+                        regexp_replace(
+                          regexp_replace(
+                        PC.COD_CUENTA,'(^|\.)(\d{3})','\1 \2'
+                        ),
+                           '(^|\.)(\d{2})','\1 0\2'
+                      ),
+                         '(^|\.)(\d)','\1 00\2'
+                    )*/
+                ```
+            pageItemsToSubmit: [
+                P59_COD_CUENTA
+                P59_NOMBRE_CUENTA
+                P59_ASENTABLE
+                P59_TIPO_CUENTA
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 60
+                items: {
+                    P60_ID: \#ID#\
+                }
+                action: resetPagination
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        heading {
+            fixedTo: region
+            maxReportHeight: 330
+        }
+        advanced {
+            savedReportMappingIdentifier: 10469884590357368
+        }
+
+        column ABREVIATURA (
+            type: hidden
+            heading {
+                heading: Abreviatura
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ASENTABLE (
+            type: plainText
+            heading {
+                heading: Asentable
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ASENTABLE_ICON#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column ASENTABLE_ICON (
+            type: plainText
+            heading {
+                heading: Asentable Icon
+                alignment: center
+            }
+            layout {
+                sequence: 370
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column COD_CUENTA (
+            type: plainText
+            heading {
+                heading: Cód. Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_CUENTA_SET (
+            type: plainText
+            heading {
+                heading: Cod. Cuenta Set
+                alignment: center
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column COD_PLAN_CUENTA (
+            type: hidden
+            heading {
+                heading: Cód. Plan de Cuenta
+            }
+            layout {
+                sequence: 330
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column CREDITO_ACTUAL (
+            type: plainText
+            heading {
+                heading: Crédito Actual
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column CUENTA_TOTALIZADORA (
+            type: plainText
+            heading {
+                heading: Cuenta Totalizadora
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column DEBITO_ACTUAL (
+            type: plainText
+            heading {
+                heading: Débito Actual
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 260
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 210
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column ID_PLAN_CUENTA (
+            type: hidden
+            heading {
+                heading: Id Plan Cuenta
+            }
+            layout {
+                sequence: 360
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column ID_PLAN_CUE_TOTALIZADORA (
+            type: hidden
+            heading {
+                heading: Id Plan Cue Totalizadora
+            }
+            layout {
+                sequence: 350
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column IMPRIMIBLE (
+            type: hidden
+            heading {
+                heading: Imprimible
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column NIVEL_DE_CUENTA (
+            type: plainText
+            heading {
+                heading: Nivel de Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column NOMBRE_CUENTA (
+            type: plainText
+            heading {
+                heading: Nombre Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NOMBRE_CUENTA_SET (
+            type: plainText
+            heading {
+                heading: Cuenta Set
+                alignment: center
+            }
+            layout {
+                sequence: 390
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column TIPO_CUENTA (
+            type: plainText
+            heading {
+                heading: Tipo Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            fontWeight: bold
+            fontSize: 18
+            pageHeaderText:
+                ```
+                PLAN DE CUENTAS
+                &P0_DESC_EMPRESA. - &P0_DESC_SUCURSAL.
+                ```
+        }
+        pageFooter {
+            alignment: start
+            pageFooterText: USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+        }
+
+        savedReport 104819 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASENTABLE (
+                sequence: 8
+            )
+
+            displayColumn COD_CUENTA (
+                sequence: 1
+            )
+
+            displayColumn COD_CUENTA_SET (
+                sequence: 5
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 7
+            )
+
+            displayColumn NIVEL_DE_CUENTA (
+                sequence: 3
+            )
+
+            displayColumn NOMBRE_CUENTA (
+                sequence: 2
+            )
+
+            displayColumn NOMBRE_CUENTA_SET (
+                sequence: 6
+            )
+
+            displayColumn TIPO_CUENTA (
+                sequence: 4
+            )
+
+        )
+
+    )
+
+    region ruta-de-navegación (
+        name: Ruta de Navegación
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P59_ASENTABLE (
+        type: selectList
+        label {
+            label: <p>Asentable:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Sí;S,No;N
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P59_COD_CUENTA (
+        type: textField
+        label {
+            label: <p>Cód. de Cuenta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P59_NOMBRE_CUENTA (
+        type: textField
+        label {
+            label: <p>Nombre de cuenta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P59_TIPO_CUENTA (
+        type: selectList
+        label {
+            label: <p>Asentable:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:ACTIVO;A,PASIVO;P,PATRIMONIO NETO;N,HABER;H,DEBE;D
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            used: always
+        }
+    )
+
+    button buscar (
+        buttonName: BUSCAR
+        label: Buscar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 20
+            region: @plan-de-cuentas
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 60
+                clearCache: 60
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @plan-de-cuentas
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button limpiar (
+        buttonName: LIMPIAR
+        label: Limpiar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction clear-items (
+        name: CLEAR_ITEMS
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @limpiar
+        }
+
+        action native-clear (
+            action: clear
+            affectedElements {
+                selectionType: items
+                items: [
+                    P59_COD_CUENTA
+                    P59_NOMBRE_CUENTA
+                    P59_ASENTABLE
+                    P59_TIPO_CUENTA
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @plan-de-cuentas
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction edit-report-dialog-closed (
+        name: Edit Report - Dialog Closed
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @plan-de-cuentas
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @plan-de-cuentas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @buscar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @plan-de-cuentas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid-onchange (
+        name: REFRESH_GRID_ONCHANGE
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: [
+                P59_COD_CUENTA
+                P59_NOMBRE_CUENTA
+                P59_ASENTABLE
+                P59_TIPO_CUENTA
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @plan-de-cuentas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process page-timestamp (
+        name: Page Timestamp
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                	:P0_PAGE_TIMESTAMP := TO_CHAR(SYSDATE,'DD-MM-YYYY HH24:MI:SS'); 
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 17372153789550875
+        }
+        comments {
+            comments:
+                ```
+                https://community.oracle.com/tech/developers/discussion/4480519/ir-printing-header-footer-add-date-page-item-value-apex-page
+                
+                https://community.oracle.com/tech/developers/discussion/960650/how-to-print-date-time-in-report-page-footer
+                ```
+        }
+    )
+
+    branch (
+        name: Go To Page 194
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 194
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

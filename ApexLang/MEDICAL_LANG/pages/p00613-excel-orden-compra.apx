@@ -1,0 +1,1348 @@
+page 613 (
+    name: Excel Orden Compra
+    alias: EXCEL-ORDEN-COMPRA
+    title: Excel Orden Compra
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        fileUrls: https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+              // Function to handle the file input change event
+            /*  function handleFile(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+            
+                reader.onload = function (event) {
+                  const data = new Uint8Array(event.target.result);
+                  const workbook = XLSX.read(data, { type: "array" });
+                  const sheetName = workbook.SheetNames[0];
+                  const worksheet = workbook.Sheets[sheetName];
+                  const rows = XLSX.utils.sheet_to_json(worksheet);
+            
+                  // Loop through each row
+                  rows.forEach((row) => {
+                    const variante = row["VARIANTE"];
+                    const descripcion = row["DESCRIPCION"];
+                    const cantidad = row["CANTIDAD"];
+                    const precio = row["PRECIO"];
+            
+                    var $widget = apex.region("DETALLE").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $grid.setEditMode(true);
+                    //insert new record on a model
+                    var newRecordId = $model.insertNewRecord();
+            
+            //continuation of above code
+            //get the new record
+            
+            var $newRecord = $model.getRecord(newRecordId);
+            $model.setValue($newRecord, "ID_ARTICULO",variante);
+            $model.setValue($newRecord, "CANTIDAD",cantidad);
+            $model.setValue($newRecord, "PRECIO_UNITARIO",precio);
+            $model.setValue($newRecord, "DESC_ARTICULO",descripcion);
+            
+            
+            
+                    // Do whatever you want with the data
+                   // console.log(`Variante: ${variante}, Descripcion: ${descripcion}, Cantidad: ${cantidad}, Precio: ${precio}`);
+                  });
+                };
+            
+                reader.readAsArrayBuffer(file);
+              }
+            
+              // Attach the event listener to the file input element
+              const fileInput = document.getElementById("P613_EXCEL");
+              fileInput.addEventListener("change", handleFile);*/
+            
+              document.getElementById("P613_TIP_CAMBIO").readOnly = true;
+              document.getElementById("P613_NRO_COMPROBANTE").readOnly = true;
+             //document.getElementById("P613_INFORMACION").readOnly = true;
+            
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            strong{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#060608;
+            }
+            
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region buttons (
+        name: BUTTONS
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region new (
+        name: New
+        type: helpText
+        layout {
+            sequence: 220
+            parentRegion: @ordenes-de-compra-cab
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @blank-with-attributes-no-grid
+            templateOptions: #DEFAULT#
+        }
+        accessibility {
+            landmarkType: region
+        }
+    )
+
+    region ordenes-de-compra-cab (
+        name: Ordenes de compra cab
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_SUCURSAL,
+                       SER_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       FEC_COMPROBANTE,
+                       ID_PROVEEDOR,
+                       ID_CONDICION_COMPRA,
+                       ID_MONEDA,
+                       TIP_CAMBIO,
+                       ID_USUARIO,
+                       CAMBIO_MONEDA_PRECIO,
+                       REFERENCIA,
+                       COD_USUARIO_AUD ,
+                       TIPO,
+                       TIP_COMPROBANTE
+                  from CMW_PEDIDOS_CABECERA
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region page_plug (
+        name: 1
+        type: staticContent
+        layout {
+            sequence: 210
+            parentRegion: @ordenes-de-compra-cab
+            slot: regionBody
+            columnSpan: 8
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--noBorder
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P613_CAMBIO_MONEDA_PRECIO (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: CAMBIO_MONEDA_PRECIO
+            dataType: number
+        }
+    )
+
+    pageItem P613_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+    )
+
+    pageItem P613_DECIMALES (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                v_decimales number(10):=0;
+                BEGIN
+                SELECT DECIMALES
+                into v_decimales
+                 FROM BSW_MONEDAS
+                WHERE ID=:P613_ID_MONEDA;
+                return v_decimales;
+                exception 
+                when no_data_found then
+                return 0;
+                END;
+                ```
+        }
+    )
+
+    pageItem P613_EXCEL (
+        type: fileUpload
+        label {
+            label: Excel
+            alignment: left
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 50
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P613_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p>Fecha: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: FEC_COMPROBANTE
+            dataType: date
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT SYSDATE FROM DUAL;
+        }
+    )
+
+    pageItem P613_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: CMW_PEDIDOS_CABECERA_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P613_ID_CONDICION_COMPRA (
+        type: popupLov
+        label {
+            label: <p>Condición Compra: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-condiciones-compra
+        }
+        layout {
+            sequence: 100
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID_CONDICION_COMPRA
+            dataType: number
+        }
+    )
+
+    pageItem P613_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P613_ID_MONEDA (
+        type: popupLov
+        label {
+            label: <p>Moneda: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 120
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 5
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID_MONEDA
+            dataType: number
+        }
+    )
+
+    pageItem P613_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+        }
+        layout {
+            sequence: 70
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID_PROVEEDOR
+            dataType: number
+        }
+    )
+
+    pageItem P613_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 60
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    pageItem P613_ID_USUARIO (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: ID_USUARIO
+            dataType: number
+        }
+    )
+
+    pageItem P613_NEW (
+        type: displayImage
+        label {
+            label: <strong>El documento de Excel solo debe contener los datos y no incluya títulos o cabeceras en las columnas. Siguiendo el siguiente orden: *Código *Descripción *Cantidad *Precio </strong>
+            alignment: left
+        }
+        settings {
+            basedOn: url
+        }
+        layout {
+            sequence: 10
+            region: @new
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: #APP_FILES#ORDEN_COMPRA.PNG
+        }
+    )
+
+    pageItem P613_NRO_COMPROBANTE (
+        type: numberField
+        label {
+            label: Nro Comprobante
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P613_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Referencia: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P613_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Número: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 1
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: A
+        }
+    )
+
+    pageItem P613_TIPO (
+        type: radioGroup
+        label {
+            label: <p>Tipo: </p>
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Local;LOC,Importacion;IMP
+            displayNullValue: false
+        }
+        layout {
+            sequence: 150
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 6
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: TIPO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: LOC
+        }
+    )
+
+    pageItem P613_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Tip Cambio: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @page_plug
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P613_TIP_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @ordenes-de-compra-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @ordenes-de-compra-cab
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('CM','PEDIDOS_COMPRAS')
+        }
+    )
+
+    button clear (
+        buttonName: CLEAR
+        label: Limpiar
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button orden-compra (
+        buttonName: Orden_Compra
+        label: Orden Compra
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-send-o
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 263
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button upload (
+        buttonName: UPLOAD
+        label: Cargar Excel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+    )
+
+    dynamicAction setear-cambio (
+        name: Setear Cambio
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P613_ID_MONEDA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:P613_ID_MONEDA,SYSDATE,'C','V');
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el cambio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: P613_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P613_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM BSW_MONEDAS
+                    WHERE ID=:P613_ID_MONEDA
+                    ```
+                itemsToSubmit: P613_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P613_DECIMALES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p613-nro-comprobante (
+        itemName: P613_NRO_COMPROBANTE
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(D.NRO_COMPROBANTE)), 0)+1
+                from CMW_PEDIDOS_CABECERA D
+                WHERE D.ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    process eliminar-collection (
+        name: ELIMINAR COLLECTION
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                IF  APEX_COLLECTION.COLLECTION_EXISTS('DETALLE_EXCEL') THEN
+                
+                    APEX_COLLECTION.TRUNCATE_COLLECTION('DETALLE_EXCEL');
+                
+                END IF;  
+                ```
+        }
+        execution {
+            sequence: 100
+        }
+        advanced {
+            executionMappingIdentifier: 12541813095089632
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear
+        }
+    )
+
+    process guardar-en-cmw-pedidos-detalle (
+        name: Guardar en CMW_PEDIDOS_DETALLE
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                     insert into CMW_PEDIDOS_DETALLE (ID_PEDIDO_CAB, ID_ARTICULO, CANTIDAD, id_unidad_medida)
+                            values(:P613_ID, :C006, :C003, :C007);                               
+                EXCEPTION
+                    when no_data_found then
+                        RAISE_APPLICATION_ERROR(-20998,'ERROR: al insertar'|| SQLERRM );
+                    WHEN OTHERS THEN 
+                        RAISE_APPLICATION_ERROR(-20995,'ERROR: al insertar arti'||:C006||'- err '|| SQLERRM);
+                end;
+                ```
+        }
+        execution {
+            sequence: 90
+        }
+        advanced {
+            executionMappingIdentifier: 12828930617067807
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process initialize-form-pagina-de-prueba (
+        name: Initialize form pagina de prueba
+        type: formInitialization
+        formRegion: @ordenes-de-compra-cab
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 12495678314949828
+        }
+    )
+
+    process limpiar-sesión (
+        name: "Limpiar sesión "
+        type: clearSessionState
+        execution {
+            sequence: 110
+        }
+        advanced {
+            executionMappingIdentifier: 12495522624949827
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: UPLOAD,CLEAR
+        }
+    )
+
+    process new (
+        name: New_1
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  v_codigo_articulo VARCHAR2(50) := ':id_articulo';
+                  v_id NUMBER;
+                BEGIN
+                  SELECT id INTO v_id
+                  FROM stw_articulos
+                  WHERE cod_articulo = v_codigo_articulo;
+                  
+                  -- Haces algo con el ID encontrado, por ejemplo, lo imprimes
+                  DBMS_OUTPUT.PUT_LINE('El ID del artículo con código ' || v_codigo_articulo || ' es ' || v_id);
+                EXCEPTION
+                  WHEN NO_DATA_FOUND THEN
+                    DBMS_OUTPUT.PUT_LINE('El artículo con código ' || v_codigo_articulo || ' no fue encontrado.');
+                  WHEN OTHERS THEN
+                    DBMS_OUTPUT.PUT_LINE('Error al buscar el artículo.');
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 11182240106174131
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process new-2 (
+        name: New
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                  FOR i IN 1..APEX_APPLICATION.G_F01.COUNT LOOP
+                    APEX_COLLECTION.ADD_MEMBER(
+                      p_collection_name => 'DETALLE',
+                      p_c001            => APEX_APPLICATION.G_F01(i), -- Columna 1 del formulario
+                      p_c002            => APEX_APPLICATION.G_F02(i), -- Columna 2 del formulario
+                      -- Agrega más columnas según la cantidad de datos que quieras cargar
+                      p_c003            => APEX_APPLICATION.G_F03(i)  -- Columna 3 del formulario
+                    );
+                  END LOOP;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 11182077107174129
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process proceso (
+        name: "PROCESO "
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VID_ARTICULO       NUMBER(10);
+                    VID_UNIDAD_MEDIDA  NUMBER(10);
+                    VID_IVA            NUMBER(10);
+                    VTOT_ARTI          NUMBER(20) := 0;
+                    VDESC_ARTICULO     VARCHAR2(200);
+                    VCOD_IVA           VARCHAR(50) :=0;
+                    VEXENTO            VARCHAR(10) := 0;--.-W_BUSCA_PARAMETRO('CM','ID_IVA_EXENTA');
+                    VTOT_COMPROBANTE NUMBER(20) := 0;
+                begin
+                    --Borra el detalle 
+                    IF  APEX_COLLECTION.COLLECTION_EXISTS('DETALLE_EXCEL') THEN
+                        APEX_COLLECTION.TRUNCATE_COLLECTION('DETALLE_EXCEL');
+                    END IF;
+                    --Vuelve a crear el detalle
+                    IF NOT APEX_COLLECTION.COLLECTION_EXISTS('DETALLE_EXCEL') THEN
+                        APEX_COLLECTION.CREATE_COLLECTION('DETALLE_EXCEL');
+                    END IF; 
+                    for r1 in (select *  
+                                 from apex_application_temp_files f, 
+                                      table( apex_data_parser.parse(
+                                                p_content                     => f.blob_content,
+                                                p_add_headers_row             => 'N',
+                                                -- p_store_profile_to_collection => 'FILE_PROV_CASH',
+                                                p_file_name                   => f.filename) 
+                                            ) p
+                                 where f.name = :P613_EXCEL 
+                              )
+                        loop
+                        --Consultamos los datos del articulo
+                        BEGIN
+                            SELECT A.ID, A.DESCRIPCION, A.ID_UNIDAD_MEDIDA, A.ID_IVA, I.PORC_IVA_COMPRA
+                              INTO VID_ARTICULO, VDESC_ARTICULO, VID_UNIDAD_MEDIDA, VEXENTO, VCOD_IVA
+                              FROM STW_ARTICULOS A,STW_IVA I
+                             WHERE A.COD_ARTICULO = r1.col001
+                               AND A.ID_EMPRESA   = :P0_ID_EMPRESA
+                               AND A.ID_IVA       = I.ID;
+                        END;
+                        VTOT_ARTI := r1.col003 * r1.col004;
+                        /*   APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'DETALLE_EXCEL',
+                                                      p_C001            => r1.col001, --cod articulos
+                                                      p_c002            => VDESC_ARTICULO, --desc articulo
+                                                      P_C003            => r1.col003, --cantidad
+                                                      p_c004            => r1.col004, --precio
+                                                      p_c005            => VID_IVA,   --ID DEL IVA
+                                                      p_c006            => VID_ARTICULO, --id articulo
+                                                      p_c007            => VID_UNIDAD_MEDIDA, 
+                                                      p_c008            => VTOT_ARTI,
+                                                      p_c009            => :P613_SER_COMPROBANTE,
+                                                      p_c010            => :P613_NRO_COMPROBANTE
+                                            );*/
+                        begin
+                            insert into CMW_PEDIDOS_DETALLE (ID_PEDIDO_CAB,
+                                                             ID_ARTICULO,
+                                                             CANTIDAD, 
+                                                             id_unidad_medida, 
+                                                             PRECIO_UNITARIO_C_IVA,
+                                                             ID_IVA,
+                                                             MONTO_TOTAL, 
+                                                             MONTO_TOTAL_C_IVA,
+                                                             IVA,
+                                                             TOTAL_IVA,
+                                                             PRECIO_UNITARIO)
+                                                     values (:P613_ID, 
+                                                             VID_ARTICULO, 
+                                                             r1.col003, 
+                                                             VID_UNIDAD_MEDIDA, 
+                                                             r1.col004,
+                                                             64,---VEXENTO, 
+                                                             VTOT_ARTI, 
+                                                             VTOT_ARTI,
+                                                             0,
+                                                             0,
+                                                             r1.col004
+                                                             ); 
+                             -- Actualizar el total del comprobante en cada iteración del bucle
+                            VTOT_COMPROBANTE := VTOT_COMPROBANTE + VTOT_ARTI; 
+                
+                        EXCEPTION
+                            when no_data_found then
+                                RAISE_APPLICATION_ERROR(-20998,'ERROR: al insertar'|| SQLERRM );
+                            WHEN OTHERS THEN 
+                                RAISE_APPLICATION_ERROR(-20995,'ERROR: al insertar arti'||:C006||'- err '|| SQLERRM);
+                        end;
+                        VTOT_ARTI := 0;
+                    END LOOP; 
+                        -- Actualizar el total del comprobante en la tabla CMW_PEDIDOS_CABECERA
+                            UPDATE CMW_PEDIDOS_CABECERA
+                            SET TOT_COMPROBANTE = VTOT_COMPROBANTE
+                            WHERE ID = :P613_ID;
+                
+                end;
+                ```
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 11541494569791508
+        }
+    )
+
+    process proceso-de-inserción (
+        name: "PROCESO DE INSERCIÓN "
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                
+                
+                
+                CURSOR C2 IS
+                
+                
+                
+                SELECT C001, C002, C003, C004, C005, C006,
+                
+                       C007, C008, C009, C010, C011, C012,
+                
+                       C013, C014, C015, c016
+                       
+                
+                       
+                
+                FROM APEX_COLLECTIONS 
+                
+                WHERE
+                
+                COLLECTION_NAME = 'Collection_name';
+                
+                
+                
+                BEGIN
+                
+                
+                
+                FOR I IN C2
+                
+                LOOP
+                
+                INSERT INTO CMW_PEDIDOS_DETALLE
+                
+                (
+                
+                
+                ID,	  --All table column
+                
+                ID_PEDIDO_CAB,	
+                
+                ID_ARTICULO,
+                
+                CANTIDAD,
+                
+                PRECIO_UNITARIO,
+                
+                MONTO_TOTAL	,
+                
+                TOTAL_IVA	,
+                
+                CANTIDAD_UB	,
+                
+                ID_UNIDAD_MEDIDA,
+                
+                IND_STOCK,
+                
+                CANTIDAD_INGRESADA,
+                
+                PRECIO_UNITARIO_C_IVA,
+                
+                MONTO_TOTAL_C_IVA,
+                
+                IVA,
+                
+                ID_IVA
+                
+                )
+                
+                VALUES(
+                
+                        I.C001,   --collection data
+                
+                        I.C003, 
+                
+                        I.C004, 
+                
+                        I.C005,
+                
+                        I.C006,
+                
+                        I.C007,    
+                
+                        I.C008,
+                
+                        I.C009, 
+                
+                        I.C010,
+                        
+                        I.c011,
+                
+                        I.c012,
+                
+                        I.c013,
+                
+                        I.c014,
+                
+                        I.c015,
+                
+                        I.c016   
+                
+                );
+                
+                END LOOP;
+                
+                END;
+                
+                
+                ```
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 12650833542937413
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+            type: never
+        }
+    )
+
+    process save-excel (
+        name: save excel
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VID_ARTICULO       NUMBER(10);
+                    VID_IVA            NUMBER(10);
+                    VID_UNIDAD_MEDIDA  NUMBER(10);
+                    VDESC_ARTICULO     VARCHAR2(200);
+                BEGIN
+                    FOR I IN (SELECT C001 AS CODIGO_ARTICULO, C002 AS ID_PEDIDO_CAB, C003 AS CANTIDAD, C004 AS TOTAL, C005 AS ID_ARTICULO
+                              FROM APEX_COLLECTIONS
+                              WHERE COLLECTION_NAME = 'DETALLE_EXCEL') LOOP
+                
+                        -- Obtener datos adicionales desde STW_ARTIC ULOS
+                        SELECT ID, ID_IVA, ID_UNIDAD_MEDIDA, DESCRIPCION
+                        INTO   VID_ARTICULO, VID_IVA, VID_UNIDAD_MEDIDA, VDESC_ARTICULO
+                        FROM STW_ARTICULOS
+                        WHERE COD_ARTICULO = I.CODIGO_ARTICULO
+                       --- AND   ID = I.ID_ARTICULO
+                        AND ID_EMPRESA = :P0_ID_EMPRESA;
+                
+                        -- Insertar datos en una nueva colección APEX_COLLECTION
+                        APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION('COLECCION_CON_DATOS_ADICIONALES');
+                        IF I.CODIGO_ARTICULO IS NOT NULL THEN 
+                            APEX_COLLECTION.ADD_MEMBER(
+                                p_collection_name => 'COLECCION_CON_DATOS_ADICIONALES',
+                                p_c001 => I.CODIGO_ARTICULO,
+                                p_c002 => I.ID_PEDIDO_CAB,
+                                p_c003 => I.CANTIDAD,
+                                p_c004 => I.TOTAL,
+                                p_c005 => VID_ARTICULO
+                                -- Insertar los demás valores que necesitas obtener desde otras tablas
+                                -- p_c006 => valor_obtenido_de_otra_tabla,
+                                -- p_c007 => valor_obtenido_de_otra_tabla,
+                                -- ...
+                                --p_cnn => 'MY_COLLECTION'
+                            );
+                            RAISE_APPLICATION_ERROR(-20000, 'Emtro al menos '||I.CODIGO_ARTICULO);
+                        END IF;
+                    END LOOP;
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 80
+        }
+        advanced {
+            executionMappingIdentifier: 12541691246089630
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+            type: never
+        }
+    )
+
+    process save-form (
+        name: Save form
+        type: formAutoRowProcessing
+        formRegion: @ordenes-de-compra-cab
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 12541524079089629
+        }
+    )
+
+)
+

@@ -1,0 +1,4331 @@
+page 658 (
+    name: CotizacionBackup
+    alias: COTIZACIONBACKUP
+    title: CotizacionBackup
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            try {
+              var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+              var v_nro_occ = model.getFieldKey("NRO_OCC");
+              ////var vaprobar  = model.getFieldKey("APROBAR");
+            
+              var numeroIngre = $v('P628_NRO_OCC');
+            
+              model.forEach(function(r, index, id) {
+                var meta = model.getRecordMetadata(id);
+                if ((meta.fields !== undefined) && (!meta.deleted)) {
+            
+                  model.setValue(r, v_nro_occ, numeroIngre);
+                }
+              });
+            
+            } catch (e) {
+              // Manejar errores aquí
+              console.error("Se produjo un error:", e);
+            }
+            
+            // create a private scope where $ is set to apex.jQuery
+            (function($) {
+                // This is the function that calculates over all the rows of the model and then
+                // updates something else.
+                // Change this to do whatever calculation is needed.
+                // Call this whenever the model data changes.
+                function update(model) {
+                    var aprobarKey = model.getFieldKey("APROBAR")
+            
+                    var salKey = model.getFieldKey("CANTIDAD_APROBADA"),
+                        total = 0;
+                    var precioKey = model.getFieldKey("PRECIO_TOTAL"),
+                        precio = 0;
+            
+                    ///console.log(">> starting sum SAL column")
+                    model.forEach(function(record, index, id) {
+                        var apr = record[aprobarKey];
+                        var pre = parseFloat(record[precioKey].replace(/\./g,''), 10)
+                        var sal = parseInt(record[salKey], 10),  // record[salKey] should be a little faster than using model.getValue in a loop
+                        
+                            meta = model.getRecordMetadata(id);
+            
+                        if (!isNaN(sal) && !meta.deleted && !meta.agg) {
+                            total += sal;
+                        }
+                        if (!isNaN(pre) && !meta.deleted && !meta.agg) {
+                           // console.log('Precio'+pre+'aprobado'+apr);
+                         if (apr === 'S'  )
+                          
+                            precio += pre;
+                        }
+                        
+                    });
+                    ///console.log(">> setting sum SAL column to " + total)
+                    console.log(precio);
+                    $s("P628_CANTIDAD_TOTAL", total);
+                    $s("P628_TOTAL_GENERAL", precio);
+            
+                    
+                }
+            
+                //
+                // This is the general pattern for subscribing to model notifications
+                //
+            
+                // need to do this here rather than in Execute when Page Loads so that the handler
+                // is setup BEFORE the IG is initialized otherwise miss the first model created event
+                $(function() {
+                    // the model gets released and created at various times such as when the report changes
+                    // listen for model created events so that we can subscribe to model notifications
+                    $("#Detalles").on("interactivegridviewmodelcreate", function(event, ui) {
+                        var sid,
+                            model = ui.model;
+            
+                        // note this is only done for the grid veiw. It could be done for
+                        // other views if desired. The imporant thing to realize is that each
+                        // view has its own model
+                        if ( ui.viewId === "grid" ) {
+                            sid = model.subscribe( {
+                                onChange: function(type, change) {
+                                   // console.log(">> model changed ", type, change);
+                                    if ( type === "set" ) {
+                                        // don't bother to recalculate if other columns change
+                                        if (change.field === "CANTIDAD_APROBADA" || change.field === "PRECIO_TOTAL"   
+                                        || change.field === "APROBAR"  )  {
+                                            update( model );
+                                        }
+                                    } else if (type !== "move" && type !== "metaChange") {
+                                        // any other change except for move and metaChange affect the calculation
+                                        update( model );
+                                    }
+                                },
+                                progressView: $("#P628_CANTIDAD_TOTAL"), // in theory this will cause a spinner on this field but I don't see it.
+                                progressView: $("#P628_TOTAL_GENERAL")
+                            } );
+                            // if not lazy loaded there is no notification for initial data so update
+                            update( model ); 
+                            // just in case fetch all the data. Model notifications will
+                            // cause calls to update so nothing to do in the callback function.
+                            // can remove if data will always be less than 50 records
+                            model.fetchAll(function() {});
+                        }
+                    });
+            
+                });
+            
+            })(apex.jQuery);
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            ///document.getElementById("P632_NUM_SOLICITUD_COMPRA").readOnly = true;
+            document.getElementById("P628_ID_CLIENTE").readOnly = true;
+            document.getElementById("P628_ID_PEDIDO").readOnly = true;
+            document.getElementById("P628_TOTAL_GENERAL").readOnly = true;
+            document.getElementById("P628_CANTIDAD_TOTAL").readOnly = true;
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .apex-item-display-only{
+             display: inline-block;
+              padding: 6px 12px;
+              font-size: 14px;
+              width: 250px;
+              line-height: 1.42857143;
+              color: #555;
+              background-color: #fff;
+              background-image: none;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+              box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+              cursor: not-allowed;
+            }
+            
+            .apex-item-text{
+                 display: inline-block;
+              padding: 6px 12px;
+              font-size: 14px;
+              width: 250px;
+              line-height: 1.42857143;
+              color: #555;
+              background-color: #fff;
+              background-image: none;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+              box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+              cursor: not-allowed;
+            }
+            
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region cotiza-pedido (
+        name: COTIZA PEDIDO
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region cotizacion-de-compras (
+        name: cotizacion de compras
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.ID_SUCURSAL,
+                       C.ID_ARTICULO,
+                       C.ID_PROVEEDOR,
+                       C.ID_MONEDA,
+                       c.PRECIO_RECARGO PRECIO,
+                       c.PRECIO_RECARGO*c.cantidad AS mon_costo,
+                       C.PRECIO AS mon_costo_copia,
+                       C.APROBADO,
+                       C.TIPO_IVA,
+                       C.PORCENTAJE_DESCUENTO,
+                       C.CANTIDAD,
+                       C.CANTIDAD AS CANTIDAD_COPIA,
+                       C.COD_ARTICULO_REF,
+                       C.NRO_ITEM,
+                       C.SALDO,
+                       C.OBSERVACION,
+                       C.COTIZA,
+                       C.COD_USUARIO_APRO,
+                       C.CAMBIO,
+                       C.ID_CONDICION_VENTAS,
+                       C.IND_GENERA_OC,
+                       C.IND_ORDEN,
+                       A.ID_ENVASE,
+                       A.ID_UNIDAD_MEDIDA,
+                       A.ID_MARCA,
+                       A.COD_ARTICULO,
+                       ---A.DESCRIPCION AS DESC_ARTICULO,
+                       ---D.DESC_ARTICULO AS DESC_ARTICULO,
+                       CASE WHEN  C.ID_ARTICULO != W_BUSCA_PARAMETRO('ST','ID_ART_ESTANDAR')
+                       THEN A.DESCRIPCION
+                       ELSE NVL(D.DESC_ARTICULO,A.DESCRIPCION) 
+                       END AS DESC_ARTICULO,
+                       C.ID_PEDIDO,
+                       C.ID_TIPO_ENTREGA,
+                       C.IND_ENVIO,
+                       round(DECODE(C.PORC_MARGEN, NULL, 0, PORC_MARGEN)) AS PORC_MARGEN,
+                       round(nvl(C.MARGEN_UNITARIO,0)) MARGEN_UNITARIO,
+                       round(nvl(C.MARGEN_TOTAL,0)) MARGEN_TOTAL,
+                       ''espacio,
+                
+                       C.ID_MONEDA_PRECIO,
+                       C.TIP_CAMBIO_MONEDA_PRECIO,
+                
+                       round(nvl(C.PRECIO_UNITARIO,0),mo.decimales) PRECIO_UNITARIO,
+                       round(nvl(C.PRECIO_TOTAL,0),mo.decimales) PRECIO_TOTAL,
+                       round(nvl(C.CANTIDAD_APROBADA,0),mo.decimales)CANTIDAD_APROBADA,
+                       C.NRO_OCC,
+                       C.FEC_OCC,
+                       ---''Aprobar,
+                
+                       CASE 
+                        WHEN (CANTIDAD_APROBADA >0 )THEN 'S'
+                        WHEN CANTIDAD_APROBADA IS NULL THEN 'N'
+                        ELSE 'N'
+                    END AS Aprobar,
+                    nvl(C.PRECIO_TOTAL,0) as PRECIO_TOTAL_COPIA,
+                    nvl(C.CANTIDAD_APROBADA,0) AS CANTIDAD_APROBADA_COPIA,
+                    C.IND_ANULADO,
+                    C.COD_USARIO_ANU,
+                    C.FEC_ANULACION,
+                    C.CANT_ANULADA,
+                    C.COMENTARIO_ANULACION,
+                    C.COD_USUARIO_APROB,
+                    C.FEC_APROB,
+                    C.COMENTARIO_APROB,
+                    A.COD_ORIGEN_ART,
+                    A.ID_RUBRO,
+                    A.ID_GRUPO_ART,
+                    A.ESTADO,
+                   /* CASE
+                        WHEN (PF.PRECIO_FIJO_CIVA IS NULL) THEN 0
+                        WHEN (PF.PRECIO_FIJO_CIVA IS NOT NULL) THEN PF.PRECIO_FIJO_CIVA
+                        ELSE 0
+                    END AS PRECIO_FIJO_CIVA*/
+                    NVL(CF_PRECIO_VENTA_ANTFORMULA(C.ID_EMPRESA,43,SYSDATE,C.ID_ARTICULO),0) PRECIO_FIJO_CIVA
+                    --PF.PRECIO_FIJO_CIVA
+                    ---,
+                    ----SUM(NVL(E.CANT_DISPON,  0)) - SUM(NVL(AB.CANT_BLOQUEO,0)) AS DISPONIBILIDAD--,
+                    ---DECODE (C.ID_ARTICULO,726,'X','UD') as EDITABLE
+                    /*,
+                     CASE 
+                        WHEN A.IND_PELIGROSO = 'S' THEN 
+                             C.PRECIO + (C.PRECIO * PV.POR_RECARGO_PELIGRO / 100)
+                        ELSE 
+                             C.PRECIO + (C.PRECIO * PV.POR_RECARGO_NORMAL / 100)
+                    END AS PRECIO_CON_RECARGO*/
+                FROM 
+                    CMW_COTIZA_ARTICULOS C,
+                    BSW_MONEDAS MO,
+                    STW_ARTICULOS A,
+                    VTW_PEDIDOS_DETALLE D,
+                    STW_EXISTENCIA_ART E,
+                    CMW_PROVEEDORES PRO
+                
+                WHERE 
+                    C.ID_EMPRESA = :P0_ID_EMPRESA
+                    -- AND C.ID = :P658_ID
+                    --AND C.ID_PEDIDO = :P658_ID_PEDIDO
+                    AND C.ID_PEDIDO = :P658_ID_PEDIDO_2
+                    AND C.IND_CLIENTE = 'S'
+                    AND A.ID         = C.ID_ARTICULO 
+                    AND A.ID_EMPRESA = C.ID_EMPRESA
+                    AND D.ID = C.ID_PEDIDO_DET 
+                   -- AND D.ID_EMPRESA = C.ID_EMPRESA
+                    AND C.ID_ARTICULO = E.ID_ARTICULO(+) 
+                   -- AND C.ID_EMPRESA = E.ID_EMPRESA
+                    AND C.ID_MONEDA_PRECIO = MO.ID(+)
+                    AND PRO.ID = C.ID_PROVEEDOR
+                group by C.ID,
+                       C.ID_EMPRESA,
+                       C.ID_SUCURSAL,
+                       C.ID_ARTICULO,
+                       C.ID_PROVEEDOR,
+                       C.ID_MONEDA,
+                       c.PRECIO_RECARGO,
+                       c.PRECIO_RECARGO,
+                       C.PRECIO,
+                       C.APROBADO,
+                       C.TIPO_IVA,
+                       C.PORCENTAJE_DESCUENTO,
+                       C.CANTIDAD,
+                       C.COD_ARTICULO_REF,
+                       C.NRO_ITEM,
+                       C.SALDO,
+                       C.OBSERVACION,
+                       C.COTIZA,
+                       C.COD_USUARIO_APRO,
+                       C.CAMBIO,
+                       C.ID_CONDICION_VENTAS,
+                       C.IND_GENERA_OC,
+                       C.IND_ORDEN,
+                       A.ID_ENVASE,
+                       A.ID_UNIDAD_MEDIDA,
+                       A.ID_MARCA,
+                       A.COD_ARTICULO,
+                       D.DESC_ARTICULO,
+                       A.DESCRIPCION,
+                       C.ID_PEDIDO,
+                       C.ID_TIPO_ENTREGA,
+                       C.IND_ENVIO,
+                       C.PORC_MARGEN,
+                       C.MARGEN_UNITARIO,
+                       C.MARGEN_TOTAL,
+                       C.ID_MONEDA_PRECIO,
+                       C.TIP_CAMBIO_MONEDA_PRECIO,
+                       C.PRECIO_UNITARIO,
+                       C.PRECIO_TOTAL,
+                       C.CANTIDAD_APROBADA,
+                       C.NRO_OCC,
+                       C.FEC_OCC,
+                       C.PRECIO_TOTAL,
+                       C.CANTIDAD_APROBADA,
+                       C.IND_ANULADO,
+                       C.COD_USARIO_ANU,
+                       C.FEC_ANULACION,
+                       C.CANT_ANULADA,
+                       C.COMENTARIO_ANULACION,
+                       A.COD_ORIGEN_ART,
+                       A.ID_RUBRO,
+                       A.ID_GRUPO_ART,
+                       C.COD_USUARIO_APROB,
+                       C.FEC_APROB,
+                       C.COMENTARIO_APROB,
+                       A.ESTADO,
+                       MO.DECIMALES
+                ```
+            pageItemsToSubmit: [
+                P658_ID_PEDIDO
+                P658_ID_PEDIDO_2
+            ]
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+        performance {
+            lazyLoading: true
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    calculaTotal();
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    calculaTotal();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    calculaTotal();
+                            };
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    calculaTotal();
+                            };                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 114569672642507370
+        }
+
+        savedReport 612054 (
+            visibility: primary
+            name: Principal
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 58
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    sequence: 121
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 122
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    sequence: 123
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO
+                layout {
+                    sequence: 124
+                }
+            )
+
+            displayColumn (
+                column: @MON_COSTO
+                layout {
+                    sequence: 125
+                }
+            )
+
+            displayColumn (
+                column: @MON_COSTO_COPIA
+                layout {
+                    sequence: 126
+                }
+            )
+
+            displayColumn (
+                column: @APROBADO
+                layout {
+                    sequence: 127
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_IVA
+                layout {
+                    sequence: 128
+                }
+            )
+
+            displayColumn (
+                column: @PORCENTAJE_DESCUENTO
+                layout {
+                    sequence: 129
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 130
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_COPIA
+                layout {
+                    sequence: 131
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_REF
+                layout {
+                    sequence: 132
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    sequence: 133
+                }
+            )
+
+            displayColumn (
+                column: @SALDO
+                layout {
+                    sequence: 134
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 135
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_APRO
+                layout {
+                    sequence: 136
+                }
+            )
+
+            displayColumn (
+                column: @CAMBIO
+                layout {
+                    sequence: 137
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONDICION_VENTAS
+                layout {
+                    sequence: 138
+                }
+            )
+
+            displayColumn (
+                column: @IND_GENERA_OC
+                layout {
+                    sequence: 139
+                }
+            )
+
+            displayColumn (
+                column: @IND_ORDEN
+                layout {
+                    sequence: 140
+                }
+            )
+
+            displayColumn (
+                column: @ID_ENVASE
+                layout {
+                    sequence: 141
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    sequence: 142
+                }
+            )
+
+            displayColumn (
+                column: @ID_MARCA
+                layout {
+                    sequence: 143
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    sequence: 144
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO
+                layout {
+                    sequence: 145
+                }
+            )
+
+            displayColumn (
+                column: @IND_ENVIO
+                layout {
+                    sequence: 146
+                }
+            )
+
+            displayColumn (
+                column: @PORC_MARGEN
+                layout {
+                    sequence: 147
+                }
+            )
+
+            displayColumn (
+                column: @MARGEN_UNITARIO
+                layout {
+                    sequence: 148
+                }
+            )
+
+            displayColumn (
+                column: @MARGEN_TOTAL
+                layout {
+                    sequence: 149
+                }
+            )
+
+            displayColumn (
+                column: @ESPACIO
+                layout {
+                    sequence: 150
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA_PRECIO
+                layout {
+                    sequence: 151
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO_MONEDA_PRECIO
+                layout {
+                    sequence: 152
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO
+                layout {
+                    sequence: 153
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_TOTAL
+                layout {
+                    sequence: 154
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_APROBADA
+                layout {
+                    sequence: 155
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    sequence: 156
+                }
+            )
+
+            displayColumn (
+                column: @FEC_OCC
+                layout {
+                    sequence: 157
+                }
+            )
+
+            displayColumn (
+                column: @APROBAR
+                layout {
+                    sequence: 158
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_TOTAL_COPIA
+                layout {
+                    sequence: 159
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_APROBADA_COPIA
+                layout {
+                    sequence: 160
+                }
+            )
+
+            displayColumn (
+                column: @IND_ANULADO
+                layout {
+                    sequence: 161
+                }
+            )
+
+            displayColumn (
+                column: @COD_USARIO_ANU
+                layout {
+                    sequence: 162
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ANULACION
+                layout {
+                    sequence: 163
+                }
+            )
+
+            displayColumn (
+                column: @CANT_ANULADA
+                layout {
+                    sequence: 164
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO_ANULACION
+                layout {
+                    sequence: 165
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_APROB
+                layout {
+                    sequence: 166
+                }
+            )
+
+            displayColumn (
+                column: @FEC_APROB
+                layout {
+                    sequence: 167
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO_APROB
+                layout {
+                    sequence: 168
+                }
+            )
+
+            displayColumn (
+                column: @COD_ORIGEN_ART
+                layout {
+                    sequence: 169
+                }
+            )
+
+            displayColumn (
+                column: @ID_RUBRO
+                layout {
+                    sequence: 170
+                }
+            )
+
+            displayColumn (
+                column: @ID_GRUPO_ART
+                layout {
+                    sequence: 171
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_FIJO_CIVA
+                layout {
+                    sequence: 172
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    frozen: true
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    frozen: true
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 114
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 119
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column APROBADO (
+            type: textField
+            heading {
+                heading: Aprobado
+            }
+            layout {
+                sequence: 170
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: APROBADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column APROBAR (
+            type: textField
+            heading {
+                heading: Aprobar
+            }
+            layout {
+                sequence: 480
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: APROBAR
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column CAMBIO (
+            type: numberField
+            heading {
+                heading: <p>Cambio</p>
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CAMBIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 200
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_APROBADA (
+            type: numberField
+            heading {
+                heading: Cantidad Aprobada
+                alignment: end
+            }
+            layout {
+                sequence: 450
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_APROBADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_APROBADA_COPIA (
+            type: numberField
+            heading {
+                heading: Cantidad Aprobada Copia
+                alignment: end
+            }
+            layout {
+                sequence: 500
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_APROBADA_COPIA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_COPIA (
+            type: numberField
+            heading {
+                heading: Cantidad Copia
+                alignment: end
+            }
+            layout {
+                sequence: 210
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_COPIA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_ANULADA (
+            type: numberField
+            heading {
+                heading: Cant Anulada
+                alignment: end
+            }
+            layout {
+                sequence: 540
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANT_ANULADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: Cod Articulo
+            }
+            layout {
+                sequence: 340
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_ARTICULO_REF (
+            type: textField
+            heading {
+                heading: Cod Articulo Ref
+            }
+            layout {
+                sequence: 220
+            }
+            validation {
+                maxLength: 15
+            }
+            source {
+                databaseColumn: COD_ARTICULO_REF
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: textField
+            heading {
+                heading: Cod Origen Art
+            }
+            layout {
+                sequence: 590
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COD_ORIGEN_ART
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USARIO_ANU (
+            type: textField
+            heading {
+                heading: Cod Usario Anu
+            }
+            layout {
+                sequence: 520
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: COD_USARIO_ANU
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USUARIO_APRO (
+            type: textField
+            heading {
+                heading: Cod Usuario Apro
+            }
+            layout {
+                sequence: 260
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: COD_USUARIO_APRO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USUARIO_APROB (
+            type: textField
+            heading {
+                heading: Cod Usuario Aprob
+            }
+            layout {
+                sequence: 560
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: COD_USUARIO_APROB
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COMENTARIO_ANULACION (
+            type: textarea
+            heading {
+                heading: Comentario Anulacion
+            }
+            layout {
+                sequence: 550
+            }
+            validation {
+                maxLength: 300
+            }
+            source {
+                databaseColumn: COMENTARIO_ANULACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column COMENTARIO_APROB (
+            type: textarea
+            heading {
+                heading: Comentario Aprob
+            }
+            layout {
+                sequence: 580
+            }
+            validation {
+                maxLength: 300
+            }
+            source {
+                databaseColumn: COMENTARIO_APROB
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column COTIZA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: COTIZA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: displayOnly
+            layout {
+                sequence: 130
+            }
+            source {
+                type: none
+            }
+        )
+
+        column ESPACIO (
+            type: textField
+            heading {
+                heading: Espacio
+            }
+            layout {
+                sequence: 400
+            }
+            source {
+                databaseColumn: ESPACIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ANULACION (
+            type: datePicker
+            heading {
+                heading: Fec Anulacion
+            }
+            layout {
+                sequence: 530
+            }
+            source {
+                databaseColumn: FEC_ANULACION
+                dataType: date
+            }
+        )
+
+        column FEC_APROB (
+            type: datePicker
+            heading {
+                heading: Fec Aprob
+            }
+            layout {
+                sequence: 570
+            }
+            source {
+                databaseColumn: FEC_APROB
+                dataType: date
+            }
+        )
+
+        column FEC_OCC (
+            type: datePicker
+            heading {
+                heading: Fec Occ
+            }
+            layout {
+                sequence: 470
+            }
+            source {
+                databaseColumn: FEC_OCC
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: Cod
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                popupWidth: 950
+                popupHeight: 550
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos-pedido
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_CONDICION_VENTAS (
+            type: textField
+            heading {
+                heading: Id Condicion Ventas
+            }
+            layout {
+                sequence: 280
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: ID_CONDICION_VENTAS
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: varchar2
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ENVASE (
+            type: numberField
+            heading {
+                heading: Id Envase
+                alignment: end
+            }
+            layout {
+                sequence: 310
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_ENVASE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_GRUPO_ART (
+            type: numberField
+            heading {
+                heading: Id Grupo Art
+                alignment: end
+            }
+            layout {
+                sequence: 610
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_GRUPO_ART
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_MARCA (
+            type: numberField
+            heading {
+                heading: Id Marca
+                alignment: end
+            }
+            layout {
+                sequence: 330
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_MARCA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_MONEDA (
+            type: popupLov
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_MONEDA_PRECIO (
+            type: numberField
+            heading {
+                heading: Id Moneda Precio
+                alignment: end
+            }
+            layout {
+                sequence: 410
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_MONEDA_PRECIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_PEDIDO (
+            type: numberField
+            heading {
+                heading: Id Pedido
+                alignment: end
+            }
+            layout {
+                sequence: 350
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_PEDIDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_RUBRO (
+            type: numberField
+            heading {
+                heading: Id Rubro
+                alignment: end
+            }
+            layout {
+                sequence: 600
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_RUBRO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: varchar2
+            }
+            default {
+                type: item
+                item: P0_ID_SUCURSAL
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_TIPO_ENTREGA (
+            type: selectList
+            heading {
+                heading: <p>Plazo de Entrega</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-plazo-entrega
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_TIPO_ENTREGA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: numberField
+            heading {
+                heading: Id Unidad Medida
+                alignment: end
+            }
+            layout {
+                sequence: 320
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column IND_ANULADO (
+            type: textField
+            heading {
+                heading: Ind Anulado
+            }
+            layout {
+                sequence: 510
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_ANULADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_ENVIO (
+            type: textField
+            heading {
+                heading: Ind Envio
+            }
+            layout {
+                sequence: 360
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_ENVIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_GENERA_OC (
+            type: textField
+            heading {
+                heading: Ind Genera Oc
+            }
+            layout {
+                sequence: 290
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_GENERA_OC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_ORDEN (
+            type: textField
+            heading {
+                heading: Ind Orden
+            }
+            layout {
+                sequence: 300
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_ORDEN
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column MARGEN_TOTAL (
+            type: numberField
+            heading {
+                heading: Margen Total
+                alignment: end
+            }
+            layout {
+                sequence: 390
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MARGEN_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MARGEN_UNITARIO (
+            type: numberField
+            heading {
+                heading: Margen Unitario
+                alignment: end
+            }
+            layout {
+                sequence: 380
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MARGEN_UNITARIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MON_COSTO (
+            type: numberField
+            heading {
+                heading: Mon Costo
+                alignment: end
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MON_COSTO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MON_COSTO_COPIA (
+            type: numberField
+            heading {
+                heading: Mon Costo Copia
+                alignment: end
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MON_COSTO_COPIA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_ITEM (
+            type: numberField
+            heading {
+                heading: Nro Item
+                alignment: end
+            }
+            layout {
+                sequence: 230
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_ITEM
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: Nro Occ
+            }
+            layout {
+                sequence: 460
+            }
+            validation {
+                maxLength: 50
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column OBSERVACION (
+            type: textField
+            heading {
+                heading: Observacion
+            }
+            layout {
+                sequence: 250
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column PORCENTAJE_DESCUENTO (
+            type: numberField
+            heading {
+                heading: Porcentaje Descuento
+                alignment: end
+            }
+            layout {
+                sequence: 190
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PORCENTAJE_DESCUENTO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PORC_MARGEN (
+            type: numberField
+            heading {
+                heading: Porc Margen
+                alignment: end
+            }
+            layout {
+                sequence: 370
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PORC_MARGEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO (
+            type: numberField
+            heading {
+                heading: Precio
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PRECIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO_FIJO_CIVA (
+            type: numberField
+            heading {
+                heading: Precio Fijo Civa
+                alignment: end
+            }
+            layout {
+                sequence: 620
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PRECIO_FIJO_CIVA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO_TOTAL (
+            type: numberField
+            heading {
+                heading: Precio Total
+                alignment: end
+            }
+            layout {
+                sequence: 440
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PRECIO_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO_TOTAL_COPIA (
+            type: numberField
+            heading {
+                heading: Precio Total Copia
+                alignment: end
+            }
+            layout {
+                sequence: 490
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PRECIO_TOTAL_COPIA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: numberField
+            heading {
+                heading: Precio Unitario
+                alignment: end
+            }
+            layout {
+                sequence: 430
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SALDO (
+            type: numberField
+            heading {
+                heading: Saldo
+                alignment: end
+            }
+            layout {
+                sequence: 240
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TIPO_IVA (
+            type: textField
+            heading {
+                heading: Tipo Iva
+            }
+            layout {
+                sequence: 180
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: TIPO_IVA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_CAMBIO_MONEDA_PRECIO (
+            type: numberField
+            heading {
+                heading: Tip Cambio Moneda Precio
+                alignment: end
+            }
+            layout {
+                sequence: 420
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: TIP_CAMBIO_MONEDA_PRECIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: cotizacion de compras
+        }
+    )
+
+    pageItem P658_ANULADO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            region: @cotiza-pedido
+            slot: regionBody
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P658_BANDERA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P658_CANTIDAD_TOTAL (
+        type: numberField
+        label {
+            label: <p>Cantidad Aprobada</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 100
+            slot: body
+            alignment: left
+            column: 7
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P658_DECIMALES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+    )
+
+    pageItem P658_FEC_OCC (
+        type: datePicker
+        label {
+            label: <P>Fecha OCC: </P>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @cotiza-pedido
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P658_FUE_APROBADO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        default {
+            type: expression
+            plsqlExpression: :APROBADO
+        }
+    )
+
+    pageItem P658_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P658_ID_CLIENTE (
+        type: displayOnly
+        label {
+            label: <p>Cliente </p>
+            alignment: left
+        }
+        settings {
+            basedOn: lov
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            displayExtraValues: false
+        }
+        layout {
+            sequence: 70
+            region: @cotiza-pedido
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P658_ID_PEDIDO (
+        type: displayOnly
+        label {
+            label: <P>Nº  Pedido</P>
+            alignment: left
+        }
+        settings {
+            basedOn: lov
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.NRO_COMPROBANTE, C.ID 
+                FROM VTW_PEDIDOS_CABECERA C
+                WHERE C.ID = :P658_ID_PEDIDO
+                
+                ```
+        }
+        layout {
+            sequence: 60
+            region: @cotiza-pedido
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: is-readonly
+        }
+        source {
+            used: always
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P658_ID_PEDIDO_2 (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 130
+            slot: body
+        }
+    )
+
+    pageItem P658_JSON_DETALLES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+    )
+
+    pageItem P658_MON_COSTO_COPIA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+    )
+
+    pageItem P658_NRO_OCC (
+        type: textField
+        label {
+            label: <P>Nro OCC: </P>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @cotiza-pedido
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P658_TOTAL_GENERAL (
+        type: numberField
+        label {
+            label: <p>Total Aprobados</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 110
+            slot: body
+            alignment: left
+            startNewRow: false
+            column: 10
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 80
+            region: @cotizacion-de-compras
+            slot: aboveBox
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P658_ID
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 60
+            region: @cotizacion-de-compras
+            slot: aboveBox
+            horizontalAlignment: left
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 633
+                items: {
+                    P633_ID_PEDIDO: &P658_ID_PEDIDO.
+                    P633_ID_CLIENTE: &P658_ID_CLIENTE.
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button marcar-todo (
+        buttonName: MARCAR_TODO
+        label: Marcar Todo
+        layout {
+            sequence: 10
+            region: @cotizacion-de-compras
+            slot: sortOrder
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--success
+                t-Button--simple
+                t-Button--stretch
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 70
+            region: @cotizacion-de-compras
+            slot: aboveBox
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P658_ID
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 30
+            region: @cotizacion-de-compras
+            slot: aboveBox
+            horizontalAlignment: left
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--padBottom
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 627
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction auditoría-de-anulación-de-artiículo (
+        name: Auditoría de Anulación de artiículo
+        execution {
+            sequence: 190
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: IND_ANULADO
+        }
+
+        action set-cantidad (
+            name: "Set Cantidad "
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    :CANTIDAD
+                    
+                    ```
+                itemsToSubmit: CANTIDAD
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANT_ANULADA
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_ANULADO
+                value: S
+            }
+        )
+
+        action set-fecha (
+            name: Set Fecha
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select /*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/sysdate from dual;
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_ANULACION
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_ANULADO
+                value: S
+            }
+        )
+
+        action set-user (
+            name: Set User
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vuser VARCHAR2(30);
+                    BEGIN
+                        vuser := :APP_USER;
+                        RETURN vuser;
+                    END;
+                    ```
+                itemsToSubmit: :APP_USER
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_USARIO_ANU
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_ANULADO
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction auditoría-de-anulación-de-artiículo-2 (
+        name: Auditoría de Anulación de artiículo_1
+        execution {
+            sequence: 200
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: APROBAR
+        }
+
+        action set-fecha (
+            name: Set Fecha
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select /*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/sysdate from dual;
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_APROB
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: APROBAR
+                value: S
+            }
+        )
+
+        action set-user (
+            name: Set User
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vuser VARCHAR2(30);
+                    BEGIN
+                        vuser := :APP_USER;
+                        RETURN vuser;
+                    END;
+                    ```
+                itemsToSubmit: :APP_USER
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_APROB
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: APROBAR
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction buscar-articulo (
+        name: Buscar Articulo
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: COD_ARTICULO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    --Cargan los datos del articulo
+                    BEGIN
+                    SELECT A.ID
+                    INTO :ID_ARTICULO
+                    FROM STW_ARTICULOS A
+                    LEFT JOIN STW_BARRAS B ON A.ID=B.ID_ARTICULO
+                    WHERE
+                    (COD_ARTICULO=:COD_ARTICULO OR B.COD_BARRA=:COD_ARTICULO) AND
+                    A.ID_EMPRESA=:P0_COD_EMPRESA AND
+                    NVL(A.ESTADO,'N')='S'
+                    AND
+                    ROWNUM=1;
+                    END;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'No se encontro el articulo');
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de articulos');
+                    
+                    
+                    ```
+                itemsToSubmit: COD_ARTICULO
+                itemsToReturn: ID_ARTICULO
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 1
+            }
+            affectedElements {
+                selectionType: items
+                items: P658_BANDERA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calc-total (
+        name: CALC_TOTAL
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: MON_COSTO
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action calcular-totales (
+            name: Calcular Totales
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotalBienes();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :MON_COSTO
+                itemsToSubmit: MON_COSTO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MON_COSTO_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cambiar-montos (
+        name: Cambiar Montos
+        execution {
+            sequence: 80
+            type: debounce
+            time: 1
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: [
+                CANTIDAD
+                PORC_MARGEN
+                CANTIDAD_APROBADA
+                ID_MONEDA
+                CAMBIO
+                ID_MONEDA_PRECIO
+                TIP_CAMBIO_MONEDA_PRECIO
+            ]
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        V_CANT_APRO NUMBER(15);
+                        V_CANT_AUX  NUMBER(18,3);
+                        V_DECIMALES NUMBER := 0;
+                    BEGIN
+                        BEGIN
+                          SELECT DECIMALES 
+                            INTO V_DECIMALES
+                          FROM BSW_MONEDAS MO 
+                          WHERE MO.ID = :ID_MONEDA_PRECIO;
+                        EXCEPTION
+                          WHEN OTHERS THEN
+                            V_DECIMALES := 0;
+                        END;
+                        IF :CANTIDAD IS NULL THEN 
+                        :CANTIDAD:=1;
+                        END IF;
+                    
+                        IF :PRECIO IS NULL THEN
+                        :PRECIO:=0;
+                        END IF;
+                    
+                    
+                        IF :PORC_MARGEN IS NULL THEN
+                        :PORC_MARGEN:=0;
+                        END IF;
+                    
+                        IF :MARGEN_UNITARIO IS NULL THEN
+                        :MARGEN_UNITARIO:=0;
+                        END IF;
+                    
+                        IF :CANTIDAD_APROBADA = 0 THEN
+                            V_CANT_APRO := 0;
+                        ELSE
+                            V_CANT_APRO := :CANTIDAD_APROBADA; 
+                        END IF;
+                        --AGREGADO 22/01/2024
+                        IF NVL(:CANTIDAD_APROBADA,0) > 0 THEN
+                           V_CANT_AUX := :CANTIDAD_APROBADA;
+                        ELSE 
+                           V_CANT_AUX := :CANTIDAD;  
+                        END IF;
+                            
+                    
+                        :MON_COSTO       := :CANTIDAD*(replace(:PRECIO,'.',''));
+                        :MARGEN_UNITARIO := ((replace(:PRECIO,'.',''))/ 100)*(:PORC_MARGEN);
+                        :MARGEN_TOTAL    := (((replace(:PRECIO,'.',''))/ 100)*(:PORC_MARGEN)*(V_CANT_AUX/*NVL(V_CANT_APRO,:CANTIDAD*/));
+                    
+                        IF :ID_MONEDA = nvl(:ID_MONEDA_PRECIO,:id_moneda) THEN
+                          :PRECIO_UNITARIO := ROUND(((replace(:PRECIO,'.',''))+((replace(:PRECIO,'.',''))/ 100)*(:PORC_MARGEN)),V_DECIMALES);
+                          :PRECIO_TOTAL    := ROUND(((replace(:PRECIO_UNITARIO,'.',''))*(V_CANT_AUX)),V_DECIMALES);
+                        ELSE
+                          :PRECIO_UNITARIO := ROUND(((replace(:PRECIO,'.',''))+((replace(:PRECIO,'.',''))/ 100)*(:PORC_MARGEN))*replace(:CAMBIO,'.','')/replace(:TIP_CAMBIO_MONEDA_PRECIO,'.',''),V_DECIMALES);
+                          :PRECIO_TOTAL    := ROUND(((replace(:PRECIO_UNITARIO,'.',''))*(V_CANT_AUX)),V_DECIMALES);
+                        END IF;
+                       
+                    END;
+                    ```
+                itemsToSubmit: [
+                    CANTIDAD
+                    PRECIO
+                    PORC_MARGEN
+                    MARGEN_UNITARIO
+                    CANTIDAD_APROBADA
+                    ID_MONEDA_PRECIO
+                    TIP_CAMBIO_MONEDA_PRECIO
+                    CAMBIO
+                    ID_MONEDA
+                ]
+                itemsToReturn: [
+                    MON_COSTO
+                    MARGEN_UNITARIO
+                    MARGEN_TOTAL
+                    PRECIO_UNITARIO
+                    PRECIO_TOTAL
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotal();
+            }
+            execution {
+                sequence: 160
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: APROBAR
+                value: S
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :PRECIO_TOTAL
+                itemsToSubmit: PRECIO_TOTAL
+            }
+            affectedElements {
+                selectionType: columns
+                columns: PRECIO_TOTAL_COPIA
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :CANTIDAD_APROBADA
+                itemsToSubmit: CANTIDAD_APROBADA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD_APROBADA_COPIA
+            }
+            execution {
+                sequence: 70
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :CANTIDAD
+                itemsToSubmit: CANTIDAD
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD_COPIA
+            }
+            execution {
+                sequence: 110
+            }
+        )
+
+    )
+
+    dynamicAction cargar-datos-de-pedido-a-cotiza (
+        name: cargar datos de pedido a cotiza
+        execution {
+            sequence: 160
+        }
+        when {
+            event: ready
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @cotizacion-de-compras
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    DECLARE 
+                    VID_PEDIDO NUMBER(10);
+                    
+                    BEGIN
+                    
+                    CMW_INSERTA_PEDIDO(:P658_ID_PEDIDO_2);
+                    
+                    
+                    :P658_ID_PEDIDO_2 := VID_PEDIDO;
+                    
+                    END;
+                    
+                    ```
+                itemsToSubmit: P658_ID_PEDIDO_2
+                errorMessage: #SQLERRM#
+                extraOptions: escapeSpecialCharactersInMessages
+            }
+            affectedElements {
+                selectionType: region
+                region: @cotizacion-de-compras
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cargar-detalles (
+        name: Cargar Detalles
+        execution {
+            sequence: 140
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                       v_contador NUMBER(18);
+                    BEGIN
+                       IF :P658_ID_PEDIDO_2 IS NOT NULL THEN 
+                          SELECT COUNT(*)
+                          INTO v_contador
+                          FROM CMW_COTIZA_ARTICULOS
+                          WHERE ID_PEDIDO = :P658_ID_PEDIDO_2;
+                          
+                          IF v_contador > 0 THEN
+                             raise_application_error(-20000, '"Este pedido ya ha sido cotizado anteriormente."');
+                          END IF;
+                       ELSE
+                          raise_application_error(-20000, 'El ID_PEDIDO es nulo');
+                       END IF;
+                    EXCEPTION
+                       WHEN NO_DATA_FOUND THEN 
+                          raise_application_error(-20000, 'No se encontró la cotizacion');
+                       WHEN OTHERS THEN
+                          raise_application_error(-20000, 'Error ' || sqlerrm);
+                    END;
+                    
+                    ```
+                itemsToSubmit: P658_ID_PEDIDO_2
+                itemsToReturn: P658_ID_PEDIDO_2
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      l_cursor SYS_REFCURSOR;
+                      json_detalle CLOB;
+                    BEGIN
+                    
+                    
+                      
+                      OPEN l_cursor FOR
+                     SELECT    D.NUM_ORDEN,
+                               D.ID_ARTICULO,
+                               A.ID_GRUPO_ART,
+                               D.DESC_ARTICULO DESCRIPCION,
+                               A.ID_ENVASE,
+                               A.ID_UNIDAD_MEDIDA,
+                               A.ID_MARCA,
+                               D.CANTIDAD,
+                               A.COD_ARTICULO,
+                               A.COD_ORIGEN_ART
+                           
+                           
+                    FROM VTW_PEDIDOS_DETALLE D, STW_ARTICULOS A
+                    WHERE D.ID_ARTICULO         = A.ID
+                      AND D.ID_EMPRESA          = A.ID_EMPRESA
+                      AND D.ID_PEDIDO_CABECERA  = :P658_ID_PEDIDO_2;
+                    
+                      APEX_JSON.initialize_clob_output;
+                    
+                      APEX_JSON.open_object;
+                      APEX_JSON.write('DETALLE', l_cursor);
+                      APEX_JSON.close_object;
+                    
+                      JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                    
+                      :P658_JSON_DETALLES:=JSON_DETALLE;
+                      EXCEPTION
+                      WHEN OTHERS THEN  
+                      NULL;
+                    
+                    END;
+                    ```
+                itemsToSubmit: P658_ID_PEDIDO_2
+                itemsToReturn: P658_JSON_DETALLES
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $model.clearChanges();
+                    
+                    ```
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var orden =0;
+                    var json_detalle = JSON.parse($v('P658_JSON_DETALLES'));
+                    
+                    
+                    
+                    
+                    //console.log(json_detalle);
+                    if ((Object.keys(json_detalle.DETALLE).length)!=0){
+                    
+                    
+                    for(let i=0;i<json_detalle.DETALLE.length;i++){
+                    
+                    
+                    //Con este codigo podemos insertar una nueva fila en el detalle de comprobantes 
+                    
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                         $grid.setEditMode(true);
+                    //insert new record on a model
+                    var newRecordId = $model.insertNewRecord();
+                    
+                    //continuation of above code
+                    //get the new record
+                    
+                    var $newRecord = $model.getRecord(newRecordId);
+                    
+                    if((json_detalle.DETALLE[i].NUM_ORDEN!=null)){
+                    $model.setValue($newRecord, "NRO_ITEM",(json_detalle.DETALLE[i].NUM_ORDEN).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_ARTICULO!=null)){
+                    $model.setValue($newRecord, "ID_ARTICULO",(json_detalle.DETALLE[i].ID_ARTICULO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].CANTIDAD!=null)){
+                    $model.setValue($newRecord, "CANTIDAD",(json_detalle.DETALLE[i].CANTIDAD).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_GRUPO_ART!=null)){
+                    $model.setValue($newRecord, "ID_GRUPO_ART",(json_detalle.DETALLE[i].ID_GRUPO_ART).toString());
+                    }
+                    if((json_detalle.DETALLE[i].DESCRIPCION!=null)){
+                    $model.setValue($newRecord, "DESC_ARTICULO",(json_detalle.DETALLE[i].DESCRIPCION).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_ENVASE!=null)){
+                    $model.setValue($newRecord, "ID_ENVASE",(json_detalle.DETALLE[i].ID_ENVASE).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_UNIDAD_MEDIDA!=null)){
+                    $model.setValue($newRecord, "ID_UNIDAD_MEDIDA",(json_detalle.DETALLE[i].ID_UNIDAD_MEDIDA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_MARCA!=null)){
+                    $model.setValue($newRecord, "ID_MARCA",(json_detalle.DETALLE[i].ID_MARCA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].CANTIDAD!=null)){
+                    $model.setValue($newRecord, "CANTIDAD",(json_detalle.DETALLE[i].CANTIDAD).toString());
+                    }
+                    if((json_detalle.DETALLE[i].COD_ARTICULO!=null)){
+                    $model.setValue($newRecord, "COD_ARTICULO",(json_detalle.DETALLE[i].COD_ARTICULO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].COD_ORIGEN_ART!=null)){
+                    $model.setValue($newRecord, "COD_ORIGEN_ART",(json_detalle.DETALLE[i].COD_ORIGEN_ART).toString());
+                    }
+                    
+                    }
+                    
+                    }
+                    
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 50
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @cotizacion-de-compras
+            }
+            execution {
+                sequence: 40
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: Inicializar
+        execution {
+            sequence: 70
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction lista-de-valores-articulo (
+        name: Lista de Valores Articulo
+        execution {
+            sequence: 30
+        }
+        when {
+            event: dblclick
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: COD_ARTICULO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_ART_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction llamar-a-lista-de-valores (
+        name: Llamar a lista de valores
+        execution {
+            sequence: 40
+        }
+        when {
+            event: keydown
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: COD_ARTICULO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if(event.keyCode == 120){
+                            $('#ID_ART_lov_btn').click();;
+                        }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todos (
+        name: Marcar Todos
+        execution {
+            sequence: 130
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: DBMS_LOCK.SLEEP(0.2);
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                        var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                        var v_seleccionada = model.getFieldKey("IND_ENVIO");
+                        ///var v_total_cantidad = 0;
+                        var bandera = 'N';
+                        model.forEach(function(r, index, id) {
+                            var meta = model.getRecordMetadata(id);
+                    
+                            console.log(meta.fields); // meta.fields undifined validation   --deprecated By RP
+                            if ((meta != undefined) && (!meta.deleted)) {
+                    
+                                if (r[v_seleccionada] == 'N' || r[v_seleccionada] == null || r[v_seleccionada] == '') {
+                                    bandera = 'S';
+                                    model.setValue(r, 'IND_ENVIO', 'S');
+                    
+                                }
+                                if (r[v_seleccionada] == 'S' && bandera == 'N') {
+                                    model.setValue(r, 'IND_ENVIO', 'N');
+                                }
+                            }
+                        });
+                        
+                        // Llamar a la función de devolución de llamada cuando se complete la operación
+                        if (typeof callback === "function") {
+                            callback();
+                        }
+                    } catch (e) {
+                        console.error("Se produjo un error:", e);
+                    }
+                    
+                    
+                    /*
+                    // Llamar a la función marcarTodos con una función de devolución de llamada
+                    marcarTodos(function() {
+                            console.log("La función de devolución de llamada se ha ejecutado.");
+                    
+                        // Realizar otras operaciones después de marcar
+                        // Esta función se ejecutará después de que los cambios se apliquen
+                    });
+                    */
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression:
+                    ```javascript-browser
+                    //var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                    //var columns = $( ".Detalles" ).grid( "getColumns" );
+                    $( "Detalles" ).grid( "focus" );
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New_1
+        execution {
+            sequence: 150
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: items
+            items: P658_NRO_OCC
+        }
+        clientSideCondition {
+            type: itemIsNull
+            item: P658_NRO_OCC
+        }
+
+        action native-disable (
+            action: disable
+            affectedElements {
+                selectionType: columns
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new-2 (
+        name: New_2
+        execution {
+            sequence: 170
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: APROBAR
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: N
+            }
+            affectedElements {
+                selectionType: columns
+                columns: APROBAR
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: APROBAR
+            }
+        )
+
+    )
+
+    dynamicAction permisos (
+        name: Permisos
+        execution {
+            sequence: 180
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @cotizacion-de-compras
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                     $("#COD_ARTICULOSS").attr('readonly','readonly'); 
+                     $("#COD_ARTICULOSS").addClass('apex_disabled');
+                    
+                    ```
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_ARTICULO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: ID_ARTICULO
+                value: 726
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                     $("#CANTIDAD").removeAttr('readonly','readonly'); 
+                     $("#CANTIDAD").removeClass('apex_disabled');
+                    
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code-3 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                     $("#CANTIDAD").attr('readonly','readonly'); 
+                     $("#CANTIDAD").addClass('apex_disabled');
+                    
+                    ```
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD
+            }
+            execution {
+                sequence: 30
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: ID_ARTICULO
+                value: 726
+            }
+        )
+
+        action native-javascript-code-4 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                     $("#PRECIO").removeAttr('readonly','readonly'); 
+                     $("#PRECIO").removeClass('apex_disabled');
+                    
+                    ```
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code-5 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                     $("#PRECIO").attr('readonly','readonly'); 
+                     $("#PRECIO").addClass('apex_disabled');
+                    
+                    ```
+            }
+            affectedElements {
+                selectionType: columns
+                columns: PRECIO
+            }
+            execution {
+                sequence: 50
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: ID_ARTICULO
+                value: 726
+            }
+        )
+
+    )
+
+    dynamicAction setear-articulos (
+        name: Setear articulos
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: ID_ARTICULO
+        }
+
+        action descripción-articulo (
+            name: Descripción Articulo
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DESCRIPCION FROM 
+                    STW_ARTICULOS WHERE
+                    ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DESC_ARTICULO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    SELECT COD_ARTICULO 
+                    into :cod_articulo
+                    FROM STW_ARTICULOS
+                    WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                    AND ID=:ID_ARTICULO;
+                    ```
+                itemsToSubmit: ID_ARTICULO
+                itemsToReturn: COD_ARTICULO
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    var array = grid.getSelectedRecords();
+                    //console.log(array);
+                    grid.gotoCell(array[0][0],'COD_ARTICULO');
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P658_BANDERA
+                value: 0
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT id_envase,id_unidad_medida,id_marca,cod_origen_art, id_rubro FROM 
+                    STW_ARTICULOS WHERE
+                    ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    ID_ENVASE
+                    ID_UNIDAD_MEDIDA
+                    ID_MARCA
+                    COD_ORIGEN_ART
+                    ID_RUBRO
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                value: 0
+            }
+            affectedElements {
+                selectionType: items
+                items: P658_BANDERA
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambio (
+        name: Setear Cambio
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: ID_MONEDA
+        }
+
+        action cambio (
+            name: Cambio
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:ID_MONEDA,SYSDATE,'C','V');
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el cambio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: ID_MONEDA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action decimales (
+            name: Decimales
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM 
+                    BSW_MONEDAS WHERE
+                    ID=:ID_MONEDA
+                    ```
+                itemsToSubmit: ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P658_DECIMALES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambio-precio (
+        name: Setear_cambio_precio
+        execution {
+            sequence: 210
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: ID_MONEDA_PRECIO
+        }
+
+        action cambio (
+            name: cambio2
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                      IF NVL(:ID_MONEDA,32) = NVL(:ID_MONEDA_PRECIO,32) THEN
+                        RETURN :CAMBIO;
+                      ELSE
+                        RETURN FTIPOS_CAMBIO(:ID_MONEDA_PRECIO,SYSDATE,'C','V');
+                      END IF;
+                    EXCEPTION
+                    WHEN OTHERS THEN
+                       RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el CambioPrecio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: [
+                    ID_MONEDA_PRECIO
+                    ID_MONEDA
+                    CAMBIO
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: TIP_CAMBIO_MONEDA_PRECIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-cantidad-aprobada-por-el-cliente (
+        name: Setear cantidad aprobada por el cliente
+        execution {
+            sequence: 100
+            type: debounce
+            time: 5
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cotizacion-de-compras
+            columns: APROBAR
+        }
+        clientSideCondition {
+            type: itemColumn=value
+            column: APROBAR
+            value: S
+        }
+
+        action native-clear (
+            action: clear
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    CANTIDAD_APROBADA
+                    NRO_OCC
+                    FEC_OCC
+                ]
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.region("Detalles").focus();
+                    
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireWhenEventResultIs: false
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    apex.region("Detalles").focus();
+                    
+                    ```
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :CANTIDAD
+                itemsToSubmit: CANTIDAD
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD_APROBADA
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :P658_NRO_OCC
+                itemsToSubmit: P658_NRO_OCC
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NRO_OCC
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :P658_FEC_OCC
+                itemsToSubmit: P658_FEC_OCC
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_OCC
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-fecha-occ-ingresado (
+        name: Setear Fecha OCC ingresado
+        execution {
+            sequence: 120
+        }
+        when {
+            selectionType: items
+            items: P658_FEC_OCC
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                      var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                      var v_nro_occ = model.getFieldKey("FEC_OCC");
+                       
+                      
+                      var numeroIngre = $v('P658_FEC_OCC');
+                    
+                      model.forEach(function(r, index, id) {
+                                model.setValue(r,'FEC_OCC', numeroIngre);
+                    
+                        var meta = model.getRecordMetadata(id);
+                        if ((meta.fields !== undefined) && (!meta.deleted)) {
+                    
+                        }
+                      });
+                    
+                    } catch (e) {
+                      
+                      console.error("error:", e);
+                    }
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-nro-occ-ingresado (
+        name: Setear NRO OCC ingresado
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: items
+            items: P658_NRO_OCC
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                      var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                      var v_nro_occ = model.getFieldKey("NRO_OCC");
+                       
+                      
+                      var numeroIngre = $v('P658_NRO_OCC');
+                    
+                      model.forEach(function(r, index, id) {
+                                model.setValue(r,'NRO_OCC', numeroIngre);
+                    
+                        var meta = model.getRecordMetadata(id);
+                        if ((meta.fields !== undefined) && (!meta.deleted)) {
+                    
+                        }
+                      });
+                    
+                    } catch (e) {
+                      
+                      console.error("error:", e);
+                    }
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p658-anulado (
+        itemName: P658_ANULADO
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT IND_ANULADO 
+                FROM CMW_COTIZA_ARTICULOS 
+                WHERE ID_PEDIDO = :P658_ID_PEDIDO 
+                AND   ID_EMPRESA = :P0_ID_EMPRESA
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P658_ID_PEDIDO
+        }
+    )
+
+    computation p658-cantidad-total (
+        itemName: P658_CANTIDAD_TOTAL
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT SUM(CANTIDAD_APROBADA) 
+                FROM CMW_COTIZA_ARTICULOS 
+                WHERE id_pedido = :P658_ID_PEDIDO 
+                AND CANTIDAD_APROBADA IS NOT NULL;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P658_ID_PEDIDO
+        }
+    )
+
+    computation p658-total-general (
+        itemName: P658_TOTAL_GENERAL
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT SUM(PRECIO_TOTAL) 
+                FROM CMW_COTIZA_ARTICULOS 
+                WHERE id_pedido = :P658_ID_PEDIDO 
+                AND CANTIDAD_APROBADA IS NOT NULL;
+                 
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P658_ID_PEDIDO
+        }
+    )
+
+    process cotizacion-de-compras-save-interactive-grid-data (
+        name: cotizacion de compras - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @cotizacion-de-compras
+        target {
+            targetType: tableView
+            tableName: CMW_COTIZA_ARTICULOS
+        }
+        lockRow {
+            preventLostUpdates: false
+            lockRow: false
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 68829935836667342
+        }
+    )
+
+    process guardar-estado-vtw-pedidos (
+        name: Guardar estado vtw_pedidos
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @cotizacion-de-compras
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                BEGIN -- It runs row by row for interactive grid
+                    IF :APEX$ROW_STATUS = 'D' THEN -- DELETE
+                        
+                        RETURN;
+                    ELSIF :APEX$ROW_STATUS = 'C' THEN -- CREATE
+                        IF :IND_ENVIO = 'S' THEN
+                            UPDATE VTW_PEDIDOS_CABECERA
+                            SET ESTADO = 'EN'
+                            WHERE ID = :ID_PEDIDO;
+                        END IF;
+                        RETURN;
+                    ELSIF :APEX$ROW_STATUS = 'U' THEN -- UPDATE
+                        IF :IND_ENVIO = 'S' THEN
+                            UPDATE VTW_PEDIDOS_CABECERA
+                            SET ESTADO = 'EN'
+                            WHERE ID = :ID_PEDIDO;
+                        END IF;
+                        RETURN;
+                    END IF;
+                END;
+                ```
+        }
+        lockRow {
+            lockRow: false
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 68830342296667342
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process setear-estado-pedido (
+        name: Setear estado pedido
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                    v_estado        inv.vtw_pedidos_cabecera.estado%type;
+                    v_ind_enviado   inv.cmw_cotiza_articulos.ind_envio%type;
+                    v_id_pedido     inv.vtw_pedidos_cabecera.id%type;
+                begin
+                    select  p.id, p.estado
+                    into    v_id_pedido, v_estado
+                    from    vtw_pedidos_cabecera p
+                    where   p.nro_comprobante = :P658_ID_PEDIDO;
+                
+                    raise_application_error(-20000, v_id_pedido||' '||v_estado);
+                    select  c.ind_envio
+                    into    v_ind_enviado
+                    from    cmw_cotiza_articulos c
+                    where   c.id_pedido = v_id_pedido;
+                
+                    if v_ind_enviado = 'S' and v_estado = 'PA' then
+                        update  vtw_pedidos_cabecera
+                        set     estado = 'EN'
+                        where   id = v_id_pedido;
+                    end if;
+                
+                    if v_ind_enviado = 'N' and v_estado = 'EN' then
+                        update  vtw_pedidos_cabecera
+                        set     estado = 'PA'
+                        where   id = v_id_pedido;
+                    end if;
+                end;
+                ```
+        }
+        execution {
+            sequence: 30
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 68836896068667354
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

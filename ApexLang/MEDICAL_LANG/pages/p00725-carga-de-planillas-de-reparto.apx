@@ -1,0 +1,3186 @@
+page 725 (
+    name: Carga de Planillas de Reparto
+    alias: CARGA-DE-PLANILLAS-DE-REPARTO
+    title: Carga de Planillas de Reparto
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function calculaTotales(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cantidad = model.getFieldKey("TOT_COMPROBANTE_COPIA");
+                var v_total_cantidad     = 0;
+                
+                model.forEach(function(r, index, id) {
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){  
+                        v_total_cantidad  += parseFloat(r[v_cantidad].replace(/\./g,'')) || 0;
+                    }
+                });
+            
+            
+                 $s('P675_TOTALES',v_total_cantidad.toString().replace('.', ','));
+            }
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            //document.getElementById("P725_TOTALES").readOnly = true;
+            
+            //document.getElementById("P725_NRO_PLANILLA").readOnly = true;
+            //document.getElementById("P725_ID_USUARIO").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: center;
+              height: 26px;
+            }
+            
+            .no-pointer {
+                pointer-events: none;
+            }
+            ```
+    }
+    readOnly {
+        type: item=value
+        item: P725_ESTADO
+        value: S
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-planilla-de-reparto (
+        name: Carga de Planilla de Reparto
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT  ID,
+                        ID_EMPRESA,
+                        NRO_PLANILLA,
+                        FEC_PLANILLA,
+                        ID_REPARTIDOR,
+                        ID_VEHICULO,
+                        ID_SUCURSAL,
+                        ESTADO,
+                        ID_USUARIO,
+                        ID_ZONA,
+                        FEC_VENCIMIENTO,
+                        COD_USUARIO_AUD,
+                        ID_PLANILLA_INGRESO,
+                        ID_SUCURSAL_CENTRAL,
+                        ID_REPARTIDOR_AYUDANTE,
+                        HORA_SALIDA,
+                        HORA_VUELTA,
+                        KM_INICIAL,
+                        KM_FINAL,
+                        ID_VENDEDOR,
+                        OBSERVACION,
+                        COD_USU_ESTADO,
+                        ESTADO_FEC,
+                        ID_MOTIVO_REPARTO,
+                        CANTIDAD_CAJAS
+                FROM RPW_REPARTO_CABECERA
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region carga-orden-nro-ruteo (
+        name: Carga Orden Nro Ruteo
+        type: staticContent
+        layout {
+            sequence: 240
+            parentRegion: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT  A.ID,
+                        A.ID_EMPRESA,
+                        A.ID_SUCURSAL,
+                        A.ID_REPARTO_CABECERA,
+                        --B.NOM_CLIENTE,
+                        A.ESTADO,
+                        --B.ID_MONEDA,
+                        0 TOT_COMPROBANTE,
+                        0 TOT_COMPROBANTE_COPIA,
+                        A.COD_USUARIO_AUD,
+                        A.NRO_PLANILLA,
+                        A.TIP_COMPROBANTE,
+                        A.ID_FACTURA_VT,
+                        A.ID_REMISION,
+                        A.ID_RECIBO,
+                        A.IND_ENTREGADO,
+                        A.HORA_ENTREGA,
+                        A.FIRMADO_POR,
+                        A.COMENTARIO,
+                        A.NRO_COMPROBANTE,
+                        --COALESCE(TO_CHAR(FC.ID_CLIENTE),TO_CHAR(RC.ID_CLIENTE),TO_CHAR(CC.ID_CLIENTE)) AS ID_CLIENTE,
+                        SC.ID_CLIENTE,
+                        --A.IND_DOCUMENTO,
+                        --A.IND_STOCK,
+                        A.ID_FACTURA_CM,
+                        A.ID_OCP,
+                        A.ID_NOTA_ENVIO,
+                        --A.DIRECCION_ENVIO,
+                        SC.DIRECCION_ENVIO,
+                        A.COD_USUARIO_ENTREGA,
+                        --NVL(FA.ID_PROVEEDOR,OC.ID_PROVEEDOR) ID_PROVEEDOR
+                        SC.ID_PROVEEDOR,
+                        SC.ID AS NRO_SOLICITUD,
+                        SC.ID_MOTIVO_REPARTO,
+                        A.ORDEN_RUTEO,
+                        SC.COMENTARIO COMENTARIO_SOLICITUD
+                FROM RPW_REPARTO_DETALLE A
+                JOIN RPW_SOLICITUD_REPARTO_DET SD ON SD.ID = A.ID_SOLICITUD_DET
+                JOIN RPW_SOLICITUD_REPARTO_CAB SC ON SC.ID = SD.ID_SOLICITUD_REP_CAB
+                LEFT JOIN VTW_COMPROBANTES_CABECERA FC ON FC.ID = A.ID_FACTURA_VT
+                LEFT JOIN STW_ENTSAL_CAB            RC ON RC.ID = A.ID_REMISION
+                LEFT JOIN CCW_RECIBOS               CC ON CC.ID = A.ID_RECIBO
+                LEFT JOIN CMW_COMPRAS_CABECERA      FA ON FA.ID = A.ID_FACTURA_CM
+                LEFT JOIN CMW_PEDIDOS_CABECERA      OC ON OC.ID = A.ID_OCP
+                WHERE A.ID_REPARTO_CABECERA = :P725_ID
+                ```
+            pageItemsToSubmit: [
+                P725_ID
+                P725_ID_VENDEDOR
+            ]
+        }
+        layout {
+            sequence: 260
+            parentRegion: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 122875231615833387
+        }
+
+        savedReport 100674 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COMENTARIO_SOLICITUD
+                layout {
+                    width: 108
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    width: 100
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE
+                layout {
+                    show: false
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE_COPIA
+                layout {
+                    show: false
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_REMISION
+                layout {
+                    show: false
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_RECIBO
+                layout {
+                    show: false
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @IND_ENTREGADO
+                layout {
+                    width: 81
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @HORA_ENTREGA
+                layout {
+                    width: 125.3203
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @FIRMADO_POR
+                layout {
+                    show: false
+                    width: 126
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    width: 94
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 108
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 113
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_OCP
+                layout {
+                    show: false
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    width: 90
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @DIRECCION_ENVIO
+                layout {
+                    width: 92.3203
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_ENTREGA
+                layout {
+                    width: 107.3203
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @ID_FACTURA_VT
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @ID_FACTURA_CM
+                layout {
+                    show: false
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ID_NOTA_ENVIO
+                layout {
+                    show: false
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @NRO_SOLICITUD
+                layout {
+                    width: 81
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_MOTIVO_REPARTO
+                layout {
+                    width: 96.3203
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @ORDEN_RUTEO
+                layout {
+                    width: 74.3203
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_REPARTO_CABECERA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 87
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 10
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PLANILLA
+                layout {
+                    sequence: 13
+                }
+            )
+
+            sort (
+                column: @ORDEN_RUTEO
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 40
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_ENTREGA (
+            type: textField
+            heading {
+                heading: <p>Entregado Por</p>
+                alignment: center
+            }
+            layout {
+                sequence: 360
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_USUARIO_ENTREGA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COMENTARIO (
+            type: textField
+            heading {
+                heading: <p>Comentario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 250
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COMENTARIO_SOLICITUD (
+            type: textField
+            heading {
+                heading: <p>Comentario Soli.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 430
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COMENTARIO_SOLICITUD
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DIRECCION_ENVIO (
+            type: textField
+            heading {
+                heading: <p>Direccion Envio</p>
+                alignment: center
+            }
+            layout {
+                sequence: 350
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: DIRECCION_ENVIO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ESTADO (
+            type: popupLov
+            heading {
+                heading: <p>Estado</p>
+                alignment: center
+                alternativeLabel: Estado
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: staticValues
+                staticValues: STATIC:Pendiente;PE,Parcial;PA,Entregado;EN,Rechazo Interno;RI,Rechazo Externo;RE,No Alcanzado;NA
+                displayNullValue: false
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 1
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column FIRMADO_POR (
+            type: textField
+            heading {
+                heading: <p>Firmado Por</p>
+            }
+            layout {
+                sequence: 240
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: FIRMADO_POR
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            comments {
+                comments: Pidieron sacar el campo. No lo iban a utilizar.
+            }
+        )
+
+        column HORA_ENTREGA (
+            type: datePicker
+            heading {
+                heading: <p>Hora Finalizacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: dd/MM/yyyy hh24:mi
+            }
+            source {
+                databaseColumn: HORA_ENTREGA
+                dataType: date
+                queryOnly: true
+            }
+            comments {
+                comments:
+                    ```
+                    hora entrega -> hora finalizacion
+                    por pedido de laura y liz
+                    
+                    ```
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: selectList
+            heading {
+                heading: <p>Cliente</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 280
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_FACTURA_CM (
+            type: numberField
+            heading {
+                heading: Id Factura Cm
+                alignment: end
+            }
+            layout {
+                sequence: 380
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_FACTURA_CM
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_FACTURA_VT (
+            type: numberField
+            heading {
+                heading: Id Factura Vt
+                alignment: end
+            }
+            layout {
+                sequence: 370
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_FACTURA_VT
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_MOTIVO_REPARTO (
+            type: selectList
+            heading {
+                heading: <p>Motivo Reparto</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select descripcion, id
+                    from rpw_motivos_reparto
+                    ```
+                displayNullValue: false
+            }
+            layout {
+                sequence: 410
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_MOTIVO_REPARTO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_NOTA_ENVIO (
+            type: numberField
+            heading {
+                heading: Id Nota Envio
+                alignment: end
+            }
+            layout {
+                sequence: 390
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_NOTA_ENVIO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_OCP (
+            type: popupLov
+            heading {
+                heading: Id Ocp
+            }
+            settings {
+                displayAs: modalDialog
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT 'OCP-'||C.SER_COMPROBANTE||'-'||C.NRO_COMPROBANTE||' de '||PE.NOMBRE, C.ID
+                    FROM CMW_PEDIDOS_CABECERA C
+                    JOIN CMW_PROVEEDORES      PR ON PR.ID = C.ID_PROVEEDOR
+                    JOIN BSW_PERSONAS         PE ON PE.ID = PR.ID_PERSONA
+                    ORDER BY C.ID DESC
+                    ```
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: ID_OCP
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            advanced {
+                htmlDomId: ID_OCP
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: selectList
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 340
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_RECIBO (
+            type: popupLov
+            heading {
+                heading: Id Recibo
+            }
+            settings {
+                displayAs: modalDialog
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select 'REC'||'-'||rec.ser_recibo||'-'||rec.nro_recibo||' de '||per.nombre, rec.id
+                    from ccw_recibos rec
+                    join ccw_clientes   cli on cli.id = rec.id_cliente
+                    join bsw_personas   per on per.id = cli.id_persona
+                    order by rec.id desc
+                    ```
+            }
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: ID_RECIBO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            advanced {
+                htmlDomId: ID_REC
+            }
+        )
+
+        column ID_REMISION (
+            type: popupLov
+            heading {
+                heading: Id Remision
+            }
+            settings {
+                displayAs: modalDialog
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select 'REM-'||rem.ser_ent_sal||'-'||rem.num_ent_sal||' de '||per.nombre, rem.id
+                    from stw_entsal_cab rem
+                    join ccw_clientes   cli on cli.id = rem.id_cliente
+                    join bsw_personas   per on per.id = cli.id_persona
+                    order by rem.id desc
+                    ```
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: ID_REMISION
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            advanced {
+                htmlDomId: ID_REM
+            }
+        )
+
+        column ID_REPARTO_CABECERA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_REPARTO_CABECERA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_SUCURSAL
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_ENTREGADO (
+            type: checkbox
+            heading {
+                heading: <p>Finalizado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 220
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_ENTREGADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            comments {
+                comments: Cambio de entregado a Finalizado. Por pedidos de Liz/Laura
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 270
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_PLANILLA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: NRO_PLANILLA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P725_NRO_PLANILLA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_SOLICITUD (
+            type: numberField
+            heading {
+                heading: <p>Nro. Solicitud</p>
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_SOLICITUD
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ORDEN_RUTEO (
+            type: numberField
+            heading {
+                heading: <p>Orden Ruteo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 420
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ORDEN_RUTEO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: selectList
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            lov {
+                type: staticValues
+                staticValues: STATIC:Factura Venta;FVE,Remision;REM,Recibo;REC,Factura Compra;FAC,Orden de Compra;OCP,Nota de Envio;ENV,Documento;DOC,Cobranza;COB
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: Tot Comprobante
+                alignment: end
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TOT_COMPROBANTE_COPIA (
+            type: numberField
+            heading {
+                heading: Tot Comprobante Copia
+                alignment: end
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 270
+            parentRegion: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P725_BANDERA_FAC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 320
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P725_CANTIDAD_CAJAS (
+        type: numberField
+        label {
+            label: <p>Cantidad Cajas</p>
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: CANTIDAD_CAJAS
+            dataType: number
+        }
+    )
+
+    pageItem P725_COD_USUARIO_AUD (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 170
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P725_COD_USU_ESTADO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 300
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: COD_USU_ESTADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P725_ESTADO (
+        type: checkbox
+        label {
+            label: <p>Reparto rendido</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ESTADO
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: 'N'
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P725_ID
+        }
+    )
+
+    pageItem P725_ESTADO_FEC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 310
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ESTADO_FEC
+            dataType: date
+        }
+    )
+
+    pageItem P725_FEC_PLANILLA (
+        type: datePicker
+        label {
+            label: <p>Fecha: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: FEC_PLANILLA
+            dataType: date
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    IF :P725_ID IS NULL THEN
+                        RETURN SYSDATE;
+                    END IF;
+                END;
+                ```
+        }
+    )
+
+    pageItem P725_FEC_VENCIMIENTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 160
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: FEC_VENCIMIENTO
+            dataType: date
+        }
+    )
+
+    pageItem P725_HORA_SALIDA (
+        type: datePicker
+        label {
+            label: <p>Hora Salida: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: dd/MM/yyyy HH24:MI
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: HORA_SALIDA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: to_char(sysdate,'dd/MM/yyyy HH24:MI')
+        }
+    )
+
+    pageItem P725_HORA_VUELTA (
+        type: datePicker
+        label {
+            label: <p>Hora Vuelta: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: dd/MM/yyy HH24:MI
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: HORA_VUELTA
+            dataType: date
+        }
+    )
+
+    pageItem P725_ID (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P725_ID_CLIENTE (
+        type: selectList
+        label {
+            label: <p>Cliente</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select distinct pe.nombre||'('||cl.cod_cliente||')', sc.id_cliente
+                from rpw_solicitud_reparto_cab sc
+                join rpw_solicitud_reparto_det sd on sd.id_solicitud_rep_cab = sc.id 
+                join ccw_clientes              cl on cl.id = sc.id_cliente 
+                join bsw_personas              pe on pe.id = cl.id_persona
+                join rpw_reparto_detalle       rd on rd.id_solicitud_det = sd.id     
+                where rd.id_reparto_cabecera = :P725_ID
+                ```
+            nullDisplayValue: -- Sin Seleccionar --
+        }
+        layout {
+            sequence: 240
+            region: @carga-orden-nro-ruteo
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P725_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P725_ID_MOTIVO_REPARTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_MOTIVO_REPARTO
+            dataType: number
+        }
+    )
+
+    pageItem P725_ID_PLANILLA_INGRESO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 180
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_PLANILLA_INGRESO
+            dataType: number
+        }
+    )
+
+    pageItem P725_ID_PROVEEDOR (
+        type: selectList
+        label {
+            label: <p>Proveedor</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select distinct pe.nombre||'('||cl.cod_proveedor||')', sc.id_proveedor
+                from rpw_solicitud_reparto_cab sc
+                join rpw_solicitud_reparto_det sd on sd.id_solicitud_rep_cab = sc.id 
+                join cmw_proveedores           cl on cl.id = sc.id_proveedor
+                join bsw_personas              pe on pe.id = cl.id_persona
+                join rpw_reparto_detalle       rd on rd.id_solicitud_det = sd.id     
+                where rd.id_reparto_cabecera = :P725_ID
+                ```
+            nullDisplayValue: -- Sin Seleccionar --
+        }
+        layout {
+            sequence: 250
+            region: @carga-orden-nro-ruteo
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P725_ID_REPARTIDOR (
+        type: popupLov
+        label {
+            label: <p>Repartidor: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 700
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-repartidores
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_REPARTIDOR
+            dataType: number
+        }
+    )
+
+    pageItem P725_ID_REPARTIDOR_AYUDANTE (
+        type: popupLov
+        label {
+            label: <p>Acompañante: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 700
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-repart-ayudante
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIÓN--
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_REPARTIDOR_AYUDANTE
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: NULL
+        }
+    )
+
+    pageItem P725_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    V_ID_SUC NUMBER:= :P725_ID_SUCURSAL;
+                BEGIN
+                    IF V_ID_SUC IS NULL THEN
+                        RETURN :P0_COD_SUCURSAL;
+                    ELSE
+                        RETURN V_ID_SUC;
+                    END IF;
+                END;
+                ```
+        }
+    )
+
+    pageItem P725_ID_SUCURSAL_CENTRAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_SUCURSAL_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P725_ID_USUARIO (
+        type: displayOnly
+        label {
+            label: <p>Usuario: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            basedOn: lov
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-usuarios
+        }
+        layout {
+            sequence: 280
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 9
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+        }
+        advanced {
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_USUARIO
+            dataType: number
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    IF :P725_ID_USUARIO IS NULL THEN
+                        RETURN TRAE_ID_USUARIO(:P0_ID_EMPRESA,:APP_USER);
+                    END IF;
+                END;
+                ```
+        }
+    )
+
+    pageItem P725_ID_VEHICULO (
+        type: popupLov
+        label {
+            label: <p>Unidad: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 700
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vehiculos
+        }
+        layout {
+            sequence: 110
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_VEHICULO
+            dataType: number
+        }
+    )
+
+    pageItem P725_ID_VENDEDOR (
+        type: popupLov
+        label {
+            label: <p>Vendedor: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vendedores-pag
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        cascadingLov {
+            parentItems: P725_ID_ZONA
+            itemsToSubmit: P725_ID_ZONA
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_VENDEDOR
+            dataType: number
+        }
+    )
+
+    pageItem P725_ID_ZONA (
+        type: popupLov
+        label {
+            label: <p>Zona: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-zonas-geo-pg
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: ID_ZONA
+            dataType: number
+        }
+    )
+
+    pageItem P725_KM_FINAL (
+        type: numberField
+        label {
+            label: <p>KM Final: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: KM_FINAL
+            dataType: number
+        }
+    )
+
+    pageItem P725_KM_INICIAL (
+        type: numberField
+        label {
+            label: <p>KM Inicial: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: KM_INICIAL
+            dataType: number
+        }
+    )
+
+    pageItem P725_NRO_PLANILLA (
+        type: numberField
+        label {
+            label: <p>Número: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tabindex="-1"
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: NRO_PLANILLA
+            dataType: number
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    vNroPlanilla  INV.RPW_REPARTO_CABECERA.NRO_PLANILLA%TYPE;
+                
+                BEGIN
+                    BEGIN
+                        SELECT NVL(MAX(TO_NUMBER(P.NRO_PLANILLA)),0) + 1
+                          INTO vNroPlanilla
+                        FROM RPW_REPARTO_CABECERA P
+                        WHERE P.ID_EMPRESA = :P0_ID_EMPRESA;
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            vNroPlanilla := 1;
+                    END;
+                
+                    RETURN vNroPlanilla;
+                
+                END;
+                ```
+        }
+    )
+
+    pageItem P725_NRO_RUTEO (
+        type: textField
+        label {
+            label: <p>Nro Ruteo</p>
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @carga-orden-nro-ruteo
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P725_NRO_SOLICITUD (
+        type: textField
+        label {
+            label: <p>Nro Solicitud</p>
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @carga-orden-nro-ruteo
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P725_OBSERVACION (
+        type: textarea
+        label {
+            label: <p>Observación: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 290
+            region: @carga-de-planilla-de-reparto
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            formRegion: @carga-de-planilla-de-reparto
+            column: OBSERVACION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P725_TOTALES (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL Gs:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+            columnSpan: 10
+            labelColumnSpan: 9
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P725_TOTDOLAR (
+        type: textField
+        label {
+            label: <p class="totales">TOTAL US$:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: totalesp
+            width: 30
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @carga-de-planilla-de-reparto
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 724
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P725_ID
+        }
+    )
+
+    button cargarruteo (
+        buttonName: CargarRuteo
+        label: Cargar Nro Orden Ruteo
+        layout {
+            sequence: 270
+            region: @carga-orden-nro-ruteo
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 20
+            region: @carga-de-planilla-de-reparto
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P725_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Eliminar
+        layout {
+            sequence: 10
+            region: @carga-de-planilla-de-reparto
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--danger
+            ]
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Seguro que desea borrar la planilla?
+            style: danger
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P725_ID is not null
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button guardar (
+        buttonName: GUARDAR
+        label: Guardar Cambios
+        layout {
+            sequence: 30
+            region: @carga-de-planilla-de-reparto
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P725_ID is not null and nvl(:P725_ESTADO,'N') != 'S'
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 40
+            region: @carga-de-planilla-de-reparto
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 720
+                items: {
+                    P720_ID: &P725_ID.
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 20
+            region: @carga-de-planilla-de-reparto
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 724
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P725_ID
+        }
+    )
+
+    dynamicAction abrir-lv (
+        name: Abrir LV
+        execution {
+            sequence: 160
+        }
+        when {
+            event: dblclick
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: NRO_COMPROBANTE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_REM_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: REM
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_FVE_lov_btn').click();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: FVE
+            }
+        )
+
+        action native-javascript-code-3 (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_REC_lov_btn').click();
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: REC
+            }
+        )
+
+        action native-javascript-code-4 (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_FACOMP_lov_btn').click();
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: FAC
+            }
+        )
+
+        action native-javascript-code-5 (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_OCP_lov_btn').click();
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: OCP
+            }
+        )
+
+        action native-javascript-code-6 (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_NEN_lov_btn').click();
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: TIP_COMPROBANTE
+                value: NEN
+            }
+        )
+
+    )
+
+    dynamicAction abrir-pag (
+        name: Abrir_pag726
+        execution {
+            sequence: 260
+        }
+        when {
+            event: custom
+            customEvent: Abrir_pag726
+            selectionType: region
+            region: @detalles
+        }
+
+        action plugin-com-fos-redirect (
+            action: plugin/fosRedirect
+            settings {
+                targetPageUrl: {
+                    page: 726
+                    items: {
+                        P726_ID_SOLICITUD: &P725_ID.
+                    }
+                }
+                options: submitPageItemsBeforeRedirect
+                pageItemsToSubmit: P725_ID
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction agregar-boton (
+        name: Agregar boton
+        execution {
+            sequence: 250
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-com-fos-interactive-grid-add-button (
+            action: plugin/fosInteractiveGridAddButton
+            settings {
+                label: Asignar Cajas
+                actionName: Abrir_pag726
+                onClick: triggerEvent
+                eventName: Abrir_pag726
+                extraOptions: toolbarOnlyHot
+            }
+            affectedElements {
+                selectionType: region
+                region: @detalles
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction init-grid (
+        name: INIT GRID
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                        $grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setea-fech (
+        name: setea fech
+        execution {
+            sequence: 240
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ESTADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select 'S', to_char(sysdate,'dd/MM/yyyy hh24:mi'),:APP_USER from dual
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    IND_ENTREGADO
+                    HORA_ENTREGA
+                    COD_USUARIO_ENTREGA
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-fac (
+        name: Setear datos FAC
+        execution {
+            sequence: 190
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_FACTURA_VT
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    begin
+                    select fac.tip_comprobante||'-'||fac.ser_comprobante||'-'||fac.nro_comprobante, fac.id_cliente, nvl(per.direccion,'No especificada')
+                    into :NRO_COMPROBANTE, :ID_CLIENTE, :DIRECCION_ENVIO
+                    from vtw_comprobantes_cabecera fac
+                    join ccw_clientes              cli on cli.id = fac.id_cliente
+                    join bsw_personas              per on per.id = cli.id_persona
+                    where fac.id = :ID_FACTURA_VT;
+                    end;
+                    ```
+                itemsToSubmit: ID_FACTURA_VT
+                itemsToReturn: [
+                    NRO_COMPROBANTE
+                    ID_CLIENTE
+                    DIRECCION_ENVIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-factura-compra (
+        name: Setear datos factura compra
+        execution {
+            sequence: 210
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_FACTURA_CM
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                    SELECT 'FAC-'||C.SER_COMPROBANTE||'-'||C.NRO_COMPROBANTE,PR.ID, nvl(PE.DIRECCION,'No especificada')
+                    INTO :NRO_COMPROBANTE, :ID_PROVEEDOR, :DIRECCION_ENVIO
+                    FROM CMW_COMPRAS_CABECERA C
+                    JOIN CMW_PROVEEDORES      PR ON PR.ID = C.ID_PROVEEDOR
+                    JOIN BSW_PERSONAS         PE ON PE.ID = PR.ID_PERSONA
+                    WHERE C.ID = :ID_FACTURA_CM;
+                    END;
+                    ```
+                itemsToSubmit: ID_FACTURA_CM
+                itemsToReturn: [
+                    NRO_COMPROBANTE
+                    ID_PROVEEDOR
+                    DIRECCION_ENVIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-nota-envio (
+        name: Setear Datos nota envio
+        execution {
+            sequence: 230
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_NOTA_ENVIO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    begin
+                    SELECT 'ENV-'||NEN.SER_ENVIO||'-'||NEN.NRO_ENVIO, NVL(ENT.DIRECCION,'No especificada')
+                    into :NRO_COMPROBANTE, :DIRECCION_ENVIO
+                    FROM STW_NOTAS_ENVIO_CAB NEN
+                    JOIN BSW_SUCURSALES      SAL ON SAL.ID = NEN.ID_SUCURSAL
+                    JOIN BSW_SUCURSALES      ENT ON ENT.ID = NEN.ID_SUCURSAL_ENT
+                    WHERE NEN.ID = :ID_NOTA_ENVIO;
+                    end;
+                    ```
+                itemsToSubmit: ID_NOTA_ENVIO
+                itemsToReturn: [
+                    NRO_COMPROBANTE
+                    DIRECCION_ENVIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-ocp (
+        name: Setear datos ocp
+        execution {
+            sequence: 220
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_OCP
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                    SELECT 'OCP-'||C.SER_COMPROBANTE||'-'||C.NRO_COMPROBANTE,PR.ID, nvl(PE.DIRECCION,'No especificada')
+                    INTO :NRO_COMPROBANTE, :ID_PROVEEDOR, :DIRECCION_ENVIO
+                    FROM CMW_PEDIDOS_CABECERA C
+                    JOIN CMW_PROVEEDORES      PR ON PR.ID = C.ID_PROVEEDOR
+                    JOIN BSW_PERSONAS         PE ON PE.ID = PR.ID_PERSONA
+                    WHERE C.ID = :ID_OCP;
+                    END;
+                    ```
+                itemsToSubmit: ID_OCP
+                itemsToReturn: [
+                    NRO_COMPROBANTE
+                    ID_PROVEEDOR
+                    DIRECCION_ENVIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-rec (
+        name: Setear datos rec
+        execution {
+            sequence: 180
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_RECIBO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    begin
+                     
+                     select 'REC'||'-'||rec.ser_recibo||'-'||rec.nro_recibo, rec.id_cliente, nvl(per.direccion,'No especificada')
+                     into :NRO_COMPROBANTE, :ID_CLIENTE, :DIRECCION_ENVIO
+                     from ccw_recibos rec
+                     join ccw_clientes              cli on cli.id = rec.id_cliente
+                    join bsw_personas              per on per.id = cli.id_persona
+                     where rec.id = :ID_RECIBO;
+                    
+                    end;
+                    ```
+                itemsToSubmit: ID_RECIBO
+                itemsToReturn: [
+                    NRO_COMPROBANTE
+                    ID_CLIENTE
+                    DIRECCION_ENVIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-rem (
+        name: Setear datos rem
+        execution {
+            sequence: 170
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_REMISION
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    begin
+                     select 'REM-'||rem.ser_ent_sal||'-'||rem.num_ent_sal, rem.id_cliente, nvl(per.direccion,'No especificada')
+                     into :NRO_COMPROBANTE, :ID_CLIENTE, :DIRECCION_ENVIO
+                     from stw_entsal_cab rem
+                     join ccw_clientes              cli on cli.id = rem.id_cliente
+                     join bsw_personas              per on per.id = cli.id_persona
+                     where rem.id = :ID_REMISION;
+                    end;
+                    ```
+                itemsToSubmit: ID_REMISION
+                itemsToReturn: [
+                    NRO_COMPROBANTE
+                    ID_CLIENTE
+                    DIRECCION_ENVIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-fecha (
+        name: Setear fecha
+        execution {
+            sequence: 200
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: IND_ENTREGADO
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: to_char(sysdate,'dd/MM/yyyy HH24:MI')
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: HORA_ENTREGA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_ENTREGADO
+                value: S
+            }
+        )
+
+    )
+
+    computation p725-nro-planilla (
+        itemName: P725_NRO_PLANILLA
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    vNroPlanilla  INV.RPW_REPARTO_CABECERA.NRO_PLANILLA%TYPE;
+                
+                BEGIN
+                    BEGIN
+                        SELECT NVL(MAX(TO_NUMBER(P.NRO_PLANILLA)),0) + 1
+                          INTO vNroPlanilla
+                        FROM RPW_REPARTO_CABECERA P
+                        WHERE P.ID_EMPRESA = :P0_ID_EMPRESA;
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            vNroPlanilla := 1;
+                    END;
+                
+                    RETURN vNroPlanilla;
+                
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P725_ID
+        }
+    )
+
+    process cargar-ruteo (
+        name: Cargar Ruteo
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare vnro number(10); vcli number(10); vpro number(10); vnum number(10);
+                begin
+                   vnro := nvl(:P725_NRO_SOLICITUD,-1);
+                   vcli := nvl(:P725_ID_CLIENTE,-1);
+                   vpro := nvl(:P725_ID_PROVEEDOR,-1);
+                   
+                   select decode(vnro,-1,1,0) + decode(vcli,-1,0,1) + decode(vpro,-1,0,1)
+                     into vnum
+                     from dual;
+                
+                   if vnum != 1 then
+                     raise_application_error(-20000,'Solo debe elegir o nro solicitud o cliente o proveedor');
+                    end if;
+                
+                    begin 
+                      if :P725_ID_CLIENTE is not null then
+                          update rpw_reparto_detalle d
+                             set d.orden_ruteo = :P725_NRO_RUTEO
+                           where d.id_reparto_cabecera = :P725_ID
+                             and :P725_NRO_RUTEO is not null
+                             and exists (
+                                 select 1
+                                 from rpw_solicitud_reparto_det sd 
+                                 join rpw_solicitud_reparto_cab sc on sc.id = sd.id_solicitud_rep_cab   
+                                 where sd.id = d.id_solicitud_det
+                                   and sc.id_cliente = :P725_ID_CLIENTE             );
+                       end if;
+                
+                      if :P725_ID_PROVEEDOR is not null then
+                          update rpw_reparto_detalle d
+                             set d.orden_ruteo = :P725_NRO_RUTEO
+                           where d.id_reparto_cabecera = :P725_ID
+                             and :P725_NRO_RUTEO is not null
+                              and exists (
+                                 select 1
+                                 from rpw_solicitud_reparto_det sd 
+                                 join rpw_solicitud_reparto_cab sc on sc.id = sd.id_solicitud_rep_cab   
+                                 where sd.id = d.id_solicitud_det
+                                   and sc.id_proveedor = :P725_ID_PROVEEDOR
+                             );
+                       end if;
+                
+                      if :P725_NRO_SOLICITUD is not null then
+                          update rpw_reparto_detalle d
+                             set d.orden_ruteo = :P725_NRO_RUTEO
+                           where d.id_reparto_cabecera = :P725_ID
+                             and :P725_NRO_RUTEO is not null
+                             and exists (
+                                 select 1
+                                 from rpw_solicitud_reparto_det sd 
+                                 join rpw_solicitud_reparto_cab sc on sc.id = sd.id_solicitud_rep_cab   
+                                 where sd.id = d.id_solicitud_det
+                                   and sc.id = :P725_NRO_SOLICITUD
+                             );
+                       end if;      
+                    exception 
+                      when others then 
+                       raise_application_error(-20000,'Error al actualizar nro ruteo. '||sqlerrm);
+                    end;
+                end;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 69968438216301729
+        }
+        serverSideCondition {
+            whenButtonPressed: @cargarruteo
+            type: never
+        }
+    )
+
+    process cargar-ruteo-proc (
+        name: Cargar Ruteo PROC
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                  -- Call the procedure
+                  RPW_CARGA_NRO_RUTEO(P_NRO_SOLICITUD => :P725_NRO_SOLICITUD,
+                                      P_ID_CLIENTE => :P725_ID_CLIENTE,
+                                      P_ID_PROVEEDOR => :P725_ID_PROVEEDOR,
+                                      P_NRO_RUTEO => :P725_NRO_RUTEO,
+                                      P_ID_REPARTO => :P725_ID);
+                end;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 69968697474301731
+        }
+        serverSideCondition {
+            whenButtonPressed: @cargarruteo
+        }
+    )
+
+    process detalles-save-interactive-grid-data (
+        name: Detalles - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        target {
+            targetType: tableView
+            tableName: RPW_REPARTO_DETALLE
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 57327062235753515
+        }
+        serverSideCondition {
+            type: never
+        }
+        comments {
+            comments: SE COMENTA YA QUE NO SE TIENE QUE ACTUALIZAR NADAAAAAAAAA DEL DETALLE REPARTO AQUI.
+        }
+    )
+
+    process initialize-form-planilla-de-reparto (
+        name: Initialize form Planilla de Reparto
+        type: formInitialization
+        formRegion: @carga-de-planilla-de-reparto
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 57318766098753503
+        }
+    )
+
+    process new (
+        name: New
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare vtotal number(10);
+                begin
+                
+                 select sum(d.id_empresa)
+                   into vtotal
+                   from rpw_reparto_detalle d 
+                   where d.id_reparto_cabecera = :P725_ID;
+                  
+                  update rpw_reparto_cabecera c    
+                     set c.ID_PLANILLA_INGRESO = vtotal
+                   where c.id = :P725_ID;
+                 
+                 exception 
+                   when others then 
+                    raise_application_error(-20000,sqlerrm);
+                end;
+                ```
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 64915283017069930
+        }
+        serverSideCondition {
+            whenButtonPressed: @guardar
+            type: never
+        }
+    )
+
+    process process-cab (
+        name: PROCESS CAB
+        type: formAutoRowProcessing
+        formRegion: @carga-de-planilla-de-reparto
+        target {
+            targetType: tableView
+            tableName: RPW_REPARTO_CABECERA
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 57319146023753503
+        }
+    )
+
+    process union-det (
+        name: UNION DET
+        type: executeCode
+        editableRegion: @detalles
+        source {
+            plsqlCode:
+                ```plsql
+                :ID_EMPRESA          := :P725_ID_EMPRESA;
+                :ID_SUCURSAL         := :P725_ID_SUCURSAL;
+                :ID_REPARTO_CABECERA := :P725_ID;
+                
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 57327492561753515
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

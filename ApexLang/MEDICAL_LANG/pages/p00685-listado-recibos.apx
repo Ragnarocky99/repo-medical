@@ -1,0 +1,301 @@
+page 685 (
+    name: LISTADO_RECIBOS
+    alias: LISTADO-RECIBOS
+    title: LISTADO RECIBOS
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        width: 800
+        height: 300
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region filtro (
+        name: FILTRO
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region listado-recibos (
+        name: LISTADO_RECIBOS
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.TIP_RECIBO,
+                       C.SER_RECIBO,
+                       C.NRO_RECIBO,
+                       C.FEC_RECIBO,
+                       C.TOT_RECIBO
+                  FROM CCW_DETALLE_RECIBOS D,
+                       CCW_RECIBOS         C
+                 WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND C.ID_EMPRESA = D.ID_EMPRESA
+                   AND C.ID = D.ID_RECIBO
+                   AND NVL(C.ANULADO,'N') <> 'S'   
+                   AND D.NRO_COMPROBANTE = :P685_ID_COMPROBANTE
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        heading {
+            fixedTo: region
+            fixedReportHeight: 300
+        }
+        advanced {
+            savedReportMappingIdentifier: 14252057340281926
+        }
+
+        savedReport 142525 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @TIP_RECIBO
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @SER_RECIBO
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @NRO_RECIBO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @FEC_RECIBO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @TOT_RECIBO
+                layout {
+                    sequence: 5
+                }
+            )
+
+        )
+
+        column FEC_RECIBO (
+            type: datePicker
+            heading {
+                heading: Fec Recibo
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: FEC_RECIBO
+                dataType: date
+            }
+        )
+
+        column NRO_RECIBO (
+            type: numberField
+            heading {
+                heading: Nro Recibo
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_RECIBO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_RECIBO (
+            type: textField
+            heading {
+                heading: Ser Recibo
+            }
+            layout {
+                sequence: 20
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: SER_RECIBO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_RECIBO (
+            type: textField
+            heading {
+                heading: Tip Recibo
+            }
+            layout {
+                sequence: 10
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: TIP_RECIBO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_RECIBO (
+            type: numberField
+            heading {
+                heading: Tot Recibo
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_RECIBO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: LISTADO_RECIBOS
+        }
+    )
+
+    pageItem P685_ID_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @filtro
+            slot: regionBody
+        }
+    )
+
+    dynamicAction refresh (
+        name: REFRESH
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P685_ID
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @listado-recibos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

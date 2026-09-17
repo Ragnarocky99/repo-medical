@@ -1,0 +1,4010 @@
+page 627 (
+    name: Cotizar Pedidos
+    alias: COTIZAR-PEDIDOS
+    title: Cotizar Pedidos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .anulado {
+                color: red;
+            }
+            .presupuestado {
+            color: orangered;
+            }
+            .cotizado{
+                color: green;
+            }
+            .confirmado {
+                color: #3f46bb;
+            }
+            .EnDeposito{
+                color: brown;
+            }
+            .EntregadoCliente{
+                color: aqua;
+            }
+            .OrdenCompra{
+                color: yellowgreen;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noPadding
+                t-ButtonRegion--noUI
+            ]
+        }
+    )
+
+    region detalles-de-pedido (
+        name: Detalles de Pedido
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_PEDIDO_CABECERA,
+                       ID_ARTICULO,
+                       CANTIDAD,
+                       CANTIDAD_FACTURADA,
+                       PRECIO_UNITARIO,
+                       MONTO_TOTAL,
+                       TOTAL_IVA,
+                       PRECIO_LISTA,
+                       DESCUENTO,
+                       IND_FACTURA,
+                       COD_USUARIO_AUD,
+                       CANTIDAD_UB,
+                       ID_UNIDAD_MEDIDA,
+                       PORC_DESCUENTO,
+                       IVA,
+                       PORC_DESC_ESP,
+                       MONTO_DESC_ESPECIAL,
+                       ID_LOTE,
+                       PRECIO_UNITARIO_C_IVA,
+                       PRECIO_LISTA_C_IVA,
+                       MONTO_TOTAL_C_IVA,
+                       DESCUENTO_C_IVA,
+                       CANT_CUOTA,
+                       ENTREGA_INICIAL,
+                       MON_CUOTA,
+                       PLAZOCUOTA,
+                       ID_IVA,
+                       CASE TRAE_ESTADO_PEDIDO(ID_EMPRESA,ID_PEDIDO_CABECERA,ID_ARTICULO) 
+                       --CASE TRAE_ESTADO_PEDIDO_X_DET(ID_EMPRESA,ID_PEDIDO_CABECERA,ID,ID_ARTICULO) 
+                       WHEN 'EN' THEN 'ENVIADO'
+                       WHEN 'CP' THEN 'COMPRAS'
+                       WHEN 'CO' THEN 'COTIZAR'
+                       WHEN 'SF' THEN 'SIN DEFINIR'
+                       END AS ESTADO_PEDIDO,    
+                       PORC_GRAVADA,
+                       IND_PROMO,
+                       --(select A.descripcion from stw_articulos A where A.id=ID_ARTICULO)DESC_ARTICULO,
+                       DESC_ARTICULO,
+                       DESC_ARTICULO_STD,
+                       NUM_ORDEN,
+                       NRO_LOTE,
+                       IND_ANULADO,
+                       STOCK,
+                       OBSERVACION,
+                       ESTADO,
+                       CASE
+                        WHEN cantidad <= stock THEN cantidad
+                        ELSE stock
+                    END AS presupuestado, 
+                       ''vacio,
+                       (SELECT NVL(A.IND_CONTROLADO, 'N') FROM STW_ARTICULOS A WHERE A.ID = ID_ARTICULO) IND_CONTROLADO
+                  from VTW_PEDIDOS_DETALLE
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @lista-de-pedidos
+        }
+        edit {
+            enabled: true
+        }
+        performance {
+            lazyLoading: true
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 35149709080377884
+        }
+
+        savedReport 116181 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @DESC_ARTICULO_STD
+                layout {
+                    width: 104
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @IND_CONTROLADO
+                layout {
+                    show: false
+                    sequence: 44
+                }
+            )
+
+            displayColumn (
+                column: @PRESUPUESTADO
+                layout {
+                    width: 105
+                    sequence: 41
+                }
+            )
+
+            displayColumn (
+                column: @VACIO
+                layout {
+                    width: 40
+                    sequence: 42
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_CABECERA
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    width: 89
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 126
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_FACTURADA
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @TOTAL_IVA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_LISTA
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @IND_FACTURA
+                layout {
+                    sequence: 35
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_UB
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 99
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @PORC_DESCUENTO
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @IVA
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @PORC_DESC_ESP
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_DESC_ESPECIAL
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_LOTE
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_C_IVA
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_LISTA_C_IVA
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_C_IVA
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO_C_IVA
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @CANT_CUOTA
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @ENTREGA_INICIAL
+                layout {
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @MON_CUOTA
+                layout {
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @PLAZOCUOTA
+                layout {
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @ID_IVA
+                layout {
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @PORC_GRAVADA
+                layout {
+                    sequence: 33
+                }
+            )
+
+            displayColumn (
+                column: @IND_PROMO
+                layout {
+                    sequence: 34
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 269
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @NUM_ORDEN
+                layout {
+                    width: 69
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    sequence: 36
+                }
+            )
+
+            displayColumn (
+                column: @IND_ANULADO
+                layout {
+                    sequence: 37
+                }
+            )
+
+            displayColumn (
+                column: @STOCK
+                layout {
+                    width: 53
+                    sequence: 38
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 39
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    show: false
+                    width: 89
+                    sequence: 40
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_PEDIDO
+                layout {
+                    sequence: 43
+                }
+            )
+
+            sort (
+                column: @NUM_ORDEN
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+            highlight controlado (
+                name: Controlado
+                condition {
+                    column: @IND_CONTROLADO
+                    value: S
+                }
+                colors {
+                    background: #ffd6d2
+                }
+                execution {
+                    sequence: 5
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad Solicitado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_FACTURADA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: CANTIDAD_FACTURADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANTIDAD_UB (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: CANTIDAD_UB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANT_CUOTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: CANT_CUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCUENTO_C_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: DESCUENTO_C_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 340
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 400
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DESC_ARTICULO_STD (
+            type: textarea
+            heading {
+                heading: <p>Desc Solicitud</p>
+            }
+            layout {
+                sequence: 350
+            }
+            validation {
+                maxLength: 400
+            }
+            source {
+                databaseColumn: DESC_ARTICULO_STD
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ENTREGA_INICIAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: ENTREGA_INICIAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO (
+            type: selectList
+            heading {
+                heading: <P>Estado</P>
+                alignment: center
+            }
+            lov {
+                type: staticValues
+                staticValues: STATIC:En Proceso;EP,Pendiente;PE,Enviado;EN,No Disponible;ND
+            }
+            layout {
+                sequence: 410
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ESTADO_PEDIDO (
+            type: textarea
+            heading {
+                heading: <p>Estado<p>
+                alignment: center
+                alternativeLabel: Estado
+            }
+            settings {
+                autoHeight: true
+            }
+            layout {
+                sequence: 440
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 11
+            }
+            source {
+                databaseColumn: ESTADO_PEDIDO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: <p>Cod Articulo</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: ID_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LOTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: ID_LOTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_CABECERA (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_PEDIDO_CABECERA
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: popupLov
+            heading {
+                heading: <p>Unidad Medida</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-unidades-medida
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column IND_ANULADO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                databaseColumn: IND_ANULADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_CONTROLADO (
+            type: textField
+            heading {
+                heading: Controlado
+                alignment: center
+            }
+            layout {
+                sequence: 450
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_CONTROLADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_FACTURA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: IND_FACTURA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_PROMO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: IND_PROMO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_DESC_ESPECIAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: MONTO_DESC_ESPECIAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_TOTAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: MONTO_TOTAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_TOTAL_C_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: MONTO_TOTAL_C_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MON_CUOTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: MON_CUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_LOTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 370
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_ORDEN (
+            type: numberField
+            heading {
+                heading: <p>Num Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 360
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NUM_ORDEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 400
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PLAZOCUOTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 300
+            }
+            source {
+                databaseColumn: PLAZOCUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_DESCUENTO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: PORC_DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_DESC_ESP (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: PORC_DESC_ESP
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PORC_GRAVADA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: PORC_GRAVADA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_LISTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: PRECIO_LISTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_LISTA_C_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: PRECIO_LISTA_C_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_UNITARIO_C_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO_C_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRESUPUESTADO (
+            type: numberField
+            heading {
+                heading: <p>Presupuestado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 420
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: PRESUPUESTADO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column STOCK (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 390
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: STOCK
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TOTAL_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: TOTAL_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column VACIO (
+            type: textField
+            layout {
+                sequence: 430
+            }
+            validation {
+                maxLength: 0
+            }
+            source {
+                databaseColumn: VACIO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles de Pedido
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region lista-de-pedidos (
+        name: Lista de Pedidos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       CASE
+                         WHEN C.ID IS NOT NULL THEN
+                          'fa fa-search u-primary-text'
+                       END Cotiza,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       C.ID_SUCURSAL,
+                       C.FEC_COMPROBANTE,
+                       C.ID_CLIENTE,
+                       C.ID_VENDEDOR,
+                       C.ID_CONDICION_VENTA,
+                       C.ID_LISTA_PRECIO,
+                       C.DESCUENTO,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.TOT_COMPROBANTE,
+                       C.TOT_GRAVADAS,
+                       C.TOT_EXENTAS,
+                       C.TOT_IVA,
+                       C.ESTADO,
+                       C.FEC_ESTADO,
+                       C.ID_USUARIO,
+                       C.FEC_ALTA,
+                       C.NRO_AUTORIZACION,
+                       C.CAMBIO_MONEDA_PRECIO,
+                       C.TIP_CAMBIO_COMPRA,
+                       C.FEC_VENCIMIENTO,
+                       C.NOM_CLIENTE,
+                       C.RUC_CLIENTE,
+                       C.COMENTARIO,
+                       C.COD_USUARIO_AUD,
+                       C.ESTADO_FAC,
+                       C.IND_CAMBIO_PRECIO,
+                       C.IND_LIMITE_CREDITO,
+                       C.ENTREGA_INICIAL,
+                       C.ID_MEDIO_PAGO,
+                       C.ESTADO_CREDITO,
+                       C.ID_CANAL_VENTA,
+                       C.ID_TIPO_ENTREGA,
+                       C.ID_SUCURSAL_CENTRAL,
+                       C.IND_ENTREGA_INICIAL,
+                       C.ID_CONCEPTO_COMP,
+                       C.ID_CORPORACION,
+                       C.NRO_OC,
+                       C.ESTADO_OC,
+                       C.FEC_ESTADO_OC,
+                       C.ID_LISTA_BODA_CAB,
+                       C.ID_SOLICITUD_CREDITO,
+                       C.ID_DEPOSITO_RESGUARDO,
+                       C.CONTACTO_NOMBRE,
+                       C.CONTACTO_TELEFONO,
+                       C.DIRECCION,
+                       C.TELEFONO,
+                       C.DIREC_ENTREGA,
+                       C.LATITUD,
+                       C.LONGITUD,
+                       C.ID_ZONA,
+                       C.AUTORIZA_STOCK,
+                       C.AUTORIZA_STOCK_USU,
+                       C.AUTORIZA_STOCK_FEC,
+                       C.AUTORIZA_CTACTE,
+                       C.AUTORIZA_CTACTE_USU,
+                       C.AUTORIZA_CTACTE_FEC,
+                       C.ID_FACTURA,
+                       C.ID_SECTOR_VEN,
+                       C.COD_USUARIO_DESPACHANDO,
+                       CASE /*TRAE_ESTADO_PEDIDO_CABECERA2_COT(ID)---*/
+                        trae_estado_pedido_cabecera3(C.ID)
+                         WHEN 'PE' THEN
+                          'Pendiente'
+                         WHEN 'PA' THEN
+                          'Parcial'
+                         WHEN 'CO' THEN
+                          'Cotizar'
+                         WHEN 'EN' THEN
+                          'Enviado'
+                         WHEN 'AN' THEN
+                          'Anulado'
+                       END AS ESTADO_PEDIDO,
+                       (SELECT MAX(COT.FEC_ENVIO)
+                          FROM CMW_COTIZA_ARTICULOS COT
+                         WHERE COT.ID_PEDIDO = C.ID) FECHA_COTIZACION,
+                     
+                          CASE
+                          WHEN ROUND((SELECT MAX(COT.FEC_ENVIO)
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID))IS NULL OR NVL((SELECT MAX(COT.FEC_ENVIO)
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID),SYSDATE) - C.FEC_COMPROBANTE - 1 < 0 THEN
+                             0
+                          ELSE
+                            ROUND( NVL((SELECT MAX(COT.FEC_ENVIO)
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID),SYSDATE) - C.FEC_COMPROBANTE - 1)
+                          END ||'Dias  '||
+                          
+                          CASE
+                          WHEN (SELECT MAX(TO_DATE(COT.FEC_ENVIO,'DD/MM/YYYY'))
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID)IS NULL THEN
+                             0
+                          ELSE
+                          (SELECT MOD(  
+                             floor((NVL((SELECT MAX(TO_DATE(COT.FEC_ENVIO,'DD/MM/YYYY'))
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID),SYSDATE) - TO_DATE(C.FEC_COMPROBANTE,'DD/MM/YYYY'))),24)     
+                                FROM DUAL
+                               GROUP BY C.ID) 
+                           END ||':'||
+                           
+                          CASE
+                          WHEN (SELECT MAX(COT.FEC_ENVIO)
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID)IS NULL THEN
+                             0
+                          ELSE
+                             (SELECT 
+                             round((((MIN(NVL((SELECT MAX(COT.FEC_ENVIO)
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID),SYSDATE)) - C.FEC_COMPROBANTE)*24)-(floor((NVL((SELECT MAX(COT.FEC_ENVIO)
+                                          FROM CMW_COTIZA_ARTICULOS COT
+                                         WHERE COT.ID_PEDIDO = C.ID),SYSDATE) - C.FEC_COMPROBANTE)*24)))*60,0)     
+                                FROM DUAL
+                               GROUP BY C.ID) END DIAS_PASADOS,
+                          CL.NIVEL
+                
+                  from VTW_PEDIDOS_CABECERA C
+                  join CCW_CLIENTES CL ON CL.ID = C.ID_CLIENTE
+                 WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND (C.NRO_COMPROBANTE = :P627_NRO_PEDIDO OR :P627_NRO_PEDIDO IS NULL)
+                   AND (C.ID_CLIENTE = :P627_CLIENTE OR :P627_CLIENTE IS NULL)
+                   AND (C.ID_SUCURSAL = :P627_SUCURSAL OR :P627_SUCURSAL IS NULL)
+                   AND ((:P627_ESTADO = /*'SS'*/
+                       'PC' AND TRAE_ESTADO_PEDIDO_CABECERA3(C.id) IN ('CO', 'PA')) OR
+                       (TRAE_ESTADO_PEDIDO_CABECERA3(C.id) = :P627_ESTADO /*AND*/
+                       OR :P627_ESTADO IS /*NOT*/
+                       NULL))
+                      ---AND (TRAE_ESTADO_PEDIDO_CABECERA2(id)  = :P627_ESTADO OR TRAE_ESTADO_PEDIDO_CABECERA2(id) IN ('CO', 'PA') OR:P627_ESTADO IS NULL)
+                   AND (C.FEC_COMPROBANTE BETWEEN :P627_FECHA_DESDE AND :P627_FECHA_HASTA)
+                   AND (C.ID_USUARIO =
+                       (select id from bsw_usuarios U where u.cod_usuario = :APP_USER) or
+                       C.ID_USUARIO = :P627_USUARIO or :p627_usuario is null)
+                       --fetch first 30 rows only
+                --AND ESTADO NOT IN ('EP');
+                
+                ```
+            pageItemsToSubmit: [
+                P627_CLIENTE
+                P627_ESTADO
+                P627_USUARIO
+                P627_SUCURSAL
+                P627_FECHA_DESDE
+                P627_FECHA_HASTA
+                P627_NRO_PEDIDO
+                " APP_USER"
+            ]
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        performance {
+            lazyLoading: true
+        }
+        pagination {
+            type: page
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                saveButton
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 35082680705377624
+        }
+
+        savedReport 115511 (
+            visibility: primary
+            view {
+                default: grid
+                rowsPerPage: 10
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COD_USUARIO_DESPACHANDO
+                layout {
+                    width: 159
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_COTIZACION
+                layout {
+                    width: 150
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    width: 40
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    show: false
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 60
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 146
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    width: 295
+                    sequence: 68
+                }
+            )
+
+            displayColumn (
+                column: @ID_VENDEDOR
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONDICION_VENTA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_LISTA_PRECIO
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @TOT_GRAVADAS
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @TOT_EXENTAS
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @TOT_IVA
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ESTADO
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_USUARIO
+                layout {
+                    sequence: 66
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ALTA
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @NRO_AUTORIZACION
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @CAMBIO_MONEDA_PRECIO
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO_COMPRA
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @NOM_CLIENTE
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @RUC_CLIENTE
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_FAC
+                layout {
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @IND_CAMBIO_PRECIO
+                layout {
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @IND_LIMITE_CREDITO
+                layout {
+                    sequence: 33
+                }
+            )
+
+            displayColumn (
+                column: @ENTREGA_INICIAL
+                layout {
+                    sequence: 34
+                }
+            )
+
+            displayColumn (
+                column: @ID_MEDIO_PAGO
+                layout {
+                    sequence: 35
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_CREDITO
+                layout {
+                    sequence: 36
+                }
+            )
+
+            displayColumn (
+                column: @ID_CANAL_VENTA
+                layout {
+                    sequence: 37
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    sequence: 38
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL_CENTRAL
+                layout {
+                    sequence: 39
+                }
+            )
+
+            displayColumn (
+                column: @IND_ENTREGA_INICIAL
+                layout {
+                    sequence: 40
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO_COMP
+                layout {
+                    sequence: 41
+                }
+            )
+
+            displayColumn (
+                column: @ID_CORPORACION
+                layout {
+                    sequence: 42
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OC
+                layout {
+                    sequence: 43
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_OC
+                layout {
+                    sequence: 45
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ESTADO_OC
+                layout {
+                    sequence: 46
+                }
+            )
+
+            displayColumn (
+                column: @ID_LISTA_BODA_CAB
+                layout {
+                    sequence: 47
+                }
+            )
+
+            displayColumn (
+                column: @ID_SOLICITUD_CREDITO
+                layout {
+                    sequence: 48
+                }
+            )
+
+            displayColumn (
+                column: @ID_DEPOSITO_RESGUARDO
+                layout {
+                    sequence: 49
+                }
+            )
+
+            displayColumn (
+                column: @CONTACTO_NOMBRE
+                layout {
+                    sequence: 50
+                }
+            )
+
+            displayColumn (
+                column: @CONTACTO_TELEFONO
+                layout {
+                    sequence: 51
+                }
+            )
+
+            displayColumn (
+                column: @DIRECCION
+                layout {
+                    sequence: 52
+                }
+            )
+
+            displayColumn (
+                column: @TELEFONO
+                layout {
+                    sequence: 53
+                }
+            )
+
+            displayColumn (
+                column: @DIREC_ENTREGA
+                layout {
+                    sequence: 54
+                }
+            )
+
+            displayColumn (
+                column: @LATITUD
+                layout {
+                    sequence: 55
+                }
+            )
+
+            displayColumn (
+                column: @LONGITUD
+                layout {
+                    sequence: 56
+                }
+            )
+
+            displayColumn (
+                column: @ID_ZONA
+                layout {
+                    sequence: 57
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK
+                layout {
+                    sequence: 58
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK_USU
+                layout {
+                    sequence: 59
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK_FEC
+                layout {
+                    sequence: 60
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE
+                layout {
+                    sequence: 61
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE_USU
+                layout {
+                    sequence: 62
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE_FEC
+                layout {
+                    sequence: 63
+                }
+            )
+
+            displayColumn (
+                column: @ID_FACTURA
+                layout {
+                    sequence: 64
+                }
+            )
+
+            displayColumn (
+                column: @ID_SECTOR_VEN
+                layout {
+                    show: false
+                    width: 138
+                    sequence: 70
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA
+                layout {
+                    width: 41
+                    sequence: 71
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    show: false
+                    sequence: 65
+                }
+            )
+
+            displayColumn (
+                column: @DIAS_PASADOS
+                layout {
+                    sequence: 44
+                }
+            )
+
+            displayColumn (
+                column: @NIVEL
+                layout {
+                    width: 40.95
+                    sequence: 69
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_PEDIDO
+                layout {
+                    width: 99
+                    sequence: 67
+                }
+            )
+
+            sort (
+                column: @NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column AUTORIZA_CTACTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 620
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column AUTORIZA_CTACTE_FEC (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 640
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE_FEC
+                dataType: timestamp
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column AUTORIZA_CTACTE_USU (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 630
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE_USU
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column AUTORIZA_STOCK (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 590
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column AUTORIZA_STOCK_FEC (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 610
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK_FEC
+                dataType: timestamp
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column AUTORIZA_STOCK_USU (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 600
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK_USU
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CAMBIO_MONEDA_PRECIO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: CAMBIO_MONEDA_PRECIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_DESPACHANDO (
+            type: selectList
+            heading {
+                heading: <p>Despachado por</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-usuarios
+            }
+            layout {
+                sequence: 700
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: COD_USUARIO_DESPACHANDO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column COMENTARIO (
+            type: hidden
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CONTACTO_NOMBRE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 510
+            }
+            source {
+                databaseColumn: CONTACTO_NOMBRE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CONTACTO_TELEFONO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 520
+            }
+            source {
+                databaseColumn: CONTACTO_TELEFONO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COTIZA (
+            type: link
+            heading {
+                heading: <p>Cotiza</p>
+                alignment: center
+            }
+            layout {
+                sequence: 670
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 628
+                    items: {
+                        P628_ID_PEDIDO: &ID.
+                        P628_ID_CLIENTE: &ID_CLIENTE.
+                        P628_ID_PEDIDO_2: &ID.
+                    }
+                }
+                linkText: <img src="#IMAGE_PREFIX#app_ui/img/icons/apex-edit-view.png" class="apex-edit-view" alt="">
+            }
+            source {
+                databaseColumn: COTIZA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DIAS_PASADOS (
+            type: textField
+            heading {
+                heading: <P>Dias Pasados</p>
+                alignment: center
+            }
+            layout {
+                sequence: 720
+            }
+            validation {
+                maxLength: 81
+            }
+            source {
+                databaseColumn: DIAS_PASADOS
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DIRECCION (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 530
+            }
+            source {
+                databaseColumn: DIRECCION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DIREC_ENTREGA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 550
+            }
+            source {
+                databaseColumn: DIREC_ENTREGA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ENTREGA_INICIAL (
+            type: hidden
+            layout {
+                sequence: 360
+            }
+            source {
+                databaseColumn: ENTREGA_INICIAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            layout {
+                sequence: 680
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            advanced {
+                htmlDomId: OPERACION
+            }
+        )
+
+        column ESTADO_CREDITO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                databaseColumn: ESTADO_CREDITO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO_FAC (
+            type: hidden
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: ESTADO_FAC
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO_OC (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 460
+            }
+            source {
+                databaseColumn: ESTADO_OC
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO_PEDIDO (
+            type: selectList
+            heading {
+                heading: <p>Estado Pedido</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-estados-pedido
+            }
+            layout {
+                sequence: 690
+            }
+            source {
+                databaseColumn: ESTADO_PEDIDO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FECHA_COTIZACION (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Cotizacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 710
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI:SS
+            }
+            source {
+                databaseColumn: FECHA_COTIZACION
+                dataType: date
+            }
+        )
+
+        column FEC_ALTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: FEC_ALTA
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: DD-MON-YYYY HH24:MI:SS
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+        )
+
+        column FEC_ESTADO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: FEC_ESTADO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ESTADO_OC (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 470
+            }
+            source {
+                databaseColumn: FEC_ESTADO_OC
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CANAL_VENTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 390
+            }
+            source {
+                databaseColumn: ID_CANAL_VENTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: selectList
+            heading {
+                heading: <P>Cliente</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_CONCEPTO_COMP (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 430
+            }
+            source {
+                databaseColumn: ID_CONCEPTO_COMP
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CONDICION_VENTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_CONDICION_VENTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CORPORACION (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 440
+            }
+            source {
+                databaseColumn: ID_CORPORACION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_DEPOSITO_RESGUARDO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 500
+            }
+            source {
+                databaseColumn: ID_DEPOSITO_RESGUARDO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_FACTURA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 650
+            }
+            source {
+                databaseColumn: ID_FACTURA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LISTA_BODA_CAB (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 480
+            }
+            source {
+                databaseColumn: ID_LISTA_BODA_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LISTA_PRECIO (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: ID_LISTA_PRECIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MEDIO_PAGO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 370
+            }
+            source {
+                databaseColumn: ID_MEDIO_PAGO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SECTOR_VEN (
+            type: popupLov
+            heading {
+                heading: <p>Sector</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sector-ventas
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 660
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_SECTOR_VEN
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_SOLICITUD_CREDITO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 490
+            }
+            source {
+                databaseColumn: ID_SOLICITUD_CREDITO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL_CENTRAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 410
+            }
+            source {
+                databaseColumn: ID_SUCURSAL_CENTRAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_TIPO_ENTREGA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 400
+            }
+            source {
+                databaseColumn: ID_TIPO_ENTREGA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_USUARIO (
+            type: selectList
+            heading {
+                heading: <p>Usuario</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-usuarios
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_USUARIO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_VENDEDOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ZONA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 580
+            }
+            source {
+                databaseColumn: ID_ZONA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_CAMBIO_PRECIO (
+            type: hidden
+            layout {
+                sequence: 340
+            }
+            source {
+                databaseColumn: IND_CAMBIO_PRECIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_ENTREGA_INICIAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 420
+            }
+            source {
+                databaseColumn: IND_ENTREGA_INICIAL
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_LIMITE_CREDITO (
+            type: hidden
+            layout {
+                sequence: 350
+            }
+            source {
+                databaseColumn: IND_LIMITE_CREDITO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column LATITUD (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 560
+            }
+            source {
+                databaseColumn: LATITUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column LONGITUD (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 570
+            }
+            source {
+                databaseColumn: LONGITUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NIVEL (
+            type: textField
+            heading {
+                heading: <p>Nivel</p>
+                alignment: center
+            }
+            layout {
+                sequence: 730
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: NIVEL
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NOM_CLIENTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: NOM_CLIENTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_AUTORIZACION (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: NRO_AUTORIZACION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Numero</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_OC (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 450
+            }
+            source {
+                databaseColumn: NRO_OC
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column RUC_CLIENTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 300
+            }
+            source {
+                databaseColumn: RUC_CLIENTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TELEFONO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 540
+            }
+            source {
+                databaseColumn: TELEFONO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_CAMBIO_COMPRA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: TIP_CAMBIO_COMPRA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tip Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 3
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_EXENTAS (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: TOT_EXENTAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_GRAVADAS (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: TOT_GRAVADAS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_IVA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: TOT_IVA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lista de Pedidos
+        }
+    )
+
+    pageItem P627_CLIENTE (
+        type: popupLov
+        label {
+            label: <P>Cliente: </P>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            displayExtraValues: false
+            nullDisplayValue: ---Sin Seleccionar---
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P627_ESTADO (
+        type: selectList
+        label {
+            label: <P>Estado: </P>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-estados-pedido
+            displayExtraValues: false
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: PC
+        }
+    )
+
+    pageItem P627_FECHA_DESDE (
+        type: datePicker
+        label {
+            label: <P>Fecha Desde: </P>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 5
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem P627_FECHA_HASTA (
+        type: datePicker
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+    )
+
+    pageItem P627_NRO_PEDIDO (
+        type: textField
+        label {
+            label: <P>Nro Pedido: </P>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 7
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P627_SUCURSAL (
+        type: selectList
+        label {
+            label: <P>Sucursal: </P>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            displayExtraValues: false
+            nullDisplayValue: ---Sin Seleccionar---
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+    )
+
+    pageItem P627_USUARIO (
+        type: selectList
+        label {
+            label: <p>Usuario</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-usuarios
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 5
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Save
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P627_FECHA_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P627_FECHA_DESDE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P627_FECHA_DESDE,'/','');
+                            conv_fecha := substr(:P627_FECHA_DESDE,1,2)||'/'||
+                                                      substr(:P627_FECHA_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P627_FECHA_DESDE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P627_FECHA_DESDE := conv_fecha;
+                            ELSIF (length(:P627_FECHA_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P627_FECHA_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P627_FECHA_DESDE
+                itemsToReturn: P627_FECHA_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P627_FECHA_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P627_FECHA_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P627_FECHA_HASTA,'/','');
+                            conv_fecha := substr(:P627_FECHA_HASTA,1,2)||'/'||
+                                                      substr(:P627_FECHA_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P627_FECHA_HASTA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P627_FECHA_HASTA := conv_fecha;
+                            ELSIF (length(:P627_FECHA_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P627_FECHA_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P627_FECHA_HASTA
+                itemsToReturn: P627_FECHA_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction estado (
+        name: Estado
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    $('td[headers="OPERACION"]').each(function() {
+                      var texto = $(this).text();
+                      if (texto === 'Confirmado') {
+                        $(this).css("color", "green");
+                      } else if (texto === 'En Proceso') {
+                        $(this).css("color", '#e1ad01');
+                      } else if (texto === 'Anulado') {
+                        $(this).css("color", "red"); 
+                      }
+                      else if (texto === 'Cotizado') {
+                        $(this).css("color", "green"); 
+                      } 
+                      else if (texto === 'En Deposito') {
+                        $(this).css("color", "blue"); 
+                      } 
+                      else if (texto === 'Presupuestado') {
+                        $(this).css("color", "orange"); 
+                      }
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P627_NRO_PEDIDO
+                P627_ESTADO
+                P627_USUARIO
+                P627_SUCURSAL
+                P627_FECHA_DESDE
+                P627_FECHA_HASTA
+                P627_CLIENTE
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @lista-de-pedidos
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process detalles-de-pedido-save-interactive-grid-data (
+        name: Detalles de Pedido - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles-de-pedido
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 23578883627818873
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    process lista-de-pedidos-save-interactive-grid-data (
+        name: Lista de Pedidos - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @lista-de-pedidos
+        target {
+            targetType: tableView
+            tableName: VTW_PEDIDOS_CABECERA
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 23560996686818864
+        }
+    )
+
+)
+

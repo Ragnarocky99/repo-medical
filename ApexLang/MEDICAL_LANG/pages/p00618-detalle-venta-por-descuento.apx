@@ -1,0 +1,625 @@
+page 618 (
+    name: Detalle Venta por Descuento
+    alias: DETALLE-VENTA-POR-DESCUENTO
+    title: Detalle Venta por Descuento
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region reporte-detalle-venta (
+        name: Reporte Detalle Venta
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT 
+                       A.COD_ARTICULO,
+                       A.DESCRIPCION DESC_ARTICULO,
+                       D.MONTO_TOTAL_C_IVA,
+                       D.PORC_DESCUENTO,
+                       D.PRECIO_UNITARIO_C_IVA,
+                       C.FEC_COMPROBANTE,
+                       E.DESCRIPCION
+                FROM VTW_COMPROBANTES_CABECERA C,
+                     VTW_COMPROBANTES_DETALLE D,
+                     BSW_TIPOS_COMPROBANTES TC,
+                     BSW_EMPRESAS E,
+                     BSW_SERIES_COMPROB SC,
+                     STW_ARTICULOS A,
+                     FVW_VENDEDORES V,
+                     BSW_PERSONAS PV,
+                     CCW_CLIENTES CL,
+                     BSW_PERSONAS PC
+                WHERE C.ID = D.ID_COMPROBANTE_CABECERA
+                  AND C.FEC_COMPROBANTE BETWEEN :P618_FECHA_INI AND :P618_FECHA_FIN
+                  AND (A.ID= :P618_ARTICULO OR :P618_ARTICULO IS NULL) 
+                  AND D.PORC_DESCUENTO > 0
+                  AND C.ID_EMPRESA = E.ID
+                  AND C.ID_EMPRESA = TC.ID_EMPRESA
+                  AND C.TIP_COMPROBANTE = TC.TIP_COMPROBANTE
+                  AND C.TIP_COMPROBANTE = SC.TIP_COMPROBANTE
+                  AND C.ID_EMPRESA      = SC.ID_EMPRESA
+                  AND C.TIP_COMPROBANTE = SC.TIP_COMPROBANTE
+                  AND C.SER_COMPROBANTE = SC.SER_COMPROBANTE 
+                  AND D.ID_ARTICULO = A.ID
+                  AND C.ID_VENDEDOR = V.ID
+                  AND PV.ID = V.ID_PERSONA
+                  AND C.ID_CLIENTE = CL.ID
+                  AND PC.ID = CL.ID_PERSONA
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 90542056984113833
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Código
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+            }
+            layout {
+                sequence: 111
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Artículo
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 9
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column MONTO_TOTAL_C_IVA (
+            type: plainText
+            heading {
+                heading: Monto con Descuento
+                alignment: end
+            }
+            layout {
+                sequence: 41
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column PORC_DESCUENTO (
+            type: plainText
+            heading {
+                heading: % Descuento
+                alignment: center
+            }
+            layout {
+                sequence: 91
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column PRECIO_UNITARIO_C_IVA (
+            type: plainText
+            heading {
+                heading: Monto sin Descuento
+                alignment: end
+            }
+            layout {
+                sequence: 101
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            fontWeight: bold
+            fontSize: 18
+            pageHeaderText:
+                ```
+                &P0_DESC_EMPRESA. 
+                &PO_LOGIN_TIMESTAMP.
+                Reporte Detalle Venta
+                ```
+        }
+        pageFooter {
+            fontSize: 8
+            alignment: start
+            pageFooterText: USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+        }
+
+        savedReport 585992 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn MONTO_TOTAL_C_IVA (
+                sequence: 6
+            )
+
+            displayColumn PORC_DESCUENTO (
+                sequence: 4
+            )
+
+            displayColumn PRECIO_UNITARIO_C_IVA (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    pageItem P618_ARTICULO (
+        type: popupLov
+        label {
+            label: <p>Articulo:  &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P618_FECHA_FIN (
+        type: datePicker
+        label {
+            label: <p>Hasta la fecha:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+    )
+
+    pageItem P618_FECHA_INI (
+        type: datePicker
+        label {
+            label: <p>Desde la fecha:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+                
+                ```
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button limpiar (
+        buttonName: LIMPIAR
+        label: Limpiar
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P618_FECHA_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P618_FECHA_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P618_FECHA_FIN,'/','');
+                            conv_fecha := substr(:P618_FECHA_FIN,1,2)||'/'||
+                                                      substr(:P618_FECHA_FIN,3,2)||'/'||
+                                                      lpad(substr(:P618_FECHA_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P618_FECHA_FIN := conv_fecha;
+                            ELSIF (length(:P618_FECHA_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P618_FECHA_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P618_FECHA_FIN
+                itemsToReturn: P618_FECHA_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P618_FECHA_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P618_FECHA_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P618_FECHA_INI,'/','');
+                            conv_fecha := substr(:P618_FECHA_INI,1,2)||'/'||
+                                                      substr(:P618_FECHA_INI,3,2)||'/'||
+                                                      lpad(substr(:P618_FECHA_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P618_FECHA_INI := conv_fecha;
+                            ELSIF (length(:P618_FECHA_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P618_FECHA_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P618_FECHA_INI
+                itemsToReturn: P618_FECHA_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process limpiar (
+        name: LIMPIAR
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 12580648751118310
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+    branch (
+        name: Go To Page 619
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 619
+                items: {
+                    P618_FECHA_INI: &P618_FECHA_INI.
+                    P618_FECHA_FIN: &P618_FECHA_FIN.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

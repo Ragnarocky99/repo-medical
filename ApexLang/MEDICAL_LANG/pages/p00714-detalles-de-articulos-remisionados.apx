@@ -1,0 +1,816 @@
+page 714 (
+    name: Detalles de Articulos Remisionados
+    alias: DETALLES-DE-ARTICULOS-REMISIONADOS
+    title: Detalles de Articulos Remisionados
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalles-de-articulos-remisionados (
+        name: Detalles de Articulos Remisionados
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select rc.fec_ent_sal,
+                       rc.ser_ent_sal,
+                       rc.num_ent_sal,
+                       pe.nombre         as nombre_cliente,
+                       nvl(ld.cod_articulo_catalogo, ar.cod_articulo) cod_articulo,
+                       ar.cod_origen_art as cod_fabricante,
+                       nvl(ld.desc_articulo_catalogo, ar.descripcion)    as desc_articulo,
+                       en.descripcion    as presentacion,
+                       um.descripcion    as unidad_medida,
+                       ru.descripcion    as rubro,
+                       ma.descripcion    as marca,
+                       rd.cantidad       as cantidad_remisionada,
+                       rd.costo_c_iva    as costo_con_iva,
+                       rd.total_costo,
+                       estado_remision(rc.id) as estado_remision,
+                       fc.ser_comprobante as ser_comprobante_ref,
+                       fc.nro_comprobante as nro_factura_ref,
+                       case nvl(fc.estado,'X') 
+                        when 'A' then 'Anulado'
+                        else 'Vigente'
+                       end as Estado_Factura,
+                       rc.nro_occ,
+                       nvl(ca.nro_item, ld.nro_item) nro_item
+                
+                from stw_entsal_det      rd
+                join stw_entsal_cab      rc on rc.id = rd.id_entsal_cab
+                left join lcw_licitaciones_det ld on ld.id = rd.id_licitacion_det
+                join stw_articulos       ar on ar.id = rd.id_articulo
+                join stw_envases         en on en.id = nvl(ld.id_presentacion_catalogo, ar.id_envase)
+                join stw_unidades_medida um on um.id = nvl(ld.id_unidad_medida_catalogo, ar.id_unidad_medida)
+                join stw_rubro           ru on ru.id = ar.id_rubro
+                join stw_marcas          ma on ma.id = ar.id_marca
+                join ccw_clientes        cl on cl.id = rc.id_cliente
+                join bsw_personas        pe on pe.id = cl.id_persona
+                left join vtw_comprobantes_detalle fd on fd.id_remision_det = rd.id
+                left join vtw_comprobantes_cabecera fc on fc.id = fd.id_comprobante_cabecera
+                left join cmw_cotiza_articulos ca on ca.id = rd.id_cotiza_art
+                where rc.tip_referencia IN ('PED', 'LIC')--solo remisiones, no entradas/salidas
+                  and (cl.id = :P714_ID_CLIENTE or :P714_ID_CLIENTE is null)
+                  and (ar.id = :P714_ID_ARTICULO or :P714_ID_ARTICULO is null)
+                  and (estado_remision(rc.id) = :P714_ESTADO or :P714_ESTADO is null)
+                  and rc.fec_ent_sal between :P714_FEC_INICIO and :P714_FEC_FIN
+                
+                order by rc.fec_ent_sal desc;
+                ```
+            pageItemsToSubmit: [
+                P714_ID_CLIENTE
+                P714_ID_ARTICULO
+                P714_ESTADO
+                P714_FEC_INICIO
+                P714_FEC_FIN
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            lazyLoading: true
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        searchBar {
+            finderDropDown: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 40055452944590620
+        }
+
+        column CANTIDAD_REMISIONADA (
+            type: plainText
+            heading {
+                heading: Cantidad Remisionada
+                alignment: center
+            }
+            layout {
+                sequence: 12
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: plainText
+            heading {
+                heading: Cod. Fabricante
+                alignment: center
+            }
+            layout {
+                sequence: 6
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column COSTO_CON_IVA (
+            type: plainText
+            heading {
+                heading: Costo C/IVA
+                alignment: center
+            }
+            layout {
+                sequence: 13
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 7
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ESTADO_FACTURA (
+            type: plainText
+            heading {
+                heading: Estado Factura
+                alignment: center
+            }
+            layout {
+                sequence: 45
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column ESTADO_REMISION (
+            type: plainText
+            heading {
+                heading: Estado Remision
+                alignment: center
+            }
+            layout {
+                sequence: 15
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column FEC_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Fec. Remision
+                alignment: center
+            }
+            layout {
+                sequence: 1
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column MARCA (
+            type: plainText
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            layout {
+                sequence: 11
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column NOMBRE_CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NRO_FACTURA_REF (
+            type: plainText
+            heading {
+                heading: Nro. Factura Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 35
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column NRO_ITEM (
+            type: plainText
+            heading {
+                heading: Nro. Item
+                alignment: center
+            }
+            layout {
+                sequence: 65
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column NRO_OCC (
+            type: plainText
+            heading {
+                heading: Nro. OCC
+                alignment: center
+            }
+            layout {
+                sequence: 55
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column NUM_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Numero
+                alignment: center
+            }
+            layout {
+                sequence: 3
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column PRESENTACION (
+            type: plainText
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            layout {
+                sequence: 8
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column RUBRO (
+            type: plainText
+            heading {
+                heading: Rubro
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column SER_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Serie Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 25
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column SER_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 2
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TOTAL_COSTO (
+            type: plainText
+            heading {
+                heading: Total Costo
+                alignment: center
+            }
+            layout {
+                sequence: 14
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column UNIDAD_MEDIDA (
+            type: plainText
+            heading {
+                heading: U.M
+                alignment: center
+            }
+            layout {
+                sequence: 9
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles de Articulos Remisionados
+        }
+
+        savedReport 400619 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD_REMISIONADA (
+                sequence: 13
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 6
+            )
+
+            displayColumn COD_FABRICANTE (
+                sequence: 7
+            )
+
+            displayColumn COSTO_CON_IVA (
+                sequence: 14
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 8
+            )
+
+            displayColumn ESTADO_FACTURA (
+                sequence: 20
+            )
+
+            displayColumn ESTADO_REMISION (
+                sequence: 16
+            )
+
+            displayColumn FEC_ENT_SAL (
+                sequence: 1
+            )
+
+            displayColumn MARCA (
+                sequence: 12
+            )
+
+            displayColumn NOMBRE_CLIENTE (
+                sequence: 4
+            )
+
+            displayColumn NRO_FACTURA_REF (
+                sequence: 19
+            )
+
+            displayColumn NRO_ITEM (
+                sequence: 5
+            )
+
+            displayColumn NRO_OCC (
+                sequence: 17
+            )
+
+            displayColumn NUM_ENT_SAL (
+                sequence: 3
+            )
+
+            displayColumn PRESENTACION (
+                sequence: 9
+            )
+
+            displayColumn RUBRO (
+                sequence: 11
+            )
+
+            displayColumn SER_COMPROBANTE_REF (
+                sequence: 18
+            )
+
+            displayColumn SER_ENT_SAL (
+                sequence: 2
+            )
+
+            displayColumn TOTAL_COSTO (
+                sequence: 15
+            )
+
+            displayColumn UNIDAD_MEDIDA (
+                sequence: 10
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                
+                
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P714_ESTADO (
+        type: selectList
+        label {
+            label: <p>Estado:&ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Facturado;Facturado,Pendiente;Pendiente,Parcial;Parcial
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P714_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P714_FEC_INICIO (
+        type: datePicker
+        label {
+            label: <p>Periodo Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P714_ID_ARTICULO (
+        type: popupLov
+        label {
+            label: <p>Articulo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: -- Todos --
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P714_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 800
+            popupHeight: 400
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: -- Todos --
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button filtrar (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: triggerAction
+        }
+
+        triggerAction refrescar-reporte (
+            name: Refrescar Reporte
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalles-de-articulos-remisionados
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar Paginacion
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @detalles-de-articulos-remisionados
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

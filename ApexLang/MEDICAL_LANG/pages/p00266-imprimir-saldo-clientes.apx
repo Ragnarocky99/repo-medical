@@ -1,0 +1,78 @@
+page 266 (
+    name: Imprimir Saldo Clientes
+    alias: IMPRIMIR-SALDO-CLIENTES
+    title: Imprimir Saldo Clientes
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                declare
+                  l_proc varchar2(100) := 'show report';
+                  l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                BEGIN
+                  xlog (l_proc, 'url (orig):' || l_report_url);
+                  xlib_jasperreports.set_report_url(l_report_url);
+                  xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('SaldoClientes'),
+                          p_rep_format          => apex_util.url_encode('pdf'),
+                          p_data_source         => apex_util.url_encode('default'),
+                          p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                          p_rep_locale          => apex_util.url_encode('es_ES'),
+                          p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                          p_additional_params   => ('P_ID_CLIENTE='||:P156_CLIENTE||'&'||'P_COD_EMPRESA='||:P0_COD_EMPRESA||'&'||'P_COD_USUARIO='||:APP_USER||'&'||'P_ID_MONEDA='||:P156_MONEDA||'&'||'FEC_INICIO='||:P156_FEC_INI||'&'||'FEC_FIN='||:P156_FEC_FIN||'&'||'IND_SALDO='||:P156_IND_SALDO)
+                          );
+                  apex_application.stop_apex_engine();
+                exception
+                  when apex_application.e_stop_apex_engine then
+                    null;
+                  when others then 
+                    xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                    raise;
+                end;   
+                                                     
+                ```
+        }
+    )
+
+)
+

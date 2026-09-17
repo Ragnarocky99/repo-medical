@@ -1,0 +1,339 @@
+appProcess procesar-salida-empleado (
+    name: PROCESAR_SALIDA_EMPLEADO
+    type: executeCode
+    source {
+        plsqlCode:
+            ```plsql
+            DECLARE
+            
+              vdias_preaviso                number;
+              vdias_dcto_preaviso           number;
+              vdias_indemnizacion           number;
+              vdias_vacaciones              number;
+              vvacaciones_causadas          number;
+              vdias                         number;
+              vfraccion                     number;
+              vdiasin                       number;
+              vac                           number;
+              sal                           number;
+              --vantiguedad                   date;
+              vjornal_legal                 number;
+              vsal_minimo                   number;
+              vanio                         number(4) := 0;
+              vmeses                        number(4) := 0;
+              v_cod_sueldo                  varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_SUELDO'      ));
+              v_cod_aguinaldo               varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_AGUIN'       ));
+              v_cod_vacaciones_causadas     varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_VAC_CAUSADAS'     ));
+              v_cod_vacaciones_proporcional varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_VAC_PROPORCIONAL' ));
+              v_cod_indemnizacion           varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_INDEMNIZA'   ));
+              v_cod_preaviso                varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_PREAVISO'    )); 
+              v_cod_dcto_preaviso           varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_DCTO_PRA'    ));
+              v_cod_ips                     varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_IPS'         ));
+              vtiene_vac                    varchar2(1);
+              v_sueldo											rhw_empleados.sueldo_final%type;
+              v_tip_empleado								varchar2(10);
+              v_jornal_hora									number(10) :=  TO_NUMBER(w_busca_parametro('RH','RH_CANT_HORAS'));
+              vantig_dias                   varchar2(10);
+              vantig_mes                    varchar2(10);
+              vantig_anio                   varchar2(10);
+              VTIPO                         VARCHAR2(2);
+              
+            BEGIN
+            	:P414_calcula	:= 'S';
+              --set_application_property( cursor_style, 'BUSY' );
+            	
+              --go_block( 'b_detalle' );
+              --clear_block( no_validate );
+            --break;
+              --actualiza_vacaciones;
+              
+              BEGIN
+            	  select nvl( indemnizacion, 'N' ), nvl( preaviso, 'N' ), nvl( dcto_preaviso, 'N' ), nvl(vac_proporcionales,'N'), nvl(vac_causada,'N')
+            	    into :P414_indemnizacion, 
+            	         :P414_preaviso, 
+            	         :P414_dcto_preaviso, 
+            	         :P414_vac_proporcional, 
+            	         :P414_vac_causadas
+            	    from rhw_motivos_salida
+            	   where /*cod_empresa  = :variables.cod_empresa
+            	     and cod_sucursal = :variables.cod_sucursal
+            	     and*/ id = :P414_ID_MOTIVO_SALIDA;
+              EXCEPTION
+                when no_data_found then
+            		  :P414_indemnizacion     := 'N';
+            		  :P414_preaviso          := 'N';
+            		  :P414_dcto_preaviso     := 'N';
+            		  :P414_vac_proporcional  := 'N';
+            		  :P414_vac_causadas      := 'N';
+              	WHEN others THEN
+                 RAISE_APPLICATION_ERROR(-20000, 'Error al buscar los indicadores de salida '||sqlerrm);
+                 --raise form_trigger_failure;
+              END;
+              
+            	--go_block( 'b_detalle' );
+            	--first_record;
+             
+              BEGIN
+                select nvl( fec_ingreso, fec_contrato ), sueldo_final, sueldo_base, id_tip_empleado
+                  into :P414_ingreso, :P414_sueldo_final, :P414_sueldo_base, v_tip_empleado
+                  from rhw_empleados
+                 where id_empresa  = :P0_ID_empresa
+                  -- and cod_sucursal = :b_cabecera.cod_sucursal--no se mira la sucursal ya que en AGPAR todos los empleados van a la misma sucursal--descomentar en otra empresa
+                   and ID = :P414_ID_EMPLEADO;
+              EXCEPTION
+                WHEN others THEN
+                  RAISE_APPLICATION_ERROR(-20000, 'No se encuentra el código de empleado ' || sqlerrm );
+                  --raise form_trigger_failure;
+              END;
+              
+              salario_promedio( :P414_ID_EMPLEADO, :P414_FEC_LIQUID, :P414_SUELDO_PROMEDIO );
+              salario_base_promedio( :P414_ID_EMPLEADO, :P0_ID_EMPRESA, :P414_FEC_LIQUID, :P414_SALARIO_BASE_PROMEDIO );
+              --RAISE_APPLICATION_ERROR(-20000,'ID EMPRESA'||:P0_ID_EMPRESA);
+              saldos_debcred(:P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_ANIO, :P414_MES, :P414_DIRECCION_IP);
+              
+              --vantiguedad           := :P414_fec_liquid - TO_DATE(:P414_INGRESO,'DD/MM/YYYY');
+                                          vantig_anio:= TO_NUMBER(TO_CHAR(TO_DATE(:P414_FEC_LIQUID,'DD/MM/YYYY'),'YYYY')) - 
+                                                        TO_NUMBER(TO_CHAR(TO_DATE(:P414_INGRESO,'DD/MM/YYYY'),'YYYY'));
+                                          
+                                          vantig_mes := TO_NUMBER(TO_CHAR(TO_DATE(:P414_FEC_LIQUID,'DD/MM/YYYY'),'MM')) - 
+                                                        TO_NUMBER(TO_CHAR(TO_DATE(:P414_INGRESO,'DD/MM/YYYY'),'MM'));
+            
+                                          vantig_dias:= TO_NUMBER(TO_CHAR(TO_DATE(:P414_FEC_LIQUID,'DD/MM/YYYY'),'DD')) - 
+                                                        TO_NUMBER(TO_CHAR(TO_DATE(:P414_INGRESO,'DD/MM/YYYY'),'DD'));
+            
+            
+              :P414_DIAS_ANTIGUEDAD := vantig_dias;
+              :P414_MES_ANTIGUEDAD  := vantig_mes;
+              :P414_ANIO_ANTIGUEDAD := vantig_anio;                                          
+            
+              /*-----------------------------
+               Calculo para pago de preaviso
+              */-----------------------------  
+              IF nvl( :P414_PREAVISO, 'N' ) = 'S' THEN
+                BEGIN
+                  select nvl( dias, 0 )
+                    into vdias_preaviso
+                    from rhw_parametros_salida
+                   where id_empresa    = :P0_ID_EMPRESA
+                     and cod_parametro  = 'PRE'
+                     and trunc( TO_NUMBER(TO_CHAR(:P414_FEC_LIQUID,'YYYY') - TO_CHAR(:P414_INGRESO,'YYYY')) / 365 ) between nvl( inicial, 0 ) and nvl( final, 0 )
+                     and rownum = '1';
+                EXCEPTION
+                  WHEN others THEN
+                    vdias_preaviso := 0;
+                END;
+            
+                SELECT TIPO
+                INTO VTIPO
+                FROM RHW_CONCEPTOS
+                WHERE ID = v_cod_preaviso;
+                --inserta_linea( v_cod_preaviso, vdias_preaviso, round( round( nvl( :P414_sueldo_promedio         , 0 ) / 30,2 ) * nvl( vdias_preaviso, 0 ), 0 ),
+                  --                                             round( round( nvl( :P414_sueldo_promedio , 0 ) / 30 ,2) * nvl( vdias_preaviso, 0 ), 0 ) );
+                INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                VALUES (v_cod_preaviso, vdias_preaviso, round( round( nvl( :P414_sueldo_promedio         , 0 ) / 30,2 ) * nvl( vdias_preaviso, 0 ), 0 ), 
+                   round( round( nvl( :P414_sueldo_promedio , 0 ) / 30 ,2) * nvl( vdias_preaviso, 0 ), 0 ), NULL, NULL, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+              END IF;
+              
+              /*-------------------------
+              -- DIAS DESCUENTO PREAVISO
+              */-------------------------
+              IF nvl( :P414_DCTO_PREAVISO, 'N' ) = 'S' THEN     
+                BEGIN
+                  select trunc( dias ) 
+                    into vdias_dcto_preaviso
+                    from rhw_parametros_salida
+                   where id_empresa    = :P0_ID_EMPRESA
+                     and cod_parametro  = 'DPR'
+                     and trunc( TO_NUMBER(TO_CHAR(:P414_FEC_LIQUID,'YYYY') - TO_CHAR(:P414_INGRESO,'YYYY')) / 365 ) between nvl( inicial, 0 ) and nvl( final, 0 )
+                     and rownum = '1';
+                EXCEPTION
+                  WHEN others THEN 
+                    vdias_dcto_preaviso := 0;
+                END;
+                
+                vdias_dcto_preaviso := round(vdias_dcto_preaviso / 2,1);
+            
+                begin
+                select tipo
+                into vtipo
+                from rhw_conceptos
+                where id = v_cod_dcto_preaviso;
+                end;
+                
+                --inserta_linea( v_cod_dcto_preaviso, vdias_dcto_preaviso, round( round( nvl( :P414_SUELDO_BASE /*salario_prom*/ , 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ),
+                  --                                                       round( round( nvl( :P414_SUELDO_BASE /*salario_base_promedio*/, 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ) );
+                INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                VALUES (v_cod_dcto_preaviso, vdias_dcto_preaviso, round( round( nvl( :P414_SUELDO_BASE /*salario_prom*/ , 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ), 
+                round( round( nvl( :P414_SUELDO_BASE /*salario_base_promedio*/, 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ), NULL, NULL, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+              END IF;
+              
+              /*------------------------
+               Calculo de Indemnizacion
+              */------------------------  
+              IF nvl( :P414_INDEMNIZACION, 'N' ) = 'S' THEN
+                BEGIN
+                  select dias, fraccion
+                    into vdias, vfraccion
+                    from rhw_parametros_salida
+                   where id_empresa   = :P0_ID_EMPRESA
+                     and cod_parametro = 'IND'
+                     and inicial       = 0;
+                  --  mensaje( 'EMPLEADO' ||:b_cabecera.cod_empleado||'dias'|| vdias || 'fraccion'|| vfraccion );
+                  
+                  IF nvl( vfraccion, 0 ) <= 0 THEN
+                    vfraccion := 1;
+                  END IF;
+                  
+                  IF nvl( :P414_mes_antiguedad, 0 ) >= 2 and nvl( :P414_anio_antiguedad, 0 ) < 1 then-- agregado para los casos que superen 2 meses de antiguedad
+                  	vdiasin := 1;
+                  ELSIF nvl( :P414_mes_antiguedad, 0 ) >= ( 12 / vfraccion ) THEN
+                    vdiasin := 1;
+                  ELSE
+                    vdiasin := 0;
+                  END IF;
+                  
+                  --mensaje( 'EMPLEADO' ||:b_cabecera.cod_empleado||'anio'|| :b_cabecera.anio_antiguedad || 'mes'|| :b_cabecera.mes_antiguedad );
+                  IF ( ( nvl( :P414_anio_antiguedad, 0 ) < 10 ) or 
+                  	   ( nvl( :P414_anio_antiguedad, 0 ) = 10 and 
+                  	     nvl( :P414_mes_antiguedad , 0 ) < 1 ) ) THEN
+                    vdias_indemnizacion := ( nvl( vdiasin, 0 ) + nvl( :P414_anio_antiguedad, 0 ) ) * nvl( vdias, 0 );
+                  ELSE
+                    vdias_indemnizacion := ( ( nvl( vdiasin, 0 ) + nvl( :P414_anio_antiguedad, 0 ) ) * nvl( vdias, 0 ) ) * 2;
+                  END IF;
+                EXCEPTION
+                  WHEN others THEN
+                    vdias_indemnizacion := 0;
+                END;
+            
+                BEGIN
+                SELECT TIPO
+                INTO VTIPO
+                FROM RHW_CONCEPTOS
+                WHERE ID = v_cod_indemnizacion;
+                END;
+                --inserta_linea( v_cod_indemnizacion, vdias_indemnizacion, round( round( nvl( :P414_SUELDO_PROMEDIO         , 0 ) / 30 ,2) * nvl( vdias_indemnizacion, 0 ), 0 ),
+                  --                                                       round( round( nvl( :P414_SUELDO_PROMEDIO /*base_promedio*/, 0 ) / 30 ,2 ) * nvl( vdias_indemnizacion, 0 ), 0 ) );
+                INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                VALUES (v_cod_indemnizacion, vdias_indemnizacion, round( round( nvl( :P414_SUELDO_PROMEDIO         , 0 ) / 30 ,2) * nvl( vdias_indemnizacion, 0 ), 0 ), 
+                round( round( nvl( :P414_SUELDO_PROMEDIO /*base_promedio*/, 0 ) / 30 ,2 ) * nvl( vdias_indemnizacion, 0 ), 0 ), 
+                null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+              END IF;
+              
+              
+              /*----------------------------------
+               Calculo de Vacaciones Proporcional
+              */----------------------------------  
+              if nvl(:P414_vac_proporcional,'N') = 'S' then
+                vdias_vacaciones := dias_vacaciones(:P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_FEC_LIQUID, :P414_INGRESO,
+                :P414_ANIO_ANTIGUEDAD, :P414_ID_ESTADO);
+            	  IF nvl( vdias_vacaciones, 0 ) > 0  THEN
+            	  	
+            	  	
+            	  		v_sueldo := :P414_sueldo_final;
+            		  
+            
+            			 	if v_tip_empleado != 'J' then
+            			  	  :P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 );
+            			      --inserta_linea( v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 )  / 30, 0 )* nvl( vdias_vacaciones, 0 ),
+            	                --                                                    round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) / 30, 0 ) );
+            
+                            BEGIN
+                            SELECT TIPO
+                            INTO VTIPO
+                            FROM RHW_CONCEPTOS
+                            WHERE ID = v_cod_vacaciones_proporcional;
+                            END;
+            
+            
+                              INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, 
+                              DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                              VALUES (v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 )  / 30, 0 )* nvl( vdias_vacaciones, 0 ), 
+                              round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) / 30, 0 ), null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+            			 	else
+            			 			v_sueldo := round (( nvl(v_sueldo, 0) * v_jornal_hora) );
+            			 			:P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) , 0 );
+            			 			--inserta_linea( v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 ) , 0 )* nvl( vdias_vacaciones, 0 ),
+            	                      --                                              round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) , 0 ) );
+                                    INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, 
+                                    DIRECCION_IP, ID_EMPRESA, TIPO )
+                                    VALUES (v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 ) , 0 )* nvl( vdias_vacaciones, 0 ), 
+                                    round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) , 0 ), null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+            			 	end if;
+            			 	
+            	  END IF;
+              else
+              	vdias_vacaciones := 0;
+              end if;
+              
+              /*-----------------------
+              -- Vacaciones Causadas --
+              */-----------------------
+              vvacaciones_causadas := dias_vacaciones_causadas(:P414_FEC_LIQUID, :P414_INGRESO, :P414_ID_EMPRESA,
+              :P414_ID_EMPLEADO, :P414_ANIO_ANTIGUEDAD);
+              IF nvl( vvacaciones_causadas, 0 ) > 0  and nvl(:P414_vac_causadas,'N') = 'S' THEN
+            		  	v_sueldo := :P414_sueldo_final;
+                            BEGIN
+                            SELECT TIPO
+                            INTO VTIPO
+                            FROM RHW_CONCEPTOS
+                            WHERE ID = v_cod_vacaciones_causadas;
+                            END;
+            
+            			 	if v_tip_empleado != 'J' then
+            			  	:P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 );
+            			    --inserta_linea( v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 ),
+            			      --                                                              :P414_tot_vac_causadas);
+                              INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, 
+                              ID_EMPRESA, TIPO ) 
+                              VALUES (v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 ), 
+                              :P414_tot_vac_causadas, null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+            			 	else
+            			 			v_sueldo := round (( nvl(v_sueldo, 0) * v_jornal_hora) );
+            			 			:P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) , 0 );
+            			      --inserta_linea( v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ), 0 ),
+            			        --                                                            :P414_tot_vac_causadas);
+                              INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, 
+                              ID_EMPRESA, TIPO ) 
+                              VALUES (v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ), 0 ), 
+                              :P414_tot_vac_causadas, null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+            			  end if;
+              else
+                :P414_tot_vac_causadas := 0;
+              END IF;
+            
+              /*------------------------
+               Calculo del Aguinaldo
+              */-----------------------
+              aguinaldo(:P414_tot_vac_causadas, :P0_ID_EMPRESA, :P414_ID_EMPLEADO,to_date(:P414_FEC_LIQUID,'DD/MM/YYYY'), :P414_ANIO, :P414_MES, 
+              TO_date(:P414_INGRESO,'DD/MM/YYYY'), :P414_DIRECCION_IP, :P414_DCTO_PREAVISO, 
+              :P414_SALARIO_MES, :P414_SUELDO_BASE, :P414_ANIO_ANTIGUEDAD, :P414_SUELDO_FINAL, :P414_ID_ESTADO, TO_DATE(:P414_FECHA_SALIDA,'DD/MM/YYYY'), :P414_DIAS, :P414_CONC_SUELDO);
+              
+              calcula_ips(:P414_ID_ESTADO, :P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_SALARIO_MES, :P414_DIRECCION_IP);
+              bonificacion(:P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_SALARIO_MINIMO, :P414_PORC_BONIF, :P414_CONC_BONIF, :P414_LIMITE_BONIF);
+              
+              --set_application_property( cursor_style, 'DEFAULT' );
+              :P414_calcula	:= 'N';
+            /*EXCEPTION
+            
+              WHEN others THEN
+                --set_application_property( cursor_style, 'DEFAULT' );
+                --mensaje( dbms_error_text );
+                :P414_calcula	:= 'N';*/
+            
+            END;
+            ```
+    }
+    execution {
+        sequence: 1
+        point: processing
+    }
+    serverSideCondition {
+        type: rowsReturned
+        sqlQuery:
+            ```sql
+            SELECT 'S' FROM DUAL WHERE
+            :APP_PAGE_ID=99999999999999
+            ```
+    }
+)
+

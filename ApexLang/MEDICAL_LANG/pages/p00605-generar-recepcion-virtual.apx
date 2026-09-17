@@ -1,0 +1,132 @@
+page 605 (
+    name: Generar Recepcion Virtual
+    alias: GENERAR-RECEPCION-VIRTUAL
+    title: Generar Recepcion Virtual
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P605_ID_ENTSAL (
+        type: hidden
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P605_ID_REMISION (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P605_MENSAJE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    dynamicAction generar-recepcion (
+        name: GENERAR RECEPCION
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: &P605_MENSAJE.
+                style: danger
+            }
+            execution {
+                sequence: 20
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P605_MENSAJE
+            }
+        )
+
+        action native-alert-2 (
+            action: alert
+            settings {
+                message: Operacion realizada con exito.
+                style: success
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 40
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    DECLARE
+                    V_MENSAJE  VARCHAR2(1000);
+                    VID_ENTSAL NUMBER(10);
+                    BEGIN
+                    
+                    
+                    GENERAR_RECEPCION_VIRTUAL(:P0_ID_EMPRESA,:P605_ID_REMISION,V_MENSAJE,:APP_USER);
+                    
+                        IF :V_MENSAJE IS NOT NULL THEN
+                        :P605_MENSAJE:=V_MENSAJE;
+                        END IF;
+                    
+                    
+                    END;
+                    ```
+                itemsToSubmit: P605_ID_REMISION
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    showErrorAsAlert
+                    showSpinnerProcessingIcon
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

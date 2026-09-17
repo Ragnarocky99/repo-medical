@@ -1,0 +1,411 @@
+page 50 (
+    name: Carga de Areas
+    alias: CARGA-DE-AREAS
+    title: Carga de Areas
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-areas (
+        name: Carga de Areas
+        type: form
+        source {
+            location: localDatabase
+            tableName: BSW_AREAS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P50_ACTIVO (
+        type: switch
+        label {
+            label: <p>Estado:</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            onLabel: ACTIVO
+            offValue: N
+            offLabel: INACTIVO
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-areas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-areas
+            column: ACTIVO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P50_COD_AREA (
+        type: textField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Área:</a>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-areas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-areas
+            column: COD_AREA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P50_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-areas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-areas
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P50_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-areas
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 65
+        }
+        source {
+            formRegion: @carga-de-areas
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P50_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-areas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-areas
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P50_ID_EMPRESA (
+        type: selectList
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Empresa:</a>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empresas
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-areas
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @required
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-areas
+            column: ID_EMPRESA
+            dataType: number
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P50_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P50_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P50_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 10335429622457814
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-areas (
+        name: Initialize form Carga de Areas
+        type: formInitialization
+        formRegion: @carga-de-areas
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 10334693510457814
+        }
+    )
+
+    process process-form-carga-de-areas (
+        name: Process form Carga de Areas
+        type: formAutoRowProcessing
+        formRegion: @carga-de-areas
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 10335001206457814
+        }
+    )
+
+)
+

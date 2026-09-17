@@ -1,0 +1,389 @@
+page 40 (
+    name: Carga de Estado Civil
+    alias: CARGA-DE-ESTADO-CIVIL
+    title: Carga de Estado Civil
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-estado-civil (
+        name: Carga de Estado Civil
+        type: form
+        source {
+            location: localDatabase
+            tableName: BSW_ESTADOS_CIVILES
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+            column: 3
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P40_COD_EQUIFAX (
+        type: textField
+        label {
+            label: <p>Cód. Equifax:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-estado-civil
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 3
+        }
+        source {
+            formRegion: @carga-de-estado-civil
+            column: COD_EQUIFAX
+            dataType: varchar2
+        }
+    )
+
+    pageItem P40_COD_ESTADO_CIVIL (
+        type: textField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Estado Civil:</a>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-estado-civil
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 3
+        }
+        source {
+            formRegion: @carga-de-estado-civil
+            column: COD_ESTADO_CIVIL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P40_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-estado-civil
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-estado-civil
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P40_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-estado-civil
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-estado-civil
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P40_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-estado-civil
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-estado-civil
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: BSW_ESTADOS_CIVILES_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P40_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P40_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P40_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 10224997843885279
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-estado-civil (
+        name: Initialize form Carga de Estado Civil
+        type: formInitialization
+        formRegion: @carga-de-estado-civil
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 10224188362885279
+        }
+    )
+
+    process process-form-carga-de-estado-civil (
+        name: Process form Carga de Estado Civil
+        type: formAutoRowProcessing
+        formRegion: @carga-de-estado-civil
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 10224588355885279
+        }
+    )
+
+)
+

@@ -1,0 +1,1014 @@
+page 686 (
+    name: RESUMEN DE FF
+    alias: RESUMEN-DE-FF
+    title: RESUMEN DE FF
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .anulado {
+                color: red;
+            }
+            .presupuestado {
+            color: orangered;
+            }
+            .cotizado{
+                color: green;
+            }
+            .confirmado {
+                color: #3f46bb;
+            }
+            .EnDeposito{
+                color: brown;
+            }
+            .EntregadoCliente{
+                color: aqua;
+            }
+            .OrdenCompra{
+                color: yellowgreen;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region resumen-de-ff (
+        name: RESUMEN DE FF
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.ID,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NUM_COMPROBANTE,
+                       C.REFERENCIA,
+                       C.ID_PROVEEDOR,
+                       C.FEC_COMPROBANTE,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       D.TOT_PAGADO AS TOT_COMPROBANTE,
+                       VAL.NRO_PLANILLA_FF,
+                       C.ID_ORDEN_PAGO,
+                       (SELECT LISTAGG(DISTINCT(CPD.COMENTARIO), CHR(13))
+                           FROM CPW_COMPROBANTES_DETALLE  CPD
+                          WHERE CPD.ID_COMPROBANTE = C.ID) COMENTARIO,
+                       ROUND(D.TOT_PAGADO * NVL(D.TIP_CAMBIO, 1)) TOT_COMPROBANTE_GS
+                  FROM CPW_COMPROBANTES_CABECERA C,
+                       CPW_DETALLE_CAJAS         D,
+                       CPW_CABECERA_CAJAS        CAJ,
+                       CPW_VALORES_CAJAS         VAL
+                 WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND VAL.NRO_PLANILLA_FF IS NOT NULL
+                   AND C.ID_EMPRESA = D.ID_EMPRESA
+                   AND C.ID = D.ID_COMPROBANTE_CPW
+                   AND D.ID_MOV_CAJ_CPW = CAJ.ID
+                   AND NVL(CAJ.ANULADO,'N') <> 'A'
+                   AND VAL.ID_CAB_CAJAS = CAJ.ID
+                   ---AND C.NRO_PLANILLA_FF = VAL.NRO_PLANILLA_FF(+)
+                   ---AND C.NUM_COMPROBANTE = '294'
+                   AND (CAJ.FEC_MOV_CAJ BETWEEN :P686_FEC_DESDE AND :P686_FEC_HASTA)
+                   AND (VAL.NRO_PLANILLA_FF = :P686_NRO_PLANILLA OR :P686_NRO_PLANILLA IS NULL)
+                 
+                 UNION ALL
+                
+                 SELECT C.ID,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.Nro_Comprobante,
+                       C.REFERENCIA,
+                       C.ID_PROVEEDOR,
+                       C.FEC_COMPROBANTE,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       D.TOT_PAGADO AS TOT_COMPROBANTE,
+                       VAL.NRO_PLANILLA_FF,
+                       NULL as ID_ORDEN_PAGO,
+                       'MERCADERIAS',
+                       ROUND(D.TOT_PAGADO * NVL(D.TIP_CAMBIO, 1)) TOT_COMPROBANTE_GS
+                  FROM CMW_COMPRAS_CABECERA C,
+                       CPW_DETALLE_CAJAS    D,
+                       CPW_CABECERA_CAJAS   CAJ,
+                       CPW_VALORES_CAJAS    VAL
+                 WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND VAL.NRO_PLANILLA_FF IS NOT NULL
+                   AND C.ID_EMPRESA = D.ID_EMPRESA
+                   AND C.ID = D.ID_COMPROBANTE_CM
+                   AND D.ID_MOV_CAJ_CPW = CAJ.ID
+                   AND NVL(CAJ.ANULADO,'N') <> 'A'
+                   AND VAL.ID_CAB_CAJAS = CAJ.ID
+                   --AND C.NRO_PLANILLA_FF = VAL.NRO_PLANILLA_FF(+)
+                   ---AND C.NRO_COMPROBANTE = '350'
+                   AND (CAJ.FEC_MOV_CAJ  BETWEEN :P686_FEC_DESDE AND :P686_FEC_HASTA)
+                   AND (VAL.NRO_PLANILLA_FF = :P686_NRO_PLANILLA OR :P686_NRO_PLANILLA IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P686_FEC_DESDE
+                P686_FEC_HASTA
+                P686_NRO_PLANILLA
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 61449247623797017
+        }
+
+        savedReport 614497 (
+            visibility: primary
+            view {
+                default: grid
+                settingsAreaExpanded: false
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @TOT_COMPROBANTE_GS
+                layout {
+                    width: 98.7031
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO
+                layout {
+                    width: 331
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    show: false
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    show: false
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 57
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 40
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NUM_COMPROBANTE
+                layout {
+                    show: false
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @REFERENCIA
+                layout {
+                    width: 132.5469
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 111.35159999999999
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE
+                layout {
+                    width: 117
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PLANILLA_FF
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_ORDEN_PAGO
+                layout {
+                    show: false
+                    sequence: 9
+                }
+            )
+
+            sort (
+                column: @TOT_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+            aggregate sum (
+                column: @TOT_COMPROBANTE_GS
+            )
+
+        )
+
+        column COMENTARIO (
+            type: textarea
+            heading {
+                heading: <p>Concepto</p>
+                alignment: center
+            }
+            layout {
+                sequence: 140
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: COMENTARIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: numberField
+            heading {
+                heading: Id
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_EMPRESA (
+            type: numberField
+            heading {
+                heading: Id Empresa
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_MONEDA (
+            type: popupLov
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_ORDEN_PAGO (
+            type: numberField
+            heading {
+                heading: <P>Orden Pago</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_ORDEN_PAGO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: popupLov
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column NRO_PLANILLA_FF (
+            type: textField
+            heading {
+                heading: <p>Nro Planilla FF</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: NRO_PLANILLA_FF
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NUM_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: Num Comprobante
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NUM_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column REFERENCIA (
+            type: textField
+            heading {
+                heading: <p>Nro. Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: REFERENCIA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: numberField
+            heading {
+                heading: <p>Cambio</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 3
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Tot Comprobante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TOT_COMPROBANTE_GS (
+            type: numberField
+            heading {
+                heading: <p>Total Gs</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE_GS
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: RESUMEN DE FF
+        }
+    )
+
+    pageItem P686_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha Desde: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/01/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P686_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P686_IND_IMPRIMIR (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @resumen-de-ff
+            slot: regionBody
+        }
+    )
+
+    pageItem P686_MONTO_A_REPONER (
+        type: displayOnly
+        label {
+            label: <p>A Reponer:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P686_NRO_PLANILLA (
+        type: textField
+        label {
+            label: <p>Nro. Planilla FF:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button print (
+        buttonName: PRINT
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction calcular-monto-a-reponer (
+        name: Calcular monto a reponer
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P686_NRO_PLANILLA
+        }
+
+        action p686-monto-a-reponer (
+            name: P686_MONTO_A_REPONER
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    TO_CHAR(TRAE_MONTO_FONDO(P_ID_EMPRESA => :P0_ID_EMPRESA,
+                                             P_NRO_CUENTA => '5',
+                                             P_NRO_FONDO  => :P686_NRO_PLANILLA), '999G999G999G999G990D00')
+                    ```
+                itemsToSubmit: P686_NRO_PLANILLA
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P686_MONTO_A_REPONER
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction imprimir (
+        name: Imprimir
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @print
+        }
+
+        action plugin-com-fos-redirect (
+            action: plugin/fosRedirect
+            settings {
+                targetPageUrl: {
+                    page: 686
+                    items: {
+                        P686_IND_IMPRIMIR: S
+                    }
+                }
+                options: submitPageItemsBeforeRedirect
+                pageItemsToSubmit: [
+                    P686_FEC_DESDE
+                    P686_FEC_HASTA
+                    P686_NRO_PLANILLA
+                ]
+                openTargetInNewWindow: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p686-monto-a-reponer (
+        itemName: P686_MONTO_A_REPONER
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                TO_CHAR(TRAE_MONTO_FONDO(P_ID_EMPRESA => :P0_ID_EMPRESA,
+                                         P_NRO_CUENTA => '5',
+                                         P_NRO_FONDO  => :P686_NRO_PLANILLA), '999G999G999G999G990D00')
+                ```
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                declare
+                          l_proc varchar2(100) := 'show report';
+                          l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                          v_nom_empresa varchar2(150);
+                        BEGIN
+                          SELECT E.DESCRIPCION INTO v_nom_empresa FROM BSW_EMPRESAS E WHERE E.ID = :P0_ID_EMPRESA;
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                          
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('ReporteFondoFijo'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => ('P_ID_EMPRESA='||:P0_ID_EMPRESA||'&'||
+                                                            'P_FEC_DESDE='||:P686_FEC_DESDE||'&'||
+                                                            'P_FEC_HASTA='||:P686_FEC_HASTA||'&'||
+                                                            'P_COD_USUARIO='||:APP_USER||'&'||
+                                                            'P_NRO_PLANILLA='||:P686_NRO_PLANILLA),
+                                  p_print_is_enabled    => case when :P3_print_is_enabled='1' then true else false end,
+                                  p_print_printer_name  => apex_util.url_encode(:P3_print_printer_name),
+                                  p_print_media         => apex_util.url_encode(:P3_print_media),
+                                  p_print_copies        => apex_util.url_encode(:P3_print_copies),
+                                  p_print_duplex        => case when :P3_print_duplex='1' then true else false end,
+                                  p_print_collate       => case when :P3_print_collate='1' then true else false end,
+                                  p_save_is_enabled     => case when :P3_save_is_enabled='1' then true else false end,
+                                  p_save_filename       => apex_util.url_encode(:P3_save_filename),
+                                  p_rep_time_zone       => apex_util.url_encode(:P3_rep_time_zone),
+                                  p_print_job_name      => apex_util.url_encode(:P3_print_job_name)
+                                  );
+                          :P686_IND_IMPRIMIR := NULL;
+                          apex_application.stop_apex_engine();
+                
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                            null; -- ok, stop engine raises exception, we can ignore that
+                          when others then 
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                ```
+        }
+        serverSideCondition {
+            type: item=value
+            item: P686_IND_IMPRIMIR
+            value: S
+        }
+    )
+
+)
+

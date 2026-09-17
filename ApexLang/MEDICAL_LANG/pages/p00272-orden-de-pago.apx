@@ -1,0 +1,3098 @@
+page 272 (
+    name: Orden de Pago
+    alias: ORDEN-DE-PAGO
+    title: Orden de Pago
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+             function calculaTotales(){
+                var model= apex.region("det").widget().interactiveGrid("getCurrentView").model;
+                var v_cantidad = model.getFieldKey("CUOTA_COPIA");
+                var v_total_cantidad     = 0;
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+                        
+                         console.log('jyyju'+r[v_cantidad]);
+                          
+                        v_total_cantidad      = v_total_cantidad     + parseFloat(r[v_cantidad].toString().replace('.', '').replace('.', '').replace(',', '.') /*.replace(/\./g,'')*/);
+                    }
+                    
+                });
+            
+                if(isNaN(v_total_cantidad)){
+                     v_total_cantidad=1;
+                 }
+            
+                 $s('P272_SUMA_TOTAL',v_total_cantidad);
+            }
+            
+            function f_setRowCount(){
+                    var grid = apex.region("det").widget().interactiveGrid("getViews", "grid");
+                    var model = grid.model;
+                    var rowCount = 0;
+                    model.forEach(function (record) {
+                        rowCount ++;
+                    });
+                    $s("P272_ROWCOUNT",rowCount);
+                }
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            //document.getElementById("P272_TIP_CAMBIO").readOnly = true;
+            /*document.getElementById("P272_SER_ORDEN_PAGO").readOnly = true;*/
+            document.getElementById("P272_NUM_ORDEN_PAGO_ANT").readOnly = true;
+            document.getElementById("P272_NUM_ORDEN_PAGO").readOnly = true;
+            document.getElementById("P272_SUMA_TOTAL").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                width: 65px;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_ORDEN_PAGO_CAB,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NUM_COMPROBANTE,
+                       C.ID_PROVEEDOR,
+                       C.TOT_ORDEN_PAGO,
+                       C.TOT_ORDEN_PAGO AS CUOTA_COPIA,
+                       C.TOT_RETENCION,
+                       C.RETENIDO,
+                       C.RUC_CLIENTE,
+                       C.NRO_ITEM_RETENC,
+                       C.COD_USUARIO_AUD,
+                       C.ID_CUOTA,
+                       C.ID_COMPROBANTE,
+                       C.INCLUIR,
+                       C.ID_EMPRESA,
+                       C.ID_MOV_CAJ,
+                       C.ID_COMPROBANTE_CM,
+                       C.GENERO_OSIRIS,
+                       C.NUM_CUOTA,
+                       C.REFERENCIA
+                  from CPW_DETALLE_ORDEN_PAGO C
+                  WHERE C.ID_ORDEN_PAGO_CAB = :P272_ID
+                
+                ```
+            pageItemsToSubmit: P272_ID
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: det
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        toolbar {
+            controls: actionsMenu
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                
+                        $( ".selector" ).grid( {
+                    autoAddRecord: false
+                } );
+                        
+                           
+                
+                
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    calculaTotales();
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    calculaTotales();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    calculaTotales();
+                            }; 
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    calculaTotales();
+                            };    
+                
+                            /*
+                             var rowAddRow = actions.lookup("selection-add-row"),
+                                originalDuplicateAction = rowAddRow.action;
+                
+                            rowAddRow.action = function(_, el){
+                                 var $widget = apex.region("Detalles").widget();
+                               var $grid = $widget.interactiveGrid("getViews", "grid");
+                              var $model = $grid.model;
+                                var cantidadDet= $model.getTotalRecords();
+                                var lineas = $v('P135_LINEAS');
+                                if (cantidadDet>lineas){
+                                    apex.message.alert('El comprobante solo puede contener '+lineas+'  lineas!');
+                                    return;
+                                }
+                                  var newRecordId=  $model.insertNewRecord();
+                                  
+                                   $grid.gotoCell(newRecordId,'COD_ARTICULO');
+                                   
+                            };  
+                
+                */
+                
+                /*
+                
+                            var rowAddRow2 = actions.lookup("row-add-row"),
+                                originalDuplicateAction = rowAddRow2.action;
+                
+                            rowAddRow2.action = function(_, el){
+                                 var det=   apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                                var cantidadDet= det.getTotalRecords();
+                                var lineas = $v('P135_LINEAS');
+                                if (cantidadDet>lineas){
+                                    apex.message.alert('El comprobante solo puede contener '+lineas+'  lineas!');
+                                    return;
+                                }
+                                    originalDuplicateAction(_, el);
+                            }; 
+                       
+                       */
+                                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 64269591449068906
+        }
+
+        savedReport 642972 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @REFERENCIA
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CUOTA_COPIA
+                layout {
+                    show: false
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_ORDEN_PAGO_CAB
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 116
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 79
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NUM_COMPROBANTE
+                layout {
+                    width: 104
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    width: 146
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @TOT_ORDEN_PAGO
+                layout {
+                    width: 259
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @TOT_RETENCION
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @RETENIDO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @RUC_CLIENTE
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM_RETENC
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_CUOTA
+                layout {
+                    show: false
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE
+                layout {
+                    show: false
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @INCLUIR
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_MOV_CAJ
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE_CM
+                layout {
+                    show: false
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @GENERO_OSIRIS
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NUM_CUOTA
+                layout {
+                    sequence: 9
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CUOTA_COPIA (
+            type: textField
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: CUOTA_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column GENERO_OSIRIS (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: GENERO_OSIRIS
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COMPROBANTE (
+            type: textField
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_COMPROBANTE_CM (
+            type: textField
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE_CM
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_CUOTA (
+            type: popupLov
+            heading {
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                popupWidth: 800
+                popupHeight: 500
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-cuotas
+            }
+            cascadingLov {
+                parentColumns: P272_ID_PROVEEDOR
+                itemsToSubmit: P272_ID_PROVEEDOR
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_CUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            advanced {
+                htmlDomId: lista
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MOV_CAJ (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: ID_MOV_CAJ
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ORDEN_PAGO_CAB (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_ORDEN_PAGO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: selectList
+            heading {
+                heading: <p>Proveedor</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column INCLUIR (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: INCLUIR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_ITEM_RETENC (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: NRO_ITEM_RETENC
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Número</p>
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NUM_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NUM_CUOTA (
+            type: textField
+            heading {
+                heading: <p>Cuota</p>
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: NUM_CUOTA
+                dataType: number
+            }
+        )
+
+        column REFERENCIA (
+            type: textField
+            heading {
+                heading: <p>Referencia</p>
+            }
+            layout {
+                sequence: 260
+            }
+            validation {
+                maxLength: 50
+            }
+            source {
+                databaseColumn: REFERENCIA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column RETENIDO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: RETENIDO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column RUC_CLIENTE (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: RUC_CLIENTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Ser.</p>
+            }
+            layout {
+                sequence: 60
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+            }
+            layout {
+                sequence: 50
+            }
+            validation {
+                maxLength: 3
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_ORDEN_PAGO (
+            type: numberField
+            heading {
+                heading: <p>Total Orden</p>
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+                width: 30
+            }
+            source {
+                databaseColumn: TOT_ORDEN_PAGO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: TOT_ORDEN_PAGO
+            }
+        )
+
+        column TOT_RETENCION (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: TOT_RETENCION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    region orden-de-pago (
+        name: Orden de Pago
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       SER_ORDEN_PAGO,
+                       NUM_ORDEN_PAGO,
+                       FEC_EMISION,
+                       FEC_VENCIMIENTO,
+                       ID_USUARIO_AUTORIZ,
+                       AUTORIZADO,
+                       ESTADO,
+                       RETENIDO,
+                       COD_USUARIO_AUD,
+                       PORC_RET_IVA,
+                       TOT_RET_IVA,
+                       IND_PAGO_ADELANTADO,
+                       GRAVADAS,
+                       IVA,
+                       ID_MOV_CAJ,
+                       ID_PROVEEDOR,
+                       FEC_AUTORIZADO,
+                       IND_CAJA_CHICA,
+                       ID_CUENTA_BANCARIA,
+                       ID_CONSIGNACION,
+                       ID_MONEDA,
+                       ID_SUCURSAL,
+                       TIP_CAMBIO,
+                       NRO_PLANILLA,
+                       SUMA_TOTAL,
+                       ID_CENTRO_COSTO
+                  from CPW_CABECERA_ORDEN_PAGO
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @detalles
+            slot: subRegions
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+                t-Form--slimPadding
+                margin-top-none
+            ]
+        }
+    )
+
+    pageItem P272_AUTORIZADO (
+        type: checkbox
+        label {
+            label: <p>Autorizado</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: AUTORIZADO
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P272_BANDERA_CARGAR (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+    )
+
+    pageItem P272_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 230
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :app_user
+        }
+    )
+
+    pageItem P272_DECIMALES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 330
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                v_decimales number(10):=0;
+                BEGIN
+                SELECT DECIMALES
+                into v_decimales
+                 FROM BSW_MONEDAS
+                WHERE ID=:P7_ID_MONEDA;
+                return v_decimales;
+                exception 
+                when no_data_found then
+                return 0;
+                END;
+                ```
+        }
+    )
+
+    pageItem P272_ESTADO (
+        type: checkbox
+        label {
+            label: <p>Anulado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: A
+            uncheckedValue: P
+        }
+        layout {
+            sequence: 150
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ESTADO
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID
+        }
+    )
+
+    pageItem P272_FEC_AUTORIZADO (
+        type: datePicker
+        label {
+            label: <p>Fec. Autorizado:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: FEC_AUTORIZADO
+            dataType: date
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID
+        }
+    )
+
+    pageItem P272_FEC_EMISION (
+        type: datePicker
+        label {
+            label: <p>Fec. Emisión: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="5"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: FEC_EMISION
+            dataType: date
+        }
+    )
+
+    pageItem P272_FEC_VENCIMIENTO (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: FEC_VENCIMIENTO
+            dataType: date
+        }
+    )
+
+    pageItem P272_GRAVADAS (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: GRAVADAS
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P272_ID_CENTRO_COSTO (
+        type: popupLov
+        label {
+            label: <p>Centro Costo: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+        }
+        layout {
+            sequence: 170
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_CENTRO_COSTO
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID_CONSIGNACION (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_CONSIGNACION
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID_CUENTA_BANCARIA (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_CUENTA_BANCARIA
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P272_ID_MONEDA (
+        type: popupLov
+        label {
+            label: <p>Moneda: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 100
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="7"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_MONEDA
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID_MOV_CAJ (
+        type: hidden
+        layout {
+            sequence: 290
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_MOV_CAJ
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+        }
+        layout {
+            sequence: 50
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="6"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_PROVEEDOR
+            dataType: number
+        }
+    )
+
+    pageItem P272_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 40
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="1"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_SUCURSAL
+        }
+    )
+
+    pageItem P272_ID_USUARIO_AUTORIZ (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: ID_USUARIO_AUTORIZ
+            dataType: number
+        }
+    )
+
+    pageItem P272_IND_CAJA_CHICA (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: IND_CAJA_CHICA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P272_IND_PAGO_ADELANTADO (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: IND_PAGO_ADELANTADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P272_IVA (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: IVA
+            dataType: number
+        }
+    )
+
+    pageItem P272_JSON_DETALLE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+    )
+
+    pageItem P272_NRO_PLANILLA (
+        type: numberField
+        label {
+            label: <p>Nro. Planilla: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 140
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="8"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: NRO_PLANILLA
+            dataType: number
+        }
+    )
+
+    pageItem P272_NUM_ORDEN_PAGO (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-bottom-none
+            ]
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="3"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: NUM_ORDEN_PAGO
+            dataType: number
+        }
+    )
+
+    pageItem P272_NUM_ORDEN_PAGO_ANT (
+        type: textField
+        label {
+            label: <p>Último Nro.: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX="4"
+        }
+    )
+
+    pageItem P272_ORDEN_SELECCIONADO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+    )
+
+    pageItem P272_PORC_RET_IVA (
+        type: hidden
+        layout {
+            sequence: 240
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: PORC_RET_IVA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P272_RETENIDO (
+        type: hidden
+        layout {
+            sequence: 220
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: RETENIDO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P272_ROWCOUNT (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P272_SER_ORDEN_PAGO (
+        type: textField
+        label {
+            label: <p>Nº Orden:</p>
+            alignment: left
+        }
+        settings {
+            textCase: upper
+        }
+        layout {
+            sequence: 80
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 1
+        }
+        advanced {
+            customAttributes: TABINDEX="2"
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: SER_ORDEN_PAGO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: A
+        }
+    )
+
+    pageItem P272_SUMA_TOTAL (
+        type: numberField
+        label {
+            label: <p class="totales">TOTAL:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+            alignment: left
+            column: 9
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+            postText: <p class="totales">Gs</p>
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: SUMA_TOTAL
+            dataType: number
+        }
+    )
+
+    pageItem P272_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: Cambio
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 110
+            region: @orden-de-pago
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-left-md
+            ]
+            width: 30
+        }
+        advanced {
+            preText: <p>Cambio: &ensp;</p>
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P272_TOT_RET_IVA (
+        type: hidden
+        layout {
+            sequence: 250
+            region: @orden-de-pago
+            slot: regionBody
+        }
+        source {
+            formRegion: @orden-de-pago
+            column: TOT_RET_IVA
+            dataType: number
+        }
+    )
+
+    pageItem P272_URL_MODAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @orden-de-pago
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 284
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P272_ID
+        }
+    )
+
+    button carga-rapida-proveedores (
+        buttonName: CARGA_RAPIDA_PROVEEDORES
+        label: Carga Rapida De Proveedores
+        layout {
+            sequence: 60
+            region: @orden-de-pago
+            slot: regionBody
+            startNewRow: false
+            column: 8
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 180
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P272_ID
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @orden-de-pago
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: definedByDynamicAction
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P272_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 30
+            region: @orden-de-pago
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button filtrar (
+        buttonName: FILTRAR
+        label: Filtrar
+        layout {
+            sequence: 180
+            region: @orden-de-pago
+            slot: regionBody
+            column: 5
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapLeft
+                t-Button--padTop
+            ]
+            icon: fa-search
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            customAttributes: TABINDEX="9"
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @orden-de-pago
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID
+        }
+    )
+
+    button movcaja (
+        buttonName: MovCaja
+        label: Caja
+        layout {
+            sequence: 50
+            region: @orden-de-pago
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-money
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 238
+                items: {
+                    P238_ID_PROVEEDOR: &P272_ID_PROVEEDOR.
+                    P238_ID_MONEDA: &P272_ID_MONEDA.
+                    P238_ID_ORDEN_PAGO: &P272_ID.
+                    P238_SER_COMPROBANTE: &P272_SER_ORDEN_PAGO.
+                    P238_NRO_COMPROBANTE: &P272_NUM_ORDEN_PAGO.
+                    P238_BANDERA: 00
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P272_AUTORIZADO = 'S' AND :P272_ID_MOV_CAJ IS NULL
+        }
+    )
+
+    button movcaja-2 (
+        buttonName: MovCaja_1
+        label: Caja
+        layout {
+            sequence: 60
+            region: @orden-de-pago
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-money
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 238
+                items: {
+                    P238_ID: &P272_ID_MOV_CAJ.
+                }
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID_MOV_CAJ
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 20
+            region: @orden-de-pago
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa fa-check
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 20
+            region: @orden-de-pago
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 284
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P272_ID
+        }
+    )
+
+    dynamicAction abrir-lista-de-valores (
+        name: Abrir lista de valores
+        execution {
+            sequence: 70
+        }
+        when {
+            event: dblclick
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: NUM_COMPROBANTE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#lista_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cargar-ordenes-seleccionados (
+        name: Cargar Ordenes Seleccionados
+        execution {
+            sequence: 30
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: jsExpression
+            javaScriptExpression: window
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      l_cursor SYS_REFCURSOR;
+                      json_detalle CLOB;
+                    BEGIN
+                    IF :P272_ORDEN_SELECCIONADO IS NOT NULL THEN 
+                    
+                    
+                      
+                      OPEN l_cursor FOR
+                        SELECT  C.NRO_COMPROBANTE,
+                                c.TIP_COMPROBANTE,
+                                nvl(C.SER_COMPROBANTE,'A') SER_COMPROBANTE,
+                                C.ID,
+                                C.NUM_CUOTA,
+                                to_char(C.FEC_VENCIMIENTO,'DD/MM/YYYY') AS FEC_VENCIMIENTO,
+                                C.ID_MONEDA,
+                                ---C.TOT_SALDO,
+                                decode(c.tip_comprobante,'NTC',-1,1) * (NVL(C.TOT_CUOTA,0) -NVL( C.MONTO_EN_OP,0)) TOT_SALDO,
+                                C.ID_PROVEEDOR,
+                                nvl(M.REFERENCIA,'Sin Referencia') REFERENCIA,
+                                C.ID_COMPROBANTE_CM,
+                                C.ID_COMPROBANTE
+                        FROM   CPW_CUOTAS C, 
+                               CMW_COMPRAS_CABECERA M 
+                        WHERE C.ID_COMPROBANTE_CM = M.ID--(+) -- Tobi Val, añadido para las NCP's
+                          AND C.ID IN (SELECT  TO_NUMBER (column_value)
+                        FROM  XMLTABLE (:P272_ORDEN_SELECCIONADO))
+                        UNION ALL
+                        SELECT  C.NRO_COMPROBANTE,
+                                c.TIP_COMPROBANTE,
+                                nvl(C.SER_COMPROBANTE,'A') SER_COMPROBANTE,
+                                C.ID,
+                                C.NUM_CUOTA,
+                                to_char(C.FEC_VENCIMIENTO,'DD/MM/YYYY') AS FEC_VENCIMIENTO,
+                                C.ID_MONEDA,
+                                ---C.TOT_SALDO,
+                                --NVL(C.TOT_CUOTA,0) -NVL( C.MONTO_EN_OP,0) TOT_SALDO,
+                                decode(c.tip_comprobante,'NCP',-1,1) * (NVL(C.TOT_CUOTA,0) -NVL( C.MONTO_EN_OP,0)) TOT_SALDO,
+                                C.ID_PROVEEDOR,
+                                nvl(M.REFERENCIA,'Sin referencia') REFERENCIA,
+                                C.ID_COMPROBANTE_CM,
+                                C.ID_COMPROBANTE
+                        FROM   CPW_CUOTAS C, 
+                               CPW_COMPROBANTES_CABECERA M 
+                        WHERE C.ID_COMPROBANTE = M.ID
+                          AND C.ID IN (SELECT	TO_NUMBER (column_value)
+                        FROM	XMLTABLE (:P272_ORDEN_SELECCIONADO));
+                    
+                      APEX_JSON.initialize_clob_output;
+                    
+                      APEX_JSON.open_object;
+                      APEX_JSON.write('CUOTAS', l_cursor);
+                      APEX_JSON.close_object;
+                    
+                      JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                    
+                      :P272_JSON_DETALLE:=JSON_DETALLE;
+                      /*
+                      SELECT SUM(NVL(TOT_CUOTA,0) - nvl(MONTO_EN_OP,0))  INTO :P272_SUMA_TOTAL FROM CPW_CUOTAS
+                      WHERE ID IN (SELECT TO_NUMBER(column_value) FROM XMLTABLE(:P272_ORDEN_SELECCIONADO));
+                      */
+                    END IF;
+                    
+                    END;
+                    ```
+                itemsToSubmit: P272_ORDEN_SELECCIONADO
+                itemsToReturn: P272_JSON_DETALLE
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var total=0;
+                    //var total_actual=$v("P272_SUMA_TOTAL");;
+                    var json_detalle = JSON.parse($v('P272_JSON_DETALLE'));
+                    console.log(json_detalle);
+                    
+                    
+                    
+                    
+                    if ((Object.keys(json_detalle.CUOTAS).length)!=0){
+                    
+                    
+                        for(let i=0;i<json_detalle.CUOTAS.length;i++){
+                    
+                    
+                        //Con este codigo podemos insertar una nueva fila en el detalle de comprobantes 
+                    
+                        var $widget = apex.region("det").widget();
+                        var $grid = $widget.interactiveGrid("getViews", "grid");
+                        var $model = $grid.model;
+                            $grid.setEditMode(true);
+                        //insert new record on a model
+                        var newRecordId = $model.insertNewRecord();
+                        var $newRecord = $model.getRecord(newRecordId);
+                    
+                    
+                        total=total+json_detalle.CUOTAS[i].TOT_SALDO;
+                        try {
+                            $model.setValue($newRecord, "ID_PROVEEDOR",(json_detalle.CUOTAS[i].ID_PROVEEDOR).toString());
+                            $model.setValue($newRecord, "TIP_COMPROBANTE",(json_detalle.CUOTAS[i].TIP_COMPROBANTE).toString());
+                            $model.setValue($newRecord, "SER_COMPROBANTE",(json_detalle.CUOTAS[i].SER_COMPROBANTE).toString());
+                            $model.setValue($newRecord, "NUM_COMPROBANTE",(json_detalle.CUOTAS[i].NRO_COMPROBANTE).toString());
+                            if ((json_detalle.CUOTAS[i].REFERENCIA)!=null){
+                            $model.setValue($newRecord, "REFERENCIA",(json_detalle.CUOTAS[i].REFERENCIA).toString());
+                            }
+                            $model.setValue($newRecord, "TOT_ORDEN_PAGO",(json_detalle.CUOTAS[i].TOT_SALDO).toString().replace(/\./g,','));
+                            $model.setValue($newRecord, "CUOTA_COPIA",(json_detalle.CUOTAS[i].TOT_SALDO).toString().replace(/\./g,','));
+                            $model.setValue($newRecord, "ID_CUOTA",(json_detalle.CUOTAS[i].ID).toString());
+                            if ((json_detalle.CUOTAS[i].ID_COMPROBANTE_CM)!=null){ 
+                            $model.setValue($newRecord, "ID_COMPROBANTE_CM",(json_detalle.CUOTAS[i].ID_COMPROBANTE_CM).toString());
+                            }
+                            if ((json_detalle.CUOTAS[i].ID_COMPROBANTE)!=null){
+                            $model.setValue($newRecord, "ID_COMPROBANTE",(json_detalle.CUOTAS[i].ID_COMPROBANTE).toString());
+                            }
+                            if ((json_detalle.CUOTAS[i].NUM_CUOTA)!=null){
+                            $model.setValue($newRecord, "NUM_CUOTA",(json_detalle.CUOTAS[i].NUM_CUOTA).toString());
+                            }
+                        }catch(e){
+                            console.log(e.stack)
+                        }
+                        }
+                        /*
+                        console.log("total actual : " + total_actual);
+                    
+                        if(isNaN(parseFloat(total_actual))){
+                            total = total + 0;
+                            console.log("total_actual is nan: " + total_actual)
+                        }else{
+                            total = total + parseFloat(total_actual);
+                            console.log("suma totales " + total);
+                        }
+                    
+                        apex.item("P272_SUMA_TOTAL").setValue(total);
+                        console.log("total : " + total);
+                        */
+                        calculaTotales();
+                    //$s('P170_TOTAL',total);
+                    
+                    }
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P272_ORDEN_SELECCIONADO
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    nombre varchar2(255):=WWV_FLOW.G_INSTANCE;
+                    orden_seleccionados varchar(500);
+                    BEGIN
+                    Select SUBSTR(c001, 0, LENGTH(c001) - 1) as c001
+                    into orden_seleccionados
+                    From APEX_COLLECTIONS
+                    Where COLLECTION_NAME = nombre
+                    AND SEQ_ID = 1;
+                    return orden_seleccionados;
+                    EXCEPTION 
+                    WHEN NO_DATA_FOUND THEN
+                    RETURN NULL;
+                    WHEN OTHERS THEN 
+                    RETURN NULL;
+                    END;
+                    
+                    ```
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_ORDEN_SELECCIONADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cargar-proveedor (
+        name: Cargar Proveedor
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P272_ID_PROVEEDOR
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      TMP_PROVEEDOR CONSTANT VARCHAR2(255) := WWV_FLOW.G_INSTANCE;     -- WWV_FLOW.G_INSTANCE is your user session number and will keep the collections per user session
+                    BEGIN
+                      IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_PROVEEDOR) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_PROVEEDOR);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_PROVEEDOR);
+                     
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => TMP_PROVEEDOR,
+                        p_c001 => :P272_ID_PROVEEDOR
+                         );
+                    END;
+                    ```
+                itemsToSubmit: P272_ID_PROVEEDOR
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 160
+        }
+        when {
+            selectionType: items
+            items: P272_FEC_EMISION
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P272_FEC_EMISION) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P272_FEC_EMISION,'/','');
+                            conv_fecha := substr(:P272_FEC_EMISION,1,2)||'/'||
+                                                      substr(:P272_FEC_EMISION,3,2)||'/'||
+                                                      lpad(substr(:P272_FEC_EMISION,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P272_FEC_EMISION := conv_fecha;
+                            ELSIF (length(:P272_FEC_EMISION) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P272_FEC_EMISION) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P272_FEC_EMISION
+                itemsToReturn: P272_FEC_EMISION
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cuota-copia (
+        name: CUOTA_COPIA
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: TOT_ORDEN_PAGO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :TOT_ORDEN_PAGO
+                itemsToSubmit: TOT_ORDEN_PAGO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CUOTA_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction fecha-autorizado (
+        name: Fecha Autorizado
+        execution {
+            sequence: 120
+        }
+        when {
+            selectionType: items
+            items: P272_AUTORIZADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_FEC_AUTORIZADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P272_AUTORIZADO
+                value: S
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: NULL
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_FEC_AUTORIZADO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P272_AUTORIZADO
+                value: N
+            }
+        )
+
+    )
+
+    dynamicAction llamar-reportes (
+        name: Llamar_reportes
+        execution {
+            sequence: 150
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @imprimir
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction mostrar-boton-filtro (
+        name: Mostrar Boton Filtro
+        execution {
+            sequence: 100
+        }
+        when {
+            selectionType: items
+            items: P272_ID_PROVEEDOR
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 0
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_SUMA_TOTAL
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-show (
+            action: show
+            affectedElements {
+                selectionType: button
+                button: @filtrar
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction ocultar-boton-filtro (
+        name: Ocultar Boton Filtro
+        execution {
+            sequence: 110
+        }
+        when {
+            event: ready
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: button
+                button: @filtrar
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction preparar-checksum (
+        name: Preparar Checksum
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @filtrar
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: apex.navigation.redirect($v('P272_URL_MODAL'));
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    v_checksum varchar2(2000);
+                    
+                    BEGIN 
+                     RETURN  APEX_UTIL.PREPARE_URL('f?p='||:APP_ID||':273:'||:APP_SESSION||'::NO::', p_checksum_type => 'SESSION');
+                     exception 
+                     when others then 
+                     RAISE_APPLICATION_ERROR(-20000,'ERROR al filtrar!');
+                    END;
+                    ```
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_URL_MODAL
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-lv (
+        name: Refrescar LV
+        execution {
+            sequence: 130
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @carga-rapida-proveedores
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @orden-de-pago
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambios (
+        name: Setear Cambios
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P272_ID_MONEDA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:P272_ID_MONEDA,SYSDATE,'C','V');
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el cambio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: P272_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM BSW_MONEDAS
+                    WHERE ID=:P272_ID_MONEDA
+                    ```
+                itemsToSubmit: P272_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P272_DECIMALES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-proveedor (
+        name: Setear Proveedor
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @filtrar
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      TMP_PROVEEDOR CONSTANT VARCHAR2(255) := WWV_FLOW.G_INSTANCE;     -- WWV_FLOW.G_INSTANCE is your user session number and will keep the collections per user session
+                    BEGIN
+                      IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_PROVEEDOR) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_PROVEEDOR);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_PROVEEDOR);
+                     
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => TMP_PROVEEDOR,
+                        p_c001 => :P272_ID_PROVEEDOR,
+                        p_c002 => :P272_ORDEN_SELECCIONADO,
+                        p_n001 => null
+                        );
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P272_ID_PROVEEDOR
+                    P272_ORDEN_SELECCIONADO
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction traer-info-cuota (
+        name: Traer info Cuota
+        execution {
+            sequence: 80
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_CUOTA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT C.TIP_COMPROBANTE, C.SER_COMPROBANTE, C.NRO_COMPROBANTE, C.NUM_CUOTA, C.ID_PROVEEDOR,
+                    CASE C.TIP_cOMPROBANTE
+                       WHEN 'NCP' THEN -C.TOT_SALDO
+                       ELSE C.TOT_SALDO
+                       END AS TOT_SALDO, nvl(M.REFERENCIA,'Sin Referencia')
+                    FROM CPW_CUOTAS C, CMW_COMPRAS_CABECERA M
+                    WHERE C.ID = :ID_CUOTA
+                    AND C.ID_COMPROBANTE_CM = M.ID(+)
+                    ```
+                itemsToSubmit: ID_CUOTA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    TIP_COMPROBANTE
+                    SER_COMPROBANTE
+                    NUM_COMPROBANTE
+                    NUM_CUOTA
+                    ID_PROVEEDOR
+                    TOT_ORDEN_PAGO
+                    REFERENCIA
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction validar-detalle-vacio (
+        name: Validar Detalle Vacio
+        execution {
+            sequence: 140
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @create
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Advertencia
+                message: El detalle no puede quedar vacio
+                style: warning
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P272_ROWCOUNT
+                value: 0
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: f_setRowCount();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-submit-page (
+            action: submitPage
+            settings {
+                requestButtonName: CREATE
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item!=value
+                item: P272_ROWCOUNT
+                value: 0
+            }
+        )
+
+    )
+
+    computation p272-fec-emision (
+        itemName: P272_FEC_EMISION
+        execution {
+            sequence: 20
+        }
+        computation {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    computation p272-num-orden-pago (
+        itemName: P272_NUM_ORDEN_PAGO
+        execution {
+            sequence: 20
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(NUM_ORDEN_PAGO),0)+1 FROM CPW_CABECERA_ORDEN_PAGO
+                WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                AND SER_ORDEN_PAGO = :P272_SER_ORDEN_PAGO;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P272_ID
+        }
+    )
+
+    computation p272-num-orden-pago-ant (
+        itemName: P272_NUM_ORDEN_PAGO_ANT
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(NUM_ORDEN_PAGO),0) FROM CPW_CABECERA_ORDEN_PAGO
+                WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                AND SER_ORDEN_PAGO = :P272_SER_ORDEN_PAGO;
+                ```
+        }
+    )
+
+    process detalles-save-interactive-grid-data (
+        name: Detalles - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                
+                
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                                insert into CPW_DETALLE_ORDEN_PAGO 
+                                (ID_ORDEN_PAGO_CAB,TIP_COMPROBANTE,SER_COMPROBANTE,NUM_COMPROBANTE,ID_PROVEEDOR,
+                                TOT_ORDEN_PAGO, ID_CUOTA, NUM_CUOTA, ID_COMPROBANTE_CM, ID_COMPROBANTE,ID_EMPRESA, COD_USUARIO_AUD, REFERENCIA)
+                                values(:P272_ID,:TIP_COMPROBANTE,:SER_COMPROBANTE, :NUM_COMPROBANTE,
+                                :ID_PROVEEDOR,REPLACE(:TOT_ORDEN_PAGO,'.',''), :ID_CUOTA, :NUM_CUOTA, :ID_COMPROBANTE_CM,:ID_COMPROBANTE
+                                , :P0_ID_EMPRESA,
+                                :APP_USER, :REFERENCIA);
+                            
+                            WHEN 'U' then  
+                                update CPW_DETALLE_ORDEN_PAGO  d
+                                    set  TIP_COMPROBANTE   = :TIP_COMPROBANTE,
+                                         SER_COMPROBANTE   = :SER_COMPROBANTE,
+                                         NUM_COMPROBANTE   = :NUM_COMPROBANTE,
+                                         ID_PROVEEDOR      = :ID_PROVEEDOR,
+                                         TOT_ORDEN_PAGO    = REPLACE(:TOT_ORDEN_PAGO,'.',''),
+                                         ID_CUOTA          = :ID_CUOTA,
+                                         NUM_CUOTA         = :NUM_CUOTA,
+                                         ID_COMPROBANTE_CM = :ID_COMPROBANTE_CM,
+                                         ID_COMPROBANTE = : ID_COMPROBANTE,
+                                         REFERENCIA        = :REFERENCIA
+                
+                                where   d.ID_ORDEN_PAGO_CAB = :P272_ID
+                                    and d.id = :id;
+                
+                           when 'D' then
+                                delete CPW_DETALLE_ORDEN_PAGO d     
+                                WHERE d.ID_ORDEN_PAGO_CAB = :ID_ORDEN_PAGO_CAB
+                                           and d.id = :id;  
+                    end case;
+                                         
+                
+                END;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 64271774289068928
+        }
+    )
+
+    process eliminar-detalle (
+        name: ELIMINAR_DETALLE
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                /* Borra todas las lineas de detalle, al borrarse la cabecera  */
+                delete from CPW_DETALLE_ORDEN_PAGO    
+                where id_ORDEN_PAGO_CAB = :P272_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 64808569018945645
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+        comments {
+            comments: "Elimina los detalles de la factura al borrase esta "
+        }
+    )
+
+    process initialize-form-orden-de-pago (
+        name: Initialize form Orden de Pago
+        type: formInitialization
+        formRegion: @orden-de-pago
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 64205123628800498
+        }
+    )
+
+    process limpiar-sesion (
+        name: LIMPIAR_SESION
+        type: clearSessionState
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 64808669688945646
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,DELETE
+        }
+        comments {
+            comments: Proceso limpiar la pantalla
+        }
+    )
+
+    process process-form-orden-de-pago (
+        name: Process form Orden de Pago
+        type: formAutoRowProcessing
+        formRegion: @orden-de-pago
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 64205520057800498
+        }
+        comments {
+            comments: "Proceso encargado para guardar, actualizar , eliminar la cabecera de la factura "
+        }
+    )
+
+    process reset (
+        name: "RESET "
+        type: executeCode
+        source {
+            plsqlCode: apex_util.set_session_state('P273_ORDEN_SELECCIONADAS',NULL);
+        }
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 62650753138549126
+        }
+    )
+
+    branch (
+        name: Go To Page 519
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 519
+                items: {
+                    P519_ID_ORDEN_PAGO: &P272_ID.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

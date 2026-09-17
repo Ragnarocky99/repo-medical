@@ -1,0 +1,684 @@
+page 674 (
+    name: Saldos Históricos
+    alias: SALDOS
+    title: Saldos Históricos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .anulado {
+                color: red;
+            }
+            .presupuestado {
+            color: orangered;
+            }
+            .cotizado{
+                color: green;
+            }
+            .confirmado {
+                color: #3f46bb;
+            }
+            .EnDeposito{
+                color: brown;
+            }
+            .EntregadoCliente{
+                color: aqua;
+            }
+            .OrdenCompra{
+                color: yellowgreen;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region saldos (
+        name: Saldos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                ------saldo clientes a una fecha--------
+                select c.id_empresa,
+                       c.cod_cliente,
+                       c.nombre,
+                       c.id_sucursal,
+                      --- sum (NVL(C.DEBITO,0) - NVL(C.CREDITO,0)) SALDO
+                       SUM(decode(c.tip_comprobante,'ADD',NVL(C.CREDITO,0),NVL(C.DEBITO,0) - NVL(C.CREDITO,0))) SALDO
+                       
+                  from CCHV_SALDOS_HIST_CLIENTES c
+                  where C.id_EMPRESA = :P0_ID_EMPRESA 
+                    and (TO_DATE(C.FEC_COMPROBANTE,'DD/MM/YYYY') <= :P674_FEC_HASTA)
+                    AND (C.COD_CLIENTE = :P674_CLIENTE OR :P674_CLIENTE IS NULL)
+                
+                group by C.ID_EMPRESA,
+                         c.cod_cliente,
+                         c.nombre,
+                         c.id_sucursal
+                       
+                ---ORDER BY C.FEC_COMPROBANTE, C.nro_comprobante
+                ```
+            pageItemsToSubmit: [
+                P674_FEC_HASTA
+                P674_CLIENTE
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 12166680617307433
+        }
+
+        savedReport 161861 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COD_CLIENTE
+                layout {
+                    width: 234.64999999999998
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NOMBRE
+                layout {
+                    width: 701.65
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @SALDO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    show: false
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 5
+                }
+            )
+
+        )
+
+        column COD_CLIENTE (
+            type: textField
+            heading {
+                heading: <p>Codigo Cliente</p>
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: COD_CLIENTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ID_EMPRESA (
+            type: numberField
+            heading {
+                heading: Id Empresa
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: selectList
+            heading {
+                heading: <p>Sucursal</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+                nullDisplayValue: -- sin sucursal--
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column NOMBRE (
+            type: textField
+            heading {
+                heading: <p>Nombre</p>
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: NOMBRE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SALDO (
+            type: numberField
+            heading {
+                heading: <p>Saldo</p>
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Saldos
+        }
+    )
+
+    region saldos-historicos (
+        name: Saldos Historicos
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region saldos-historicos-2 (
+        name: Saldos Historicos
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                t-BreadcrumbRegion--useBreadcrumbTitle
+                t-BreadcrumbRegion--headingFontAlt
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P674_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes-cod-cliente
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 60
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P674_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha Desde: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/01/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P674_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P674_IND_DETALLE (
+        type: checkbox
+        label {
+            label: <p>Ver Detallado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 70
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button imprimir (
+        buttonName: imprimir
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button volver (
+        buttonName: volver
+        label: volver
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 156
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P674_FEC_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P674_FEC_DESDE) = 8) then
+                    
+                            conv_fecha := replace(:P674_FEC_DESDE,'/','');
+                            conv_fecha := substr(:P674_FEC_DESDE,1,2)||'/'||
+                                                      substr(:P674_FEC_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P674_FEC_DESDE,5,4),4,'0');
+                    
+                        :P674_FEC_DESDE := conv_fecha;
+                        ELSIF (length(:P674_FEC_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P674_FEC_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P674_5_FEC_INI
+                itemsToReturn: P674_5_FEC_INI
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha-hasta (
+        name: CONVERT_FECHA_HASTA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P674_FEC_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P674_FEC_HASTA) = 8) then
+                    
+                            conv_fecha := replace(:P674_FEC_HASTA,'/','');
+                            conv_fecha := substr(:P674_FEC_HASTA,1,2)||'/'||
+                                                      substr(:P674_FEC_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P674_FEC_HASTA,5,4),4,'0');
+                    
+                        :P674_FEC_HASTA := conv_fecha;
+                        ELSIF (length(:P674_FEC_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P674_FEC_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P674_FEC_HASTA
+                itemsToReturn: P674_FEC_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh (
+        name: REFRESH
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P674_CLIENTE
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 266
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 664
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

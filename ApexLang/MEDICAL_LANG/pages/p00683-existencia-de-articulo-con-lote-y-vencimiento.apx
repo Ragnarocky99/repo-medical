@@ -1,0 +1,377 @@
+page 683 (
+    name: Existencia de Articulo con Lote y Vencimiento
+    alias: EXISTENCIA-DE-ARTICULO-CON-LOTE-Y-VENCIMIENTO
+    title: Existencia de Articulo con Lote y Vencimiento
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region existencia-de-articulo-con-lote-y-vencimiento (
+        name: Existencia de Articulo con Lote y Vencimiento
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT  S.DESCRIPCION AS SUCURSAL, A.COD_ARTICULO, A.DESCRIPCION, E.CANT_DISPON, L.NRO_LOTE, L.FEC_VENCIMIENTO
+                FROM STW_EXISTENCIA_ART E, STW_LOTES L, STW_ARTICULOS A, BSW_SUCURSALES S
+                WHERE A.ID = L.ID_ARTICULO
+                AND A.ID = E.ID_ARTICULO
+                AND E.ID_SUCURSAL = S.ID
+                AND (S.ID = :P683_SUCURSAL OR :P683_SUCURSAL IS NULL)
+                AND (A.ID = :P683_ARTICULOS OR :P683_ARTICULOS IS NULL)
+                AND (:P683_NRO_LOTE = L.NRO_LOTE OR :P683_NRO_LOTE IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P683_SUCURSAL
+                P683_ARTICULOS
+                P683_NRO_LOTE
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 42204592938824169
+        }
+
+        column CANT_DISPON (
+            type: plainText
+            heading {
+                heading: Cant Dispon
+                alignment: end
+            }
+            layout {
+                sequence: 3
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+            }
+            layout {
+                sequence: 2
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion Articulo
+            }
+            layout {
+                sequence: 1
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fec Vencimiento
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NRO_LOTE (
+            type: plainText
+            heading {
+                heading: Nro Lote
+            }
+            layout {
+                sequence: 24
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column SUCURSAL (
+            type: plainText
+            heading {
+                heading: Sucursal
+            }
+            layout {
+                sequence: 14
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            fontSize: 15
+            pageHeaderText:
+                ```
+                STOCK Y VENCIMIENTO
+                &P0_DESC_EMPRESA. - &P0_DESC_SUCURSAL.
+                ```
+        }
+        pageFooter {
+            pageFooterText:
+                ```
+                USUARIO: &APP_USER.     FECHA Y HORA: &P0_PAGE_TIMESTAMP.
+                
+                ```
+        }
+
+        savedReport 227491 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANT_DISPON (
+                sequence: 5
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 3
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 6
+            )
+
+            displayColumn NRO_LOTE (
+                sequence: 4
+            )
+
+            displayColumn SUCURSAL (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P683_ARTICULOS (
+        type: popupLov
+        label {
+            label: <p>Articulos: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 4
+            columnSpan: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-bottom-sm
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P683_NRO_LOTE (
+        type: textField
+        label {
+            label: <p> Nro Lote: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 4
+            columnSpan: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-bottom-sm
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P683_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 4
+            columnSpan: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-bottom-sm
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P683_SUCURSAL
+                P683_ARTICULOS
+                P683_NRO_LOTE
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @existencia-de-articulo-con-lote-y-vencimiento
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

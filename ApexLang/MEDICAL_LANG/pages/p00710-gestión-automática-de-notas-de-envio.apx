@@ -1,0 +1,1636 @@
+page 710 (
+    name: Gestion automatica de Notas de Envio
+    alias: GESTIÓN-AUTOMÁTICA-DE-NOTAS-DE-ENVIO
+    title: Gestion automatica de Notas de Envio
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        fileUrls: #APP_FILES#control/ccs_p.css
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region articulos-en-sucursal (
+        name: Articulos en Sucursal
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ped.nro_comprobante,
+                       art.cod_articulo,
+                       art.descripcion, 
+                       sum(exi.cant_dispon) cant_dispon,
+                       cot.id id_cot,
+                       art.id id_art,
+                       ped.id id_ped,
+                       per.nombre as cliente
+                from cmw_cotiza_articulos    cot 
+                join stw_articulos           art on art.id = cot.id_articulo
+                join vtw_pedidos_cabecera    ped on ped.id = cot.id_pedido
+                join ccw_clientes            cli on cli.id = ped.id_cliente
+                join bsw_personas            per on per.id = cli.id_persona
+                join stw_existencia_art      exi on cot.id_articulo = exi.id_articulo
+                                                and exi.id_sucursal = ped.id_sucursal
+                where nvl(ped.autoriza_stock,'N') = 'S'
+                  and nvl(ped.autoriza_ctacte,'N') = 'S'
+                  and nvl(cot.cantidad_a_entregar,0) > 0
+                  and nvl(cot.nro_occ,'0') != '0'
+                  and obtener_cantidad_pendiente(ped.id,art.id,:P0_ID_EMPRESA,cot.id) - nvl(cot.cant_anulada,0) > 0
+                group by ped.nro_comprobante, art.cod_articulo, art.descripcion,cot.id,art.id,ped.id,per.nombre
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+            icon: fa-box-arrow-in-south
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 52200988943772105
+        }
+
+        column CANT_DISPON (
+            type: plainText
+            heading {
+                heading: Cant Dispon
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ID_ART (
+            type: plainText
+            heading {
+                heading: Id Art
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID_COT (
+            type: plainText
+            heading {
+                heading: Id Cot
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_PED (
+            type: plainText
+            heading {
+                heading: Id Ped
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Comprobante
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Articulos en Sucursal
+        }
+
+        savedReport 534688 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANT_DISPON (
+                sequence: 4
+            )
+
+            displayColumn CLIENTE (
+                sequence: 5
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 3
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region generacion-de-notas-env (
+        name: Generacion de Notas Env.
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                -- SELECT PED.NRO_COMPROBANTE AS NRO_PEDIDO,
+                --        ART.COD_ARTICULO,
+                --        ART.DESCRIPCION AS DESC_ARTICULO,
+                --        LOT.NRO_LOTE,
+                --        LOT.FEC_VENCIMIENTO,
+                --        AEN.CANITDAD AS CANTIDAD,
+                --        SAL.DESCRIPCION AS SUCURSAL_SALIDA,
+                --        ENT.DESCRIPCION AS SUCURSAL_ENTRADA,
+                --        AEN.FEC_ALTA AS FECHA_GENERACION,
+                --        (SELECT P.NOMBRE
+                --           FROM BSW_PERSONAS P,
+                --                CCW_CLIENTES C,
+                --                VTW_PEDIDOS_CABECERA PED
+                --          WHERE P.ID = C.ID_PERSONA
+                --            AND C.ID = PED.ID_CLIENTE
+                --            AND PED.ID = AEN.ID_PEDIDO) AS CLIENTE,
+                --         AEN.ID,
+                --         AEN.ID_PEDIDO,
+                --         AEN.ID_ARTICULO,
+                --         AEN.ID_LOTE
+                --   FROM STW_TMP_ARTS_NOTA_ENV AEN
+                --   JOIN STW_ARTICULOS         ART ON ART.ID = AEN.ID_ARTICULO
+                --   JOIN STW_LOTES             LOT ON LOT.ID = AEN.ID_LOTE
+                --   JOIN BSW_SUCURSALES        SAL ON SAL.ID = AEN.ID_SUCURSAL_SAL
+                --   JOIN BSW_SUCURSALES        ENT ON ENT.ID = AEN.ID_SUCURSAL_ENT
+                --   JOIN VTW_PEDIDOS_CABECERA  PED ON PED.ID = AEN.ID_PEDIDO
+                --   WHERE AEN.COD_USUARIO_AUD = :APP_USER
+                SELECT C002 NRO_PEDIDO,
+                       C003 COD_ARTICULO,
+                       C004 DESC_ARTICULO,
+                       C005 NRO_LOTE,
+                       C006 FEC_VENCIMIENTO,
+                       N001 CANTIDAD,
+                       C001 SUCURSAL_SALIDA,
+                       C008 SUCURSAL_ENTRADA,
+                       D001 FECHA_GENERACION,
+                       C007 CLIENTE,
+                       SEQ_ID ID,
+                       N004 ID_PEDIDO,
+                       N002 ID_ARTICULO,
+                       N005 ID_LOTE,
+                       C010 NRO_LICITACION
+                  FROM APEX_COLLECTIONS
+                 WHERE COLLECTION_NAME = 'STWC_NOTAS_ENVIO'
+                   AND C001 != 'LICITACIONES'
+                --   FROM STW_TMP_ARTS_NOTA_ENV AEN
+                --   JOIN STW_ARTICULOS         ART ON ART.ID = AEN.ID_ARTICULO
+                --   JOIN STW_LOTES             LOT ON LOT.ID = AEN.ID_LOTE
+                --   JOIN BSW_SUCURSALES        SAL ON SAL.ID = AEN.ID_SUCURSAL_SAL
+                --   JOIN BSW_SUCURSALES        ENT ON ENT.ID = AEN.ID_SUCURSAL_ENT
+                --   LEFT JOIN VTW_PEDIDOS_CABECERA  PED ON PED.ID = AEN.ID_PEDIDO
+                --   WHERE AEN.COD_USUARIO_AUD = :APP_USER
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 29466281612695243
+        }
+
+        savedReport 310149 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @SUCURSAL_ENTRADA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_GENERACION
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @CLIENTE
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO
+                layout {
+                    show: false
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    show: false
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_LOTE
+                layout {
+                    show: false
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PEDIDO
+                layout {
+                    width: 89
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 126
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @SUCURSAL_SALIDA
+                layout {
+                    show: false
+                    width: 112
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 98
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 371
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LICITACION
+                layout {
+                    width: 101.0767
+                    sequence: 5
+                }
+            )
+
+            controlBreak (
+                column: @SUCURSAL_SALIDA
+                sort {
+                    nulls: last
+                }
+                layout {
+                    sequence: 5
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CLIENTE (
+            type: textField
+            heading {
+                heading: <p>Cliente</p>
+                alignment: center
+            }
+            layout {
+                sequence: 240
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: CLIENTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod. Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+            }
+            validation {
+                valueRequired: true
+                maxLength: 3000
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FECHA_GENERACION (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Generacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: FECHA_GENERACION
+                dataType: date
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Vencimiento Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: numberField
+            heading {
+                heading: Id Articulo
+                alignment: end
+            }
+            layout {
+                sequence: 270
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_LOTE (
+            type: numberField
+            heading {
+                heading: Id Lote
+                alignment: end
+            }
+            layout {
+                sequence: 280
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_LOTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_PEDIDO (
+            type: numberField
+            heading {
+                heading: Id Pedido
+                alignment: end
+            }
+            layout {
+                sequence: 260
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_PEDIDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_LICITACION (
+            type: textField
+            heading {
+                heading: <p>Nro. Licitacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 290
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: NRO_LICITACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_PEDIDO (
+            type: numberField
+            heading {
+                heading: <p>Nro. Pedido</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_PEDIDO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+        )
+
+        column SUCURSAL_ENTRADA (
+            type: textField
+            heading {
+                heading: <p>Sucursal Entrada</p>
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: SUCURSAL_ENTRADA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SUCURSAL_SALIDA (
+            type: textField
+            heading {
+                heading: Sucursal Salida
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: SUCURSAL_SALIDA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Generacion de Notas Env.
+        }
+    )
+
+    region resultados (
+        name: Resultados
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ped.nro_comprobante as nro_pedido,
+                       art.cod_articulo,
+                       art.descripcion as desc_articulo,
+                       lot.nro_lote,
+                       lot.fec_vencimiento,
+                       aen.CANITDAD as cantidad,
+                       sal.descripcion as sucursal_salida,
+                       ent.descripcion as sucursal_entrada,
+                       aen.FEC_ALTA as fecha_generacion,
+                       (select p.nombre
+                          from bsw_personas p,
+                               ccw_clientes c,
+                               vtw_pedidos_cabecera ped
+                         where p.id = c.id_persona
+                           and c.id = ped.id_cliente
+                           and ped.id = aen.id_pedido) AS CLIENTE
+                  from STW_TMP_ARTS_NOTA_ENV aen
+                  join stw_articulos         art on art.id = aen.id_articulo
+                  join stw_lotes             lot on lot.id = aen.id_lote
+                  join bsw_sucursales        sal on sal.id = aen.id_sucursal_sal
+                  join bsw_sucursales        ent on ent.id = aen.id_sucursal_ent
+                  join vtw_pedidos_cabecera  ped on ped.id = aen.id_pedido
+                  where aen.cod_usuario_aud = :APP_USER
+                
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+            icon: fa-list-alt
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 50349108365189504
+        }
+
+        column CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Desc Articulo
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column FECHA_GENERACION (
+            type: plainText
+            heading {
+                heading: Fecha Generacion
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fec Vencimiento
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column NRO_LOTE (
+            type: plainText
+            heading {
+                heading: Nro Lote
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column NRO_PEDIDO (
+            type: plainText
+            heading {
+                heading: Nro Pedido
+                alignment: end
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column SUCURSAL_ENTRADA (
+            type: plainText
+            heading {
+                heading: Sucursal Entrada
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column SUCURSAL_SALIDA (
+            type: plainText
+            heading {
+                heading: Sucursal Salida
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Resultados
+        }
+
+        savedReport 506156 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD (
+                sequence: 7
+            )
+
+            displayColumn CLIENTE (
+                sequence: 10
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn FECHA_GENERACION (
+                sequence: 9
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 6
+            )
+
+            displayColumn NRO_LOTE (
+                sequence: 5
+            )
+
+            displayColumn NRO_PEDIDO (
+                sequence: 2
+            )
+
+            displayColumn SUCURSAL_ENTRADA (
+                sequence: 8
+            )
+
+            displayColumn SUCURSAL_SALIDA (
+                sequence: 1
+            )
+
+            sort (
+                column: FEC_VENCIMIENTO
+                sort {
+                    sequence: 1
+                }
+            )
+
+            controlBreak (
+                column: SUCURSAL_SALIDA
+                layout {
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    region selector (
+        name: Selector
+        type: regionDisplaySelector
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        settings {
+            displayRegionIcons: true
+            includeShowAll: false
+        }
+    )
+
+    pageItem P710_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fec Desde</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                sysdate-30
+                
+                ```
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P710_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fec Hasta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                sysdate
+                
+                ```
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P710_IDS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @generacion-de-notas-env
+            slot: regionBody
+        }
+    )
+
+    pageItem P710_ID_PEDIDO (
+        type: popupLov
+        label {
+            label: <p>Nro Pedido</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select distinct pc.nro_comprobante,
+                pc.id
+                from stwv_articulos_a_enviar x
+                join vtw_pedidos_cabecera pc on pc.id = x.id_pedido
+                join bsw_sucursales suc on suc.id = pc.id_sucursal
+                
+                ```
+            nullDisplayValue: -- Sin Seleccionar --
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            used: always
+        }
+        serverSideCondition {
+            type: never
+        }
+        comments {
+            comments: ||' ('||suc.descripcion||')-'||pc.id
+        }
+    )
+
+    pageItem P710_MENSAJE_PROCEDIMIENTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            region: @generacion-de-notas-env
+            slot: regionBody
+        }
+        sessionState {
+            dataType: clob
+        }
+    )
+
+    pageItem P710_PEDIDOS (
+        type: displayOnly
+        label {
+            label: Pedidos
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            type: sqlQuerySingleValue
+            sqlQuery:
+                ```sql
+                select nvl((select 'Pedidos implicados: '||listagg(distinct pc.nro_comprobante,',')
+                from stwv_articulos_a_enviar x
+                join vtw_pedidos_cabecera pc on pc.id = x.id_pedido), '') pedidos
+                  from dual
+                ```
+        }
+    )
+
+    button generar (
+        buttonName: Generar
+        label: Generar Recomendacion
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction agregar-botones (
+        name: Agregar botones
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-hr-bilog-extendigtoolbar (
+            action: plugin/interactiveGridExtendToolbar
+            settings {
+                label: Generar Nota Envio
+                hot: true
+                icon: fa-dynamic-content
+                triggerAction: gen_nota_env
+            }
+            affectedElements {
+                selectionType: region
+                region: @generacion-de-notas-env
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction generar-nota-de-envio (
+        name: Generar nota de envio
+        execution {
+            sequence: 20
+        }
+        when {
+            event: custom
+            customEvent: gen_nota_env
+            selectionType: region
+            region: @generacion-de-notas-env
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: &P710_MENSAJE_PROCEDIMIENTO.
+                style: information
+            }
+            execution {
+                sequence: 80
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNotNull
+                componentType: item
+                item: P710_MENSAJE_PROCEDIMIENTO
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    :P710_IDS := NULL;
+                    :P710_MENSAJE_PROCEDIMIENTO := NULL;
+                    ```
+                itemsToReturn: [
+                    P710_IDS
+                    P710_MENSAJE_PROCEDIMIENTO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: :P710_IDS  := SUBSTR(:P710_IDS, 1, LENGTH(:P710_IDS) - 1);
+                itemsToSubmit: P710_IDS
+                itemsToReturn: P710_IDS
+                showProcessing: true
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-3 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                        STWP_INSERTA_NOTA_ENVIO_AUTO(p_id_empresa => :P0_ID_EMPRESA,
+                                                     p_ids        => :P710_IDS);
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            :P710_MENSAJE_PROCEDIMIENTO := SQLERRM;
+                    END;
+                    ```
+                itemsToReturn: P710_MENSAJE_PROCEDIMIENTO
+                showProcessing: true
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @generacion-de-notas-env
+            }
+            execution {
+                sequence: 90
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-interactive-grid-process-rows (
+            action: plugin/fosInteractiveGridProcessRows
+            settings {
+                action: processSelectedRows
+                plSqlCode: :P710_IDS := NVL(:P710_IDS, '')||:ID||':';
+                itemsToSubmit: ID
+                itemsToReturn: P710_IDS
+                errorMessage: #SQLERRM#
+                extraOptions: refreshSelectionAfterProcessing
+            }
+            affectedElements {
+                selectionType: region
+                region: @generacion-de-notas-env
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 100
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process generacion-de-notas-env-save-interactive-grid-data (
+        name: Generacion de Notas Env. - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @generacion-de-notas-env
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 31009451905148713
+        }
+    )
+
+    process generar-tmp (
+        name: Generar TMP
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                  -- Call the procedure
+                --   STW_GENERA_PREV_NOTA_ENVIO(P_ID_PEDIDO => :P710_ID_PEDIDO,                             
+                --                              P_COD_USUARIO_AUD => :APP_USER);
+                  STWP_GENERA_NOTA_ENVIO_PREVIO(:P0_ID_EMPRESA);
+                  :P710_IDS := NULL;
+                end;
+                
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 50350789742189520
+        }
+    )
+
+)
+

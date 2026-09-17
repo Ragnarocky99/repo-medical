@@ -1,0 +1,1543 @@
+page 780 (
+    name: Autorizacion de Nota de Entrega
+    alias: AUTORIZACION-DE-NOTA-DE-ENTREGA
+    title: Autorizacion de Nota de Entrega
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region autorizaciones (
+        name: Autorizaciones
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT LC.ID,
+                       LC.ID_SUCURSAL,
+                       LC.FEC_LICITACION,
+                       LC.NRO_LICITACION,
+                       LC.ID_CLIENTE,
+                       LC.IND_AUTORIZA_STOCK,
+                       LC.COD_USUARIO_AUT_STOCK,
+                       LC.FEC_AUTORIZA_STOCK,
+                       LC.IND_AUTORIZA_CTACTE,
+                       LC.COD_USUARIO_AUT_CTACTE,
+                       LC.FEC_AUTORIZA_CTACTE
+                  FROM LCW_LICITACIONES_CAB LC
+                 WHERE ID_EMPRESA  = :P0_ID_EMPRESA
+                   AND ID_SUCURSAL = :P0_ID_SUCURSAL
+                   AND EXISTS (SELECT 1
+                                 FROM LCWV_RESUMEN_SISTEMA RS
+                                WHERE RS.ID_LICITACION_CAB = LC.ID
+                                  AND CANT_PEND_A_ENTREGAR > 0
+                                  AND CALCULA_SALDO_STOCK(P_ID_EMPRESA  => LC.ID_EMPRESA,
+                                                          P_ID_ARTICULO => RS.ID_ARTICULO,
+                                                          P_ID_LOTE     => NULL,
+                                                          P_ID_SUCURSAL => NULL,
+                                                          P_FECHA       => SYSDATE) > 0)
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--accent15
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            htmlDomId: LicitacionCab
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 42396891193188113
+        }
+
+        savedReport 424537 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    width: 129.48
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @FEC_LICITACION
+                layout {
+                    width: 115.49100000000001
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LICITACION
+                layout {
+                    width: 117.49100000000001
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    width: 452.503
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @IND_AUTORIZA_STOCK
+                layout {
+                    width: 106.49100000000001
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUT_STOCK
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FEC_AUTORIZA_STOCK
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @IND_AUTORIZA_CTACTE
+                layout {
+                    width: 117.81200000000001
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUT_CTACTE
+                layout {
+                    width: 125.81
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @FEC_AUTORIZA_CTACTE
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column COD_USUARIO_AUT_CTACTE (
+            type: textField
+            heading {
+                heading: <p>Autorizado Por</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 15
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUT_CTACTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USUARIO_AUT_STOCK (
+            type: textField
+            heading {
+                heading: <p>Autorizado Por</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 15
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUT_STOCK
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_AUTORIZA_CTACTE (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Autorización</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_AUTORIZA_CTACTE
+                dataType: date
+            }
+        )
+
+        column FEC_AUTORIZA_STOCK (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Autorización</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_AUTORIZA_STOCK
+                dataType: date
+            }
+        )
+
+        column FEC_LICITACION (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Licitacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: FEC_LICITACION
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: selectList
+            heading {
+                heading: <p>Cliente</p<
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 70
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: selectList
+            heading {
+                heading: <p>Sucursal</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column IND_AUTORIZA_CTACTE (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza CTE</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_AUTORIZA_CTACTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_AUTORIZA_STOCK (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza Stock</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_AUTORIZA_STOCK
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_LICITACION (
+            type: numberField
+            heading {
+                heading: <p>Nro. Licitacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_LICITACION
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Autorizaciones
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalles-aprobaciones (
+        name: Detalles Aprobaciones
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT ID_APROBACION,
+                       CANT_PEND_A_ENTREGAR,
+                       ID_LICITACION_CAB,
+                       CANT_A_ENTREGAR,
+                       COD_ARTICULO,
+                       DESC_ARTICULO,
+                       PRESENTACION,
+                       UNIDAD_MEDIDA,
+                       MARCA,
+                       NRO_ITEM,
+                       STOCK,
+                       ID_ARTICULO,
+                       CANT_RESERVADA,
+                       ID_SUCURSAL,
+                       OBTENER_CANTIDAD_EXISTENTE(P_ID_ARTICULO    => ID_ARTICULO,
+                                                  P_ID_SUCURSAL    => ID_SUCURSAL,
+                                                  P_IND_DISPONIBLE => 'S') DISPONIBILIDAD
+                  FROM LCWV_ARTICULOS_A_ENTREGAR
+                 WHERE CANT_RESERVADA > 0
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @autorizaciones
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @autorizaciones
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 42728664315845537
+        }
+
+        savedReport 434149 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 123.99700000000001
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 359
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 88
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @CANT_PEND_A_ENTREGAR
+                layout {
+                    width: 161.95499999999998
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @STOCK
+                layout {
+                    width: 102
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @CANT_A_ENTREGAR
+                layout {
+                    width: 140.33499999999998
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @CANT_RESERVADA
+                layout {
+                    width: 135.989
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_APROBACION
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @PRESENTACION
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @UNIDAD_MEDIDA
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MARCA
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @DISPONIBILIDAD
+                layout {
+                    width: 110.702
+                    sequence: 7
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANT_A_ENTREGAR (
+            type: numberField
+            heading {
+                heading: <p>Cant. A Entregar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 190
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANT_A_ENTREGAR
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_PEND_A_ENTREGAR (
+            type: numberField
+            heading {
+                heading: <p>Cant. Pend. A Entregar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 240
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: CANT_PEND_A_ENTREGAR
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_RESERVADA (
+            type: numberField
+            heading {
+                heading: <p>Cant. Reservada</p>
+                alignment: center
+            }
+            layout {
+                sequence: 280
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: CANT_RESERVADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod. Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            link {
+                target: {
+                    page: 646
+                    items: {
+                        P646_ID: &ID_ARTICULO.
+                    }
+                }
+                linkText: &COD_ARTICULO.
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 220
+            }
+            validation {
+                valueRequired: true
+                maxLength: 3000
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DISPONIBILIDAD (
+            type: numberField
+            heading {
+                heading: <p>Disponibilidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 380
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: DISPONIBILIDAD
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_APROBACION (
+            type: hidden
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: ID_APROBACION
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LICITACION_CAB (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_LICITACION_CAB
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 370
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MARCA (
+            type: hidden
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: MARCA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_ITEM (
+            type: numberField
+            heading {
+                heading: <p>Nro. Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NRO_ITEM
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRESENTACION (
+            type: hidden
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: PRESENTACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column STOCK (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            link {
+                target: {
+                    page: 758
+                    items: {
+                        P758_ID_ARTICULO: &ID_ARTICULO.
+                    }
+                }
+                linkText: &STOCK.
+            }
+            source {
+                databaseColumn: STOCK
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column UNIDAD_MEDIDA (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: UNIDAD_MEDIDA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles Aprobaciones
+        }
+    )
+
+    pageItem P780_ID_LICITACION_CAB (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+    )
+
+    dynamicAction abrir-generacion-de-nota-entrega (
+        name: Abrir Generacion de Nota Entrega
+        execution {
+            sequence: 40
+        }
+        when {
+            event: custom
+            customEvent: gen_ne
+            selectionType: region
+            region: @autorizaciones
+        }
+
+        action plugin-com-fos-interactive-grid-process-rows (
+            action: plugin/fosInteractiveGridProcessRows
+            settings {
+                action: processSelectedRows
+                plSqlCode: :P780_ID_LICITACION_CAB := :ID;
+                itemsToSubmit: ID
+                itemsToReturn: P780_ID_LICITACION_CAB
+                errorMessage: #SQLERRM#
+                extraOptions: escapeSpecialCharactersInMessages
+            }
+            affectedElements {
+                selectionType: region
+                region: @autorizaciones
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-redirect (
+            action: plugin/fosRedirect
+            settings {
+                targetPageUrl: {
+                    page: 783
+                    items: {
+                        P783_ID: &P780_ID_LICITACION_CAB.
+                    }
+                }
+                options: submitPageItemsBeforeRedirect
+                pageItemsToSubmit: P780_ID_LICITACION_CAB
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction acciones-al-iniciar-pagina (
+        name: Acciones al iniciar pagina
+        execution {
+            sequence: 30
+        }
+        when {
+            event: ready
+        }
+
+        action boton-generacion-nota-entrega (
+            name: Boton Generacion Nota Entrega
+            action: plugin/interactiveGridExtendToolbar
+            settings {
+                label: Gen. Nota de Entrega
+                hot: true
+                icon: fa-dynamic-content
+                triggerAction: gen_ne
+            }
+            affectedElements {
+                selectionType: region
+                region: @autorizaciones
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action grilla-licitacion-modo-edicion (
+            name: Grilla Licitacion Modo Edicion
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("LicitacionCab").call("getViews").grid;
+                        grid.model.setOption("editable", true);
+                        grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-detalle (
+        name: Refrescar Detalle
+        execution {
+            sequence: 50
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: jsExpression
+            javaScriptExpression: window
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalles-aprobaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-usuario-auditor-cte (
+        name: Setear Usuario Auditor CTE
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @autorizaciones
+            columns: IND_AUTORIZA_CTACTE
+        }
+
+        action cod-usuario-aut-ctacte (
+            name: COD_USUARIO_AUT_CTACTE
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_AUT_CTACTE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_CTACTE
+                value: S
+            }
+        )
+
+        action cod-usuario-aut-ctacte-2 (
+            name: COD_USUARIO_AUT_CTACTE
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_AUT_CTACTE
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_CTACTE
+                value: N
+            }
+        )
+
+        action fec-autoriza-ctacte (
+            name: FEC_AUTORIZA_CTACTE
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_AUTORIZA_CTACTE
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_CTACTE
+                value: S
+            }
+        )
+
+        action fec-autoriza-ctacte-2 (
+            name: FEC_AUTORIZA_CTACTE
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: FEC_AUTORIZA_CTACTE
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_CTACTE
+                value: N
+            }
+        )
+
+    )
+
+    dynamicAction setear-usuario-auditor-stock (
+        name: Setear Usuario Auditor STOCK
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @autorizaciones
+            columns: IND_AUTORIZA_STOCK
+        }
+
+        action cod-usuario-aut-stock (
+            name: COD_USUARIO_AUT_STOCK
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_AUT_STOCK
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_STOCK
+                value: S
+            }
+        )
+
+        action cod-usuario-aut-stock-2 (
+            name: COD_USUARIO_AUT_STOCK
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_AUT_STOCK
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_STOCK
+                value: N
+            }
+        )
+
+        action fec-autoriza-stock (
+            name: FEC_AUTORIZA_STOCK
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_AUTORIZA_STOCK
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_STOCK
+                value: S
+            }
+        )
+
+        action fec-autoriza-stock-2 (
+            name: FEC_AUTORIZA_STOCK
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: FEC_AUTORIZA_STOCK
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_AUTORIZA_STOCK
+                value: N
+            }
+        )
+
+        action ind-autoriza-ctacte (
+            name: IND_AUTORIZA_CTACTE
+            action: setValue
+            settings {
+                value: N
+            }
+            affectedElements {
+                selectionType: columns
+                columns: IND_AUTORIZA_CTACTE
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: COD_USUARIO_AUT_CTACTE
+            }
+        )
+
+    )
+
+    validation validar-cantidad-a-entregar-pend (
+        name: Validar Cantidad a Entregar Pend.
+        execution {
+            sequence: 10
+        }
+        validation {
+            editableRegion: @detalles-aprobaciones
+            plsqlExpression: TO_NUMBER(:CANT_A_ENTREGAR) <= TO_NUMBER(:CANT_PEND_A_ENTREGAR)
+        }
+        error {
+            errorMessage: La cantidad a entregar no puede superar la cantidad pendiente.
+            associatedColumn: CANT_A_ENTREGAR
+        }
+    )
+
+    validation validar-cantidad-entregar-stock (
+        name: Validar Cantidad Entregar Stock
+        execution {
+            sequence: 20
+        }
+        validation {
+            editableRegion: @detalles-aprobaciones
+            plsqlExpression: TO_NUMBER(:CANT_A_ENTREGAR) <= TO_NUMBER(:STOCK)
+        }
+        error {
+            errorMessage: La cantidad a entregar no puede superar el stock.
+            associatedColumn: CANT_A_ENTREGAR
+        }
+    )
+
+    process autorizaciones-save-interactive-grid-data (
+        name: Autorizaciones - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @autorizaciones
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 42398200512188127
+        }
+    )
+
+    process detalles-aprobaciones-save-interactive-grid-data (
+        name: Detalles Aprobaciones - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles-aprobaciones
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                BEGIN
+                    CASE :APEX$ROW_STATUS
+                    WHEN 'C' THEN
+                        NULL;
+                    WHEN 'U' THEN
+                        UPDATE LCW_OFERTAS_APROBACIONES
+                           SET CANT_A_ENTREGAR = :CANT_A_ENTREGAR
+                         WHERE ID = :ID_APROBACION;
+                    WHEN 'D' THEN
+                        NULL;
+                    END CASE;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 43409813229485409
+        }
+    )
+
+)
+

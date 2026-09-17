@@ -1,0 +1,207 @@
+page 760 (
+    name: Carga de Formatos Convocatoria
+    alias: CARGA-DE-FORMATOS-CONVOCATORIA
+    title: Carga de Formatos Convocatoria
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region lcw-formato-licitacion (
+        name: LCW_FORMATO_LICITACION
+        type: form
+        source {
+            location: localDatabase
+            tableName: LCW_FORMATO_LICITACIONES
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    pageItem P760_COD_FORMATO (
+        type: textField
+        label {
+            label: <p>Código:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @lcw-formato-licitacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Autogenerado
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @lcw-formato-licitacion
+            column: COD_FORMATO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P760_DESCRIPCION (
+        type: textarea
+        label {
+            label: <p>Descripcion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @lcw-formato-licitacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @lcw-formato-licitacion
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P760_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @lcw-formato-licitacion
+            slot: regionBody
+        }
+        source {
+            formRegion: @lcw-formato-licitacion
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @lcw-formato-licitacion
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+    )
+
+    computation p760-cod-formato (
+        itemName: P760_COD_FORMATO
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(COD_FORMATO), 0) + 1
+                  FROM LCW_FORMATO_LICITACIONES
+                ```
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 31557734731234429
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST IN ('CREATE', 'SAVE')
+        }
+    )
+
+    process form-automatica-row-processing (
+        name: Form - Automatica Row Processing
+        type: formAutoRowProcessing
+        formRegion: @lcw-formato-licitacion
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 31557683229234428
+        }
+    )
+
+    process initialize-form-carga-de-formatos-convocatoria (
+        name: Initialize form Carga de Formatos Convocatoria
+        type: formInitialization
+        formRegion: @lcw-formato-licitacion
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 31557091915234422
+        }
+    )
+
+)
+

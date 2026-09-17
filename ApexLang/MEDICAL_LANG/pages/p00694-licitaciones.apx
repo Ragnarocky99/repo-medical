@@ -1,0 +1,765 @@
+page 694 (
+    name: Licitaciones
+    alias: LICITACIONES
+    title: Licitaciones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region licitaciones (
+        name: Licitaciones
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT LC.ID,
+                       LC.ID_EMPRESA,
+                       LC.ID_SUCURSAL,
+                       LC.NRO_LICITACION,
+                       LC.FEC_LICITACION,
+                       LC.ID_CLIENTE,
+                       LC.ID_FORMATO,
+                       LC.COD_USUARIO_AUD,
+                       LC.FEC_ALTA,
+                       LC.NRO_ID_LICITACION,
+                       DECODE(LC.ESTADO_LLAMADO, 'PE', 'Pendiente',
+                                                 'EV', 'Evaluacion',
+                                                 'AD', 'Adjudicado',
+                                                 'CA', 'Cancelado',
+                                                 'PR', 'Prorroga',
+                                                 'PD', 'Perdido',
+                                                 'PT', 'Protesta',
+                                                 'NA', 'No Aprobado',
+                                                 'No definido') ESTADO_LLAMADO,
+                       'f?p='||V('APP_ID')||':695:'||V('APP_SESSION')||':IG[Detalles]_'||FL.ALIAS||':::P695_ID:'||LC.ID URL,
+                       DECODE(LC.IND_APROBADO, 'N', 'No',
+                                               'S', 'Si',
+                                               'No definido') IND_APROBADO,
+                       CASE
+                        WHEN IND_APROBADO = 'S' THEN 'fa fa-check u-success-text'
+                        WHEN IND_NO_APROBADO = 'S' THEN 'fa fa-remove u-danger-text'
+                       END IND_APROBADO_ICON
+                  FROM LCW_LICITACIONES_CAB     LC
+                  JOIN LCW_FORMATO_LICITACIONES FL ON FL.ID = LC.ID_FORMATO
+                 WHERE ID_SUCURSAL = :P0_ID_SUCURSAL
+                   AND LC.FEC_LICITACION BETWEEN :P694_FEC_INI AND :P694_FEC_FIN
+                   AND (LC.NRO_LICITACION = :P694_NRO_LICITACION OR :P694_NRO_LICITACION IS NULL)
+                   AND (LC.ID_CLIENTE = :P694_ID_CLIENTE OR :P694_ID_CLIENTE IS NULL)
+                   AND (LC.NRO_ID_LICITACION = :P694_NRO_ID_LICITACION OR :P694_NRO_ID_LICITACION IS NULL)
+                   AND (LC.ESTADO_LLAMADO = :P694_ESTADO_LLAMADO OR :P694_ESTADO_LLAMADO IS NULL)
+                ORDER BY lc.NRO_LICITACION DESC
+                
+                ```
+            pageItemsToSubmit: [
+                P694_FEC_INI
+                P694_FEC_FIN
+                P694_ID_CLIENTE
+                P694_NRO_LICITACION
+                P694_NRO_ID_LICITACION
+                P694_ESTADO_LLAMADO
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: item=value
+            item: P0_ID_SUCURSAL
+            value: 690
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                type: url
+                url: #URL#
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 12695148983501160
+        }
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Creado Por
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ESTADO_LLAMADO (
+            type: plainText
+            heading {
+                heading: Estado Llamado
+                alignment: center
+            }
+            layout {
+                sequence: 87
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Alta
+                alignment: center
+            }
+            layout {
+                sequence: 47
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column FEC_LICITACION (
+            type: plainText
+            heading {
+                heading: Fecha Licitacion
+                alignment: center
+            }
+            layout {
+                sequence: 17
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                primaryKey: true
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 27
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 5
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID_FORMATO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Formato
+                alignment: center
+            }
+            lov {
+                lov: @lv-formatos-licitacion
+            }
+            layout {
+                sequence: 37
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            heading {
+                heading: Id Sucursal
+            }
+            layout {
+                sequence: 6
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column IND_APROBADO (
+            type: plainText
+            heading {
+                heading: Aprobado
+                alignment: center
+            }
+            layout {
+                sequence: 97
+                columnAlignment: center
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#IND_APROBADO_ICON#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column IND_APROBADO_ICON (
+            type: hidden
+            heading {
+                heading: Ind Aprobado Icon
+            }
+            layout {
+                sequence: 107
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column NRO_ID_LICITACION (
+            type: plainText
+            heading {
+                heading: ID Licitacion
+                alignment: center
+            }
+            layout {
+                sequence: 67
+                columnAlignment: end
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column NRO_LICITACION (
+            type: link
+            heading {
+                heading: Nro. Licitacion
+                alignment: center
+            }
+            layout {
+                sequence: 57
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 788
+                    items: {
+                        P788_ID_LICITACION_CAB: #ID#
+                    }
+                }
+                linkText: #NRO_LICITACION#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column URL (
+            type: hidden
+            heading {
+                heading: Url
+            }
+            layout {
+                sequence: 77
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Licitaciones
+        }
+
+        savedReport 127005 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 8
+            )
+
+            displayColumn ESTADO_LLAMADO (
+                sequence: 6
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 9
+            )
+
+            displayColumn FEC_LICITACION (
+                sequence: 1
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 5
+            )
+
+            displayColumn ID_FORMATO (
+                sequence: 4
+            )
+
+            displayColumn IND_APROBADO (
+                sequence: 7
+            )
+
+            displayColumn NRO_ID_LICITACION (
+                sequence: 3
+            )
+
+            displayColumn NRO_LICITACION (
+                sequence: 2
+            )
+
+            sort (
+                column: NRO_LICITACION
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P694_ESTADO_LLAMADO (
+        type: popupLov
+        label {
+            label: <p>Estado Llamado:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-estado-llamado-lic
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P694_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P694_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(ADD_MONTHS(SYSDATE, -3), 'MM')
+        }
+    )
+
+    pageItem P694_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p<
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P694_NRO_ID_LICITACION (
+        type: textField
+        label {
+            label: <p>Nro. ID:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P694_NRO_LICITACION (
+        type: numberField
+        label {
+            label: <p>Nro. Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @licitaciones
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 695
+                clearCache: 695
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction change-filtros (
+        name: Change - Filtros
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: [
+                P694_ID_CLIENTE
+                P694_NRO_LICITACION
+                P694_NRO_ID_LICITACION
+                P694_ESTADO_LLAMADO
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @licitaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: item!=value
+            item: P0_ID_SUCURSAL
+            value: 690
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Aviso
+                message: Para el correcto funcionamiento del módulo, las cargas deben ser realizadas en la sucursal de Licitaciones.
+                style: information
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-reporte (
+        name: Refrescar Reporte
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @licitaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

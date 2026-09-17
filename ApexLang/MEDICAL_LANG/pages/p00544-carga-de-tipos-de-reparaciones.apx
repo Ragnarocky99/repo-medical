@@ -1,0 +1,401 @@
+page 544 (
+    name: Carga de tipos de reparaciones
+    alias: CARGA-DE-TIPOS-DE-REPARACIONES
+    title: Carga de tipos de reparaciones
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: document.getElementById("P544_COD_TIP_REPARACION").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-tipos-de-reparaciones (
+        name: Carga de tipos de reparaciones
+        type: form
+        source {
+            location: localDatabase
+            tableName: ACW_TIPOS_REPARACION
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P544_COD_TIP_REPARACION (
+        type: textField
+        label {
+            label: <p>Código: </p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-tipos-de-reparaciones
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 8
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 20
+        }
+        source {
+            formRegion: @carga-de-tipos-de-reparaciones
+            column: COD_TIP_REPARACION
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(T.COD_TIP_REPARACION)), 0)+1
+                from ACW_TIPOS_REPARACION T
+                WHERE T.ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    pageItem P544_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @carga-de-tipos-de-reparaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-tipos-de-reparaciones
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P544_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-tipos-de-reparaciones
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 60
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            formRegion: @carga-de-tipos-de-reparaciones
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P544_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-tipos-de-reparaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-tipos-de-reparaciones
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P544_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-tipos-de-reparaciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-tipos-de-reparaciones
+            column: ID_EMPRESA
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P544_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-trash-o
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P544_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P544_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 83437641335833971
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-tipos-de-reparaciones (
+        name: Initialize form Carga de tipos de reparaciones
+        type: formInitialization
+        formRegion: @carga-de-tipos-de-reparaciones
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 83436801492833971
+        }
+    )
+
+    process process-form-carga-de-tipos-de-reparaciones (
+        name: Process form Carga de tipos de reparaciones
+        type: formAutoRowProcessing
+        formRegion: @carga-de-tipos-de-reparaciones
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 83437205944833971
+        }
+    )
+
+)
+

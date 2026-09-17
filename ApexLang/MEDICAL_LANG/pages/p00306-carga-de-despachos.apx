@@ -1,0 +1,2112 @@
+page 306 (
+    name: Carga de Despachos
+    alias: CARGA-DE-DESPACHOS
+    title: Carga de Despachos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: [
+            #DEFAULT#
+            t-PageBody--noContentPadding
+        ]
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            
+            .comprobante{
+              color: #000000;
+              background-color: #e0e0e0;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #a8a8a8;
+              pointer-events: none;
+            }
+            
+            .a-danger{
+                background-color: #f44336;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            
+            #Detalles_ig_toolbar_m1{
+                display: none;
+            }
+            .ocultar{
+                display: none
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region despacho (
+        name: Despacho
+        type: form
+        source {
+            location: localDatabase
+            tableName: CMW_DESPACHOS_CABECERA
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region embarques (
+        name: Embarques
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select D.ID,
+                       D.ID_EMPRESA,
+                       D.ID_DESPACHO_CAB,
+                       D.NRO_REFERENCIA,
+                       D.BASE_IMPONIBLE,
+                       D.COD_USUARIO_AUD,
+                       D.ID_EMBARQUE,
+                       E.FEC_EMBARQUE,
+                       P.COD_PUERTO,
+                       P.DESCRIPCION AS DESC_PUERTO,
+                       PR.NRO_COMPROBANTE AS NRO_PROFORMA
+                  from CMW_DESPACHOS_DETALLE D,CMW_EMBARQUES E,CMW_PUERTOS P,
+                  CMW_PROFORMAS_CABECERA PR
+                  WHERE ID_DESPACHO_CAB=:P306_ID
+                  AND D.ID_EMBARQUE=E.ID
+                  AND E.ID_PUERTO=P.ID(+)
+                  AND E.ID_PROFORMA=PR.ID
+                
+                ```
+            pageItemsToSubmit: P306_ID
+        }
+        layout {
+            sequence: 220
+            parentRegion: @despacho
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-bottom-md
+            ]
+        }
+        headerAndFooter {
+            headerText: <h5>Embarques</h5>
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 20742119047784936
+        }
+
+        savedReport 208882 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMBARQUE
+                layout {
+                    width: 68.9896
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_DESPACHO_CAB
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_REFERENCIA
+                layout {
+                    width: 178.33999999999997
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @BASE_IMPONIBLE
+                layout {
+                    show: false
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @FECHA
+                layout {
+                    width: 86.92
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @COD_PUERTO
+                layout {
+                    width: 81.91999999999999
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @DESC_PUERTO
+                layout {
+                    width: 505.93399999999997
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PROFORMA
+                layout {
+                    width: 174.899
+                    sequence: 11
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column BASE_IMPONIBLE (
+            type: numberField
+            heading {
+                heading: Base Imponible
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: BASE_IMPONIBLE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_PUERTO (
+            type: textField
+            heading {
+                heading: <p>Código</p>
+                alignment: center
+                alternativeLabel: Código
+            }
+            layout {
+                sequence: 70
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: COD_PUERTO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: CODIGO
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESC_PUERTO (
+            type: textField
+            heading {
+                heading: <p>Puerto</p>
+                alignment: center
+                alternativeLabel: Puerto
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: DESC_PUERTO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: PUERTO
+            }
+        )
+
+        column FECHA (
+            type: textField
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+                alternativeLabel: Fecha
+            }
+            layout {
+                sequence: 60
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_EMBARQUE
+                dataType: date
+                queryOnly: true
+            }
+            advanced {
+                htmlDomId: FECHA
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_DESPACHO_CAB (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_DESPACHO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMBARQUE (
+            type: popupLov
+            heading {
+                heading: <p>Embarque</p>
+                alignment: center
+                alternativeLabel: Numero
+            }
+            settings {
+                displayAs: modalDialog
+                popupWidth: 950
+                popupHeight: 950
+                additionalOutputs: FEC_EMBARQUE:FECHA,COD_PUERTO:CODIGO,DESC_PUERTO:PUERTO,NRO_COMPROBANTE:PROFORMA,REFERENCIA:NRO_PEDIDO
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-embarques-despachos
+            }
+            layout {
+                sequence: 50
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_EMBARQUE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_PROFORMA (
+            type: textField
+            heading {
+                heading: <p>Proforma</p>
+                alignment: center
+                alternativeLabel: Proforma
+            }
+            layout {
+                sequence: 130
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NRO_PROFORMA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: PROFORMA
+            }
+        )
+
+        column NRO_REFERENCIA (
+            type: textField
+            heading {
+                heading: <p>Nro de OCP</p>
+                alignment: center
+                alternativeLabel: Referencia
+            }
+            layout {
+                sequence: 110
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 8
+            }
+            source {
+                databaseColumn: NRO_REFERENCIA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: NRO_PEDIDO
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Embarques
+        }
+    )
+
+    pageItem P306_ANULADO (
+        type: checkbox
+        label {
+            label: <p>Anulado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 40
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @despacho
+            column: ANULADO
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+    )
+
+    pageItem P306_ASIENTOS (
+        type: hidden
+        layout {
+            sequence: 210
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: ASIENTOS
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_BASE_IMPONIBLE (
+        type: textField
+        label {
+            label: <p>Base imponible GS: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 310
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: BASE_IMPONIBLE
+            dataType: number
+        }
+    )
+
+    pageItem P306_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P306_COMENTARIO (
+        type: textField
+        label {
+            label: <p>Comentario: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 200
+        }
+        source {
+            formRegion: @despacho
+            column: COMENTARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_CONFIRMADO (
+        type: checkbox
+        label {
+            label: <p>Confirmado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 30
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @despacho
+            column: CONFIRMADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_DNA_NUMERO (
+        type: textField
+        label {
+            label: <p>D.N.A.Nº: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 20
+        }
+        source {
+            formRegion: @despacho
+            column: DNA_NUMERO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_FACTOR_CIVA (
+        type: numberField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 300
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 20
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: FACTOR_CIVA
+            dataType: number
+        }
+    )
+
+    pageItem P306_FACTOR_SIVA (
+        type: numberField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 20
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: FACTOR_SIVA
+            dataType: number
+        }
+    )
+
+    pageItem P306_FEC_CONFIRMACION (
+        type: datePicker
+        label {
+            label: <p>Fec Confirmación: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: FEC_CONFIRMACION
+            dataType: date
+        }
+    )
+
+    pageItem P306_FEC_PAGO (
+        type: datePicker
+        label {
+            label: <p>Fecha de Despacho: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: FEC_PAGO
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P306_ID (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P306_ID_ADUANA (
+        type: popupLov
+        label {
+            label: <p>Aduana: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 650
+            popupHeight: 650
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-aduanas
+        }
+        layout {
+            sequence: 110
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: ID_ADUANA
+            dataType: number
+        }
+    )
+
+    pageItem P306_ID_DESPACHANTE (
+        type: popupLov
+        label {
+            label: <p>Despachante: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 450
+            popupHeight: 450
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-despachantes
+        }
+        layout {
+            sequence: 90
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: ID_DESPACHANTE
+            dataType: number
+        }
+    )
+
+    pageItem P306_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :P0_ID_EMPRESA
+                
+                ```
+        }
+    )
+
+    pageItem P306_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+        }
+        layout {
+            sequence: 140
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 5
+        }
+        source {
+            formRegion: @despacho
+            column: ID_PROVEEDOR_ORIGEN
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_ID_SUC_STOCK (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: ID_SUC_STOCK
+            dataType: number
+        }
+    )
+
+    pageItem P306_NRO_DESPACHO (
+        type: numberField
+        label {
+            label: <p>Numero: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @despacho
+            column: NRO_DESPACHO
+            dataType: number
+        }
+    )
+
+    pageItem P306_PORC_PARTICIPACION (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: PORC_PARTICIPACION
+            dataType: number
+        }
+    )
+
+    pageItem P306_PORC_PRECIO_SEGURIDO (
+        type: numberField
+        label {
+            label: <p>% Precio Sugerido: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            minValue: 0
+            maxValue: 99
+        }
+        layout {
+            sequence: 270
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: PORC_PRECIO_SUGERIDO
+            dataType: number
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+    )
+
+    pageItem P306_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Nro. de Factura del Exterior: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @despacho
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_TIPO_DESPACHO (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: TIPO_DESPACHO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P306_TIPO_PRORRATEO (
+        type: selectList
+        label {
+            label: <p>Tipo: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Por Monto;M,Por Peso y Flete;P
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 230
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: M
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+    )
+
+    pageItem P306_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Cambio Moneda Fac: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P306_TIP_CAMBIO_CIVA (
+        type: numberField
+        label {
+            label: <p>Tipo Cambio C/IVA: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 290
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: TIP_CAMBIO_CIVA
+            dataType: number
+        }
+    )
+
+    pageItem P306_TIP_CAMBIO_DOLAR (
+        type: textField
+        label {
+            label: <p>Cambio Dólar: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @despacho
+            column: TIP_CAMBIO_DOLAR
+            dataType: number
+        }
+    )
+
+    pageItem P306_TIP_CAMBIO_SIVA (
+        type: numberField
+        label {
+            label: <p>Tipo Cambio S/IVA: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 250
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: TIP_CAMBIO_SIVA
+            dataType: number
+        }
+    )
+
+    pageItem P306_TOT_GASTOS (
+        type: numberField
+        label {
+            label: <p>Total de Gastos: &ensp; </p>
+            alignment: left
+        }
+        layout {
+            sequence: 330
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: TOT_GASTOS
+            dataType: number
+        }
+    )
+
+    pageItem P306_TOT_GASTOS_CIVA (
+        type: numberField
+        label {
+            label: <p>Gastos c/IVA: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 340
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: TOT_GASTOS_CIVA
+            dataType: number
+        }
+    )
+
+    pageItem P306_VALOR_FOB (
+        type: numberField
+        label {
+            label: <p> Valor Factura: &ensp; </p>
+            alignment: left
+        }
+        layout {
+            sequence: 320
+            region: @despacho
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: TABINDEX="-1"
+        }
+        source {
+            formRegion: @despacho
+            column: VALOR_FOB
+            dataType: number
+        }
+    )
+
+    pageItem P306_VALOR_IMP (
+        type: hidden
+        layout {
+            sequence: 150
+            region: @despacho
+            slot: regionBody
+        }
+        source {
+            formRegion: @despacho
+            column: VALOR_IMP
+            dataType: number
+        }
+    )
+
+    button confirmar-costos (
+        buttonName: Confirmar_Costos
+        label: Prorratear Costos
+        layout {
+            sequence: 240
+            region: @despacho
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--iconLeft
+            ]
+            icon: fa-check
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @despacho
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P306_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 30
+            region: @despacho
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message:
+                ```html
+                Desea realmente eliminar el despacho?
+                
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button print (
+        buttonName: PRINT
+        label: Imprimir
+        layout {
+            sequence: 280
+            region: @despacho
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--primary
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Guardar
+        layout {
+            sequence: 20
+            region: @despacho
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P306_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 10
+            region: @despacho
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 397
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction calcular-costos (
+        name: Calcular Costos
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @confirmar-costos
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare
+                    V_TOT_GASTOS NUMBER;
+                    V_TOT_GASTOS_CIVA NUMBER;
+                    V_VALOR_FOB NUMBER;
+                    V_TIP_CAMBIO_SIVA NUMBER;
+                    V_TIP_CAMBIO_CIVA NUMBER;
+                    V_FACTOR_SIVA NUMBER;
+                    V_FACTOR_CIVA NUMBER;
+                    V_TOT_GRAVADAS NUMBER;
+                    V_PORC_GRAVADAS NUMBER;
+                    V_PORC_GRAVADAS_AD NUMBER;
+                    V_TOT_COMPROBANTE NUMBER;
+                    V_TOT_COMPROBANTE_ADUANA NUMBER;
+                    V_TOT_GRAVADAS_ADUANA NUMBER;
+                    
+                    
+                    begin
+                    PRORRATEO_MONTO_BKP(W_BUSCA_PARAMETRO('CM','ID_MODULO_CM'),:P0_ID_EMPRESA,:P306_ID,V_TOT_GASTOS,V_TOT_GASTOS_CIVA,V_VALOR_FOB,V_TIP_CAMBIO_SIVA,V_TIP_CAMBIO_CIVA,
+                    V_FACTOR_SIVA,V_FACTOR_CIVA,V_TOT_GRAVADAS,V_PORC_GRAVADAS,V_PORC_GRAVADAS_AD,:P306_TIP_CAMBIO,V_TOT_COMPROBANTE,V_TOT_COMPROBANTE_ADUANA,
+                    V_TOT_GRAVADAS_ADUANA);
+                    :P306_TIP_CAMBIO_CIVA:=ROUND(V_TIP_CAMBIO_CIVA,0);
+                    :P306_TIP_CAMBIO_SIVA:=ROUND(V_TIP_CAMBIO_SIVA,0);
+                    :P306_VALOR_FOB:=V_VALOR_FOB;
+                    :P306_TOT_GASTOS:=ROUND(V_TOT_GASTOS,2);
+                    :P306_TOT_GASTOS_CIVA:=ROUND(V_TOT_GASTOS_CIVA,2);
+                    :P306_FACTOR_CIVA:=V_FACTOR_CIVA;
+                    :P306_FACTOR_SIVA:=V_FACTOR_SIVA;
+                    EXCEPTION 
+                    WHEN OTHERS THEN 
+                    RAISE_APPLICATION_ERROR(-20000,'Error :'||sqlerrm);
+                    rollback;
+                    end;
+                    ```
+                itemsToSubmit: [
+                    P306_ID
+                    P306_TIP_CAMBIO
+                ]
+                itemsToReturn: [
+                    P306_TIP_CAMBIO_SIVA
+                    P306_TIP_CAMBIO_CIVA
+                    P306_TOT_GASTOS_CIVA
+                    P306_TOT_GASTOS
+                    P306_VALOR_FOB
+                    P306_FACTOR_SIVA
+                    P306_FACTOR_CIVA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                spinnerType: ring
+                accessibilityText: Processing
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action plugin-com-fos-spinner-actions-2 (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P306_FEC_PAGO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P306_FEC_PAGO) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P306_FEC_PAGO,'/','');
+                            conv_fecha := substr(:P306_FEC_PAGO,1,2)||'/'||
+                                                      substr(:P306_FEC_PAGO,3,2)||'/'||
+                                                      lpad(substr(:P306_FEC_PAGO,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P306_FEC_PAGO := conv_fecha;
+                            ELSIF (length(:P306_FEC_PAGO) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P306_FEC_PAGO) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P306_FEC_PAGO
+                itemsToReturn: P306_FEC_PAGO
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New_1
+        execution {
+            sequence: 20
+        }
+        when {
+            event: region/interactiveGrid/interactivegridreportchange
+            selectionType: region
+            region: @embarques
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :ID_EMBARQUE IS NOT NULL AND :P306_ID IS NOT NULL THEN
+                    SELECT E.FEC_EMBARQUE,P.COD_PUERTO,P.DESCRIPCION,PR.NRO_COMPROBANTE
+                    INTO :FECHA,:COD_PUERTO,:DESC_PUERTO,:NRO_PROFORMA
+                    FROM CMW_EMBARQUES E ,CMW_PUERTOS P,CMW_PROFORMAS_CABECERA PR
+                    WHERE E.ID_PUERTO=P.ID(+)
+                    AND E.ID_PROFORMA=PR.ID
+                    AND E.ID=:ID_EMBARQUE;
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    ID_EMBARQUE
+                    P306_ID
+                ]
+                itemsToReturn: [
+                    FECHA
+                    COD_PUERTO
+                    DESC_PUERTO
+                    NRO_PROFORMA
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction poner-fecha-confirmacion (
+        name: Poner fecha Confirmacion
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P306_CONFIRMADO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :P306_CONFIRMADO='S' THEN 
+                    :P306_FEC_CONFIRMACION:=SYSDATE;
+                    
+                         DECLARE
+                          VID_EMBARQUE   VARCHAR2(15);
+                         BEGIN
+                          SELECT A.ID_EMBARQUE
+                            INTO VID_EMBARQUE
+                            FROM CMW_DESPACHOS_DETALLE A
+                           WHERE A.ID_DESPACHO_CAB = :P306_ID;
+                    
+                            ---RAISE_APPLICATION_ERROR(-20000,'03-NRO EMB '||VID_EMBARQUE||' EMBARQUE'||SQLERRM);
+                            UPDATE CMW_COMPRAS_CABECERA A
+                              SET A.ESTADO = 'C',
+                                  A.FEC_ESTADO = SYSDATE
+                             WHERE A.ID_EMPRESA = :P306_ID_EMPRESA
+                               AND A.ID_EMBARQUE = VID_EMBARQUE;
+                            EXCEPTION 
+                              WHEN OTHERS THEN
+                               RAISE_APPLICATION_ERROR(-20000,'03-No se pudo confirmar la factura! '||VID_EMBARQUE||' EMBARQUE'||SQLERRM);
+                           END;
+                    
+                    ELSE 
+                    :P306_FEC_CONFIRMACION:=NULL;
+                    
+                          DECLARE
+                              VID_EMBARQUE   VARCHAR2(15);
+                             BEGIN
+                              SELECT A.ID_EMBARQUE
+                                INTO VID_EMBARQUE
+                                FROM CMW_DESPACHOS_DETALLE A
+                               WHERE A.ID_DESPACHO_CAB = :P306_ID;
+                    
+                                ---RAISE_APPLICATION_ERROR(-20000,'03-NRO EMB '||VID_EMBARQUE||' EMBARQUE'||SQLERRM);
+                                UPDATE CMW_COMPRAS_CABECERA A
+                                  SET A.ESTADO = 'P'
+                                 WHERE A.ID_EMPRESA = :P306_ID_EMPRESA
+                                   AND A.ID_EMBARQUE = VID_EMBARQUE;
+                                EXCEPTION 
+                                  WHEN OTHERS THEN
+                                   RAISE_APPLICATION_ERROR(-20000,'No se pudo confirmar la factura! '||VID_EMBARQUE||' EMBARQUE'||SQLERRM);
+                               END;
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    P306_CONFIRMADO
+                    P306_ID_EMPRESA
+                    P306_ID
+                ]
+                itemsToReturn: P306_FEC_CONFIRMACION
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction tipo-cambio-dolar (
+        name: Tipo Cambio Dolar
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P306_ID
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: SELECT  ftipos_cambio(trae_id_moneda(3),SYSDATE,W_BUSCA_PARAMETRO('BS','TIPO_CAMBIO'), 'V') FROM DUAL;
+            }
+            affectedElements {
+                selectionType: items
+                items: P306_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p306-nro-despacho (
+        itemName: P306_NRO_DESPACHO
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                --Cargo el numero de comprobante si que es no escribio de manera manual 
+                DECLARE
+                v_nro_comprobante CMW_DESPACHOS_CABECERA.NRO_DESPACHO%TYPE;
+                BEGIN
+                IF :P306_NRO_DESPACHO IS  NULL THEN
+                SELECT NVL(MAX(NRO_DESPACHO),0)+1
+                INTO v_nro_comprobante
+                FROM 
+                 CMW_DESPACHOS_CABECERA 
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA;
+                RETURN V_NRO_COMPROBANTE;
+                END IF;
+                 RETURN :P306_NRO_DESPACHO;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                V_NRO_COMPROBANTE:=1;
+                RETURN V_NRO_COMPROBANTE;
+                WHEN OTHERS THEN 
+                RAISE_APPLICATION_ERROR(-20000,'Error al cargar el numero de comprobante'||sqlerrm);
+                END;
+                
+                ```
+        }
+    )
+
+    process borrar-detalle (
+        name: Borrar Detalle
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DELETE  CMW_DESPACHOS_DETALLE
+                WHERE ID_DESPACHO_CAB=:P306_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 26303533515898807
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process despacho-cabecera (
+        name: Despacho Cabecera
+        type: formAutoRowProcessing
+        formRegion: @despacho
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 20928000989313609
+        }
+    )
+
+    process despachosdet-save-interactive-grid-data (
+        name: DespachosDet - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @embarques
+        target {
+            targetType: tableView
+            tableName: CMW_DESPACHOS_DETALLE
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 20927336623313602
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE
+        }
+    )
+
+    process initialize-form-carga-de-despachos (
+        name: Initialize form Carga de Despachos
+        type: formInitialization
+        formRegion: @despacho
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 20738996517784904
+        }
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 7428283864083705
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: DELETE
+        }
+    )
+
+    process setear-id-cab-despacho (
+        name: Setear ID CAB DESPACHO
+        type: executeCode
+        editableRegion: @embarques
+        source {
+            plsqlCode: :ID_DESPACHO_CAB:=:P306_ID;
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 22606041662008303
+        }
+    )
+
+    branch (
+        name: Impresion Despacho
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 444
+                items: {
+                    P444_ID: &P306_ID.
+                    P444_ID_EMPRESA: &P306_ID_EMPRESA.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @print
+        }
+    )
+
+)
+

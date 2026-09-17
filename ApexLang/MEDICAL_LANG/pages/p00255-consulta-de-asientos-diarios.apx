@@ -1,0 +1,670 @@
+page 255 (
+    name: Consulta de Asientos Diarios
+    alias: CONSULTA-DE-ASIENTOS-DIARIOS
+    title: Consulta de Asientos Diarios
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-bottom-lg
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region reporte (
+        name: Reporte
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DEF.ID,
+                       DEF.NUM_ASIENTO_REF,
+                       DEF.FEC_ASIENTO,
+                       DEF.DESCRIPCION,
+                       EM.DESCRIPCION AS EMPRESA,
+                       MO.DESCRIPCION AS MONEDA
+                       --MD.DESCRIPCION AS MODULO,
+                       --EJ.COD_EJERCICIO AS EJERCICIO
+                       
+                FROM COW_DIARIO_CABECERAS DEF,
+                     BSW_EMPRESAS EM,
+                     BSW_MONEDAS MO
+                    -- BSW_MODULOS MD,
+                    -- COW_EJERCICIOS EJ
+                WHERE :P255_TIPO_ASIENTO = 'D'
+                      AND EM.ID = :P0_COD_EMPRESA
+                      AND DEF.ID_EMPRESA = EM.ID
+                      AND (DEF.FEC_ASIENTO BETWEEN :P255_FEC_INI AND :P255_FEC_FIN)
+                      AND (DEF.NUM_ASIENTO BETWEEN :P255_NUM_ASIENTO_INI AND :P255_NUM_ASIENTO_FIN OR (:P255_NUM_ASIENTO_INI IS NULL AND :P255_NUM_ASIENTO_FIN IS NULL))
+                      AND (MO.ID = :P255_TIPO_MONEDA OR :P255_TIPO_MONEDA IS NULL)
+                      AND DEF.ID_MONEDA = MO.ID
+                
+                UNION
+                
+                SELECT PROV.ID,
+                       PROV.NUM_ASIENTO,
+                       PROV.FEC_ASIENTO,
+                       PROV.DESCRIPCION,
+                       EM.DESCRIPCION AS EMPRESA,
+                       MO.DESCRIPCION AS MONEDA
+                       --MD.DESCRIPCION AS MODULO,
+                       --EJ.COD_EJERCICIO AS EJERCICIO
+                       
+                FROM COW_DIARIO_CABECERAS_PROV PROV,
+                     BSW_EMPRESAS EM,
+                     BSW_MONEDAS MO
+                    -- BSW_MODULOS MD,
+                    -- COW_EJERCICIOS EJ
+                
+                WHERE :P255_TIPO_ASIENTO = 'P'
+                      AND EM.ID = :P0_COD_EMPRESA
+                      AND PROV.ID_EMPRESA = EM.ID
+                      AND (PROV.FEC_ASIENTO BETWEEN :P255_FEC_INI AND :P255_FEC_FIN)
+                      AND (PROV.NUM_ASIENTO BETWEEN :P255_NUM_ASIENTO_INI AND :P255_NUM_ASIENTO_FIN OR (:P255_NUM_ASIENTO_INI IS NULL AND :P255_NUM_ASIENTO_FIN IS NULL))
+                      AND (MO.ID = :P255_TIPO_MONEDA OR :P255_TIPO_MONEDA IS NULL)
+                      AND PROV.ID_MONEDA = MO.ID
+                
+                
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 59279930926901910
+        }
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripción
+                alignment: center
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column EMPRESA (
+            type: plainText
+            heading {
+                heading: Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column FEC_ASIENTO (
+            type: plainText
+            heading {
+                heading: Fecha de Asiento
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column MONEDA (
+            type: plainText
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column NUM_ASIENTO_REF (
+            type: plainText
+            heading {
+                heading: Nro. Asiento
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte
+        }
+
+        savedReport 594370 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn DESCRIPCION (
+                sequence: 4
+            )
+
+            displayColumn EMPRESA (
+                sequence: 5
+            )
+
+            displayColumn FEC_ASIENTO (
+                sequence: 3
+            )
+
+            displayColumn ID (
+                sequence: 1
+            )
+
+            displayColumn MONEDA (
+                sequence: 6
+            )
+
+            displayColumn NUM_ASIENTO_REF (
+                sequence: 2
+            )
+
+        )
+
+    )
+
+    pageItem P255_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p>Hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+    )
+
+    pageItem P255_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem P255_NUM_ASIENTO_FIN (
+        type: numberField
+        label {
+            label: <p>Nro. fin: </p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P255_NUM_ASIENTO_INI (
+        type: numberField
+        label {
+            label: <p>Nro. inicio: </p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P255_TIPO_ASIENTO (
+        type: radioGroup
+        label {
+            label: <p>Tipo de asiento: <p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Provisorio;P,Definitivo;D
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: P
+        }
+    )
+
+    pageItem P255_TIPO_MONEDA (
+        type: popupLov
+        label {
+            label: <p>Tipo de moneda: <p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT M.ID FROM BSW_MONEDAS M
+                WHERE ID =W_BUSCA_PARAMETRO('BS','COD_MONEDA_GS')
+                ```
+        }
+    )
+
+    button b255-ejecutar (
+        buttonName: B255_EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button b255-imprimir (
+        buttonName: B255_IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P255_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P255_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P255_FEC_INI,'/','');
+                            conv_fecha := substr(:P255_FEC_INI,1,2)||'/'||
+                                                      substr(:P255_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:P255_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P255_FEC_INI := conv_fecha;
+                            ELSIF (length(:P255_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P255_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P255_FEC_INI
+                itemsToReturn: P255_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha-fin (
+        name: CONVERT_FECHA_FIN
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P255_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P255_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P255_FEC_FIN,'/','');
+                            conv_fecha := substr(:P255_FEC_FIN,1,2)||'/'||
+                                                      substr(:P255_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:P255_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P255_FEC_FIN := conv_fecha;
+                            ELSIF (length(:P255_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P255_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P255_FEC_FIN
+                itemsToReturn: P255_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 256
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 256
+                items: {
+                    P255_TIPO_ASIENTO: &P255_TIPO_ASIENTO.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @b255-imprimir
+        }
+    )
+
+)
+

@@ -1,0 +1,1322 @@
+page 179 (
+    name: Libro de Ventas
+    alias: LIBRO-VENTAS
+    title: Libro de Ventas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region libro-de-ventas (
+        name: Libro de Ventas
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT e.descripcion AS DESC_EMPRESA,
+                       C.TIP_COMPROBANTE TIP_COMPROBANTE,
+                       NVL(C.SERIE, C.SER_COMPROBANTE) SERIE,
+                       NVL(SC.SER_TIMBRADO, C.SER_COMPROBANTE) || '-' ||LPAD(TO_CHAR(C.NRO_COMPROBANTE), 7, '0') NRO_COMPROBANTE,
+                       TRUNC(C.FEC_COMPROBANTE) FEC_COMPROBANTE,
+                       S.COD_SUCURSAL,
+                       S.DESCRIPCION SUCURSAL,
+                       CC.COD_CLIENTE,
+                       E.RUC_EMPRESA,
+                       --NVL(PC.NOMBRE, PC.NOMB_FANTASIA) CLIENTE,
+                       DECODE(C.ESTADO,'A','--ANULADO--',NVL(PC.NOMBRE, PC.NOMB_FANTASIA)) CLIENTE,
+                       
+                       C.RUC_CLIENTE,
+                       
+                       CV.COD_CONDICION_VENTA,
+                       CV.DESCRIPCION CONDICION_VENTA,
+                       c.cod_usuario_aud,
+                       M.COD_MONEDA,
+                       M.DESCRIPCION MONEDA,
+                       M.SIGLAS,
+                       NVL(C.TIP_CAMBIO, 1) TIP_CAMBIO,
+                       V.COD_VENDEDOR,
+                       LTRIM(PV.NOMBRE) VENDEDOR,
+                       TO_CHAR(C.FEC_COMPROBANTE, 'DD') DIA,
+                       TO_CHAR(C.FEC_COMPROBANTE, 'MM') MES,
+                       TO_CHAR(C.FEC_COMPROBANTE, 'YYYY') ANIO,
+                       TC.DESCRIPCION DESC_TIPO_COMPROBANTE,
+                       M.DECIMALES,
+                       TC.IND_HECHAUKA,
+                       --ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 0, 0, ROUND(D.MONTO_TOTAL_C_IVA / ((100 + IVA.PORC_IVA_VENTA) / 100), 16)) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_GRAVADA,
+                      -- ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 5, ROUND(D.MONTO_TOTAL_C_IVA / ((100 + IVA.PORC_IVA_VENTA) / 100), 16), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_GRAVADA_5,
+                       ---ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 5, ROUND((D.MONTO_TOTAL_C_IVA * IVA.PORC_IVA_VENTA) / (IVA.PORC_IVA_VENTA + 100), 16), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_IVA_5,
+                       --ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 0, NVL(D.MONTO_TOTAL, 0), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_EXENTA,
+                       --ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 0, 0, ROUND((D.MONTO_TOTAL_C_IVA * IVA.PORC_IVA_VENTA) / (IVA.PORC_IVA_VENTA + 100), 16)) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_IVA, 0 DESCUENTO, ROUND(SUM((NVL(D.MONTO_TOTAL_C_IVA, 0)) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_COMPROBANTE,
+                      DECODE(C.Estado,'A','0',ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 0, 0, ROUND(D.MONTO_TOTAL_C_IVA / ((100 + IVA.PORC_IVA_VENTA) / 100), 16)) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))) * DECODE(nvl(CC.TIPO_IMPUESTO,'G'),'E',0,1) TOT_GRAVADA,
+                      DECODE(C.Estado,'A','0',ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 5, ROUND(D.MONTO_TOTAL_C_IVA / ((100 + IVA.PORC_IVA_VENTA) / 100), 16), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))) * DECODE(nvl(CC.TIPO_IMPUESTO,'G'),'E',0,1) TOT_GRAVADA_5,
+                      DECODE(C.Estado,'A','0',ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 5, ROUND((D.MONTO_TOTAL_C_IVA * IVA.PORC_IVA_VENTA) / (IVA.PORC_IVA_VENTA + 100), 16), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))) * DECODE(nvl(CC.TIPO_IMPUESTO,'G'),'E',0,1) TOT_IVA_5,
+                      DECODE(C.Estado,'A','0',ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 0, NVL(D.MONTO_TOTAL, 0), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))) + DECODE(nvl(CC.TIPO_IMPUESTO,'G'),'E',C.TOT_COMPROBANTE,0) TOT_EXENTA,
+                     
+                       C.SERIE SERIE_FACTURA,
+                       0 TOT_IVA_DECIMAL,
+                       C.NRO_TIMBRADO,
+                       DECODE(C.TIP_COMPROBANTE, 'FCR', TO_CHAR(CV.NRO_CUOTAS), '0') NRO_CUOTAS,
+                       C.ID_EMPRESA,
+                       '1' TIPO_DOCUMENTO,
+                       --ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 10, ROUND(D.MONTO_TOTAL_C_IVA / ((100 + IVA.PORC_IVA_VENTA) / 100), 16), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_GRAVADA_10,
+                       --ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 10, ROUND((D.MONTO_TOTAL_C_IVA * IVA.PORC_IVA_VENTA) / (IVA.PORC_IVA_VENTA + 100),16),0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) TOT_IVA_10,
+                       DECODE(C.TIP_COMPROBANTE, 'FCR', '2', '1') COND_VENTA,
+                       C.ID_SUCURSAL_CENTRAL ID_SUCURSAL,
+                
+                       DECODE(C.Estado,'A','0',ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 10, ROUND(D.MONTO_TOTAL_C_IVA / ((100 + IVA.PORC_IVA_VENTA) / 100), 16), 0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))) * DECODE(nvl(CC.TIPO_IMPUESTO,'G'),'E',0,1) TOT_GRAVADA_10,    
+                       DECODE(C.Estado,'A','0',ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 10, ROUND((D.MONTO_TOTAL_C_IVA * IVA.PORC_IVA_VENTA) / (IVA.PORC_IVA_VENTA + 100),16),0) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))) * DECODE(nvl(CC.TIPO_IMPUESTO,'G'),'E',0,1) TOT_IVA_10,
+                       C.ID ID_COMPROBANTE,
+                       
+                CASE 
+                   WHEN C.ESTADO = 'A' OR NVL(CC.TIPO_IMPUESTO,'G') = 'E' THEN 
+                     0
+                  ELSE 
+                    ROUND(SUM(DECODE(IVA.PORC_IVA_VENTA, 0, 0, ROUND((D.MONTO_TOTAL_C_IVA * IVA.PORC_IVA_VENTA) / (IVA.PORC_IVA_VENTA + 100), 16)) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1))
+                 END AS TOT_IVA,
+                 
+                CASE 
+                   WHEN C.ESTADO = 'A' /*OR NVL(CC.TIPO_IMPUESTO,'G') = 'E'*/ THEN 
+                     0
+                     ELSE 
+                      ROUND(SUM((NVL(D.MONTO_TOTAL_C_IVA, 0)) * NVL(C.TIP_CAMBIO, 1)) * DECODE(TC.SALDOS,'R',-1,1)) 
+                      END AS TOT_COMPROBANTE
+                
+                
+                
+                  FROM VTW_COMPROBANTES_CABECERA C,
+                       VTW_COMPROBANTES_DETALLE  D,
+                       STW_ARTICULOS             A,
+                       STW_IVA                   IVA,
+                       CCW_CLIENTES              CC,
+                       BSW_PERSONAS              PC,
+                       CCW_CONDICIONES_VENTAS    CV,
+                       BSW_MONEDAS               M,
+                       FVW_VENDEDORES            V,
+                       BSW_PERSONAS              PV,
+                       BSW_SUCURSALES            S,
+                       BSW_TIPOS_COMPROBANTES    TC,
+                       BSW_IDENT_PERSONAS        ID,
+                       BSW_EMPRESAS              E,
+                       BSW_SERIES_COMPROB        SC
+                       
+                WHERE E.ID = :P0_COD_EMPRESA
+                   AND C.FEC_COMPROBANTE BETWEEN :PV_FEC_INI AND :PV_FEC_FIN
+                   AND (S.ID = :PV_ID_SUCURSAL OR :PV_ID_SUCURSAL IS NULL)
+                   
+                   
+                   AND C.ID_EMPRESA = CC.ID_EMPRESA
+                   AND C.ID_CLIENTE = CC.ID
+                   AND CC.ID_PERSONA = PC.ID
+                   AND C.ID_EMPRESA = TC.ID_EMPRESA
+                   AND C.TIP_COMPROBANTE = TC.TIP_COMPROBANTE
+                   --AND NVL(C.ESTADO, 'x') != 'A'
+                   AND C.ID_EMPRESA = S.ID_EMPRESA
+                   AND C.ID_SUCURSAL = S.ID
+                   AND C.ID_MONEDA = M.ID
+                   AND C.ID_EMPRESA = CV.ID_EMPRESA
+                   AND C.ID_CONDICION_VENTA = CV.ID(+)
+                   AND C.ID_EMPRESA = V.ID_EMPRESA(+)
+                   AND C.ID_VENDEDOR = V.ID(+)
+                   AND V.ID_PERSONA = PV.ID(+)
+                   AND ID.ID_PERSONA(+) = CC.ID_PERSONA
+                   AND ID.ID_IDENTIFICACIONES(+) = 1
+                   AND C.ID_SERIE_COMP = SC.ID
+                   --AND NVL(C.IMPRIME_IVA, 'S') = 'S'
+                   --AND C.TIP_COMPROBANTE != 'NCR'
+                   AND D.ID_COMPROBANTE_CABECERA = C.ID
+                   AND A.ID = D.ID_ARTICULO
+                   AND IVA.ID = D.ID_IVA
+                   AND E.ID=c.id_empresa
+                   --AND C.SER_COMPROBANTE<>'B'
+                   and C.ser_comprobante != 'MIGR'
+                   --and cc.cod_cliente = '247' que problemas que nos generó itaiupu lgmt
+                   
+                 GROUP BY C.TIP_COMPROBANTE,
+                          NVL(C.SERIE, C.SER_COMPROBANTE),
+                          LPAD(TO_CHAR(C.NRO_COMPROBANTE), 7, '0'),
+                          TRUNC(C.FEC_COMPROBANTE),
+                          SC.SER_TIMBRADO,
+                          C.SER_COMPROBANTE,
+                          S.COD_SUCURSAL,
+                          S.DESCRIPCION,
+                          CC.COD_CLIENTE,
+                          NVL(PC.NOMBRE, PC.NOMB_FANTASIA),
+                          CV.COD_CONDICION_VENTA,
+                          CV.DESCRIPCION,
+                          M.COD_MONEDA,
+                          M.DESCRIPCION,
+                          M.SIGLAS,
+                          NVL(C.TIP_CAMBIO, 1),
+                          V.COD_VENDEDOR,
+                          LTRIM(PV.NOMBRE),
+                          TO_CHAR(C.FEC_COMPROBANTE, 'DD'),
+                          TO_CHAR(C.FEC_COMPROBANTE, 'MM'),
+                          TO_CHAR(C.FEC_COMPROBANTE, 'YYYY'),
+                          TC.DESCRIPCION,
+                          M.DECIMALES,
+                          TC.IND_HECHAUKA,
+                          C.SERIE,
+                          C.NRO_TIMBRADO,
+                          E.RUC_EMPRESA,
+                          DECODE(C.TIP_COMPROBANTE, 'FCR', TO_CHAR(CV.NRO_CUOTAS), '0'),
+                          C.ID_EMPRESA,
+                          DECODE(C.TIP_COMPROBANTE, 'FCR', '2', '1'),
+                          C.ID_SUCURSAL_CENTRAL,
+                          E.DESCRIPCION,
+                          C.FEC_COMPROBANTE,
+                          TC.SALDOS,
+                          C.RUC_CLIENTE,
+                          C.ESTADO,
+                          c.cod_usuario_aud,
+                          CC.TIPO_IMPUESTO,
+                          C.TOT_COMPROBANTE,
+                          C.ID
+                ORDER BY C.FEC_COMPROBANTE DESC
+                
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 43630118465893534
+        }
+
+        column ANIO (
+            type: hidden
+            heading {
+                heading: Anio
+            }
+            layout {
+                sequence: 500
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column COD_CLIENTE (
+            type: hidden
+            heading {
+                heading: Cod Cliente
+            }
+            layout {
+                sequence: 260
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column COD_CONDICION_VENTA (
+            type: hidden
+            heading {
+                heading: Cod Condicion Venta
+            }
+            layout {
+                sequence: 400
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column COD_MONEDA (
+            type: hidden
+            heading {
+                heading: Cod Moneda
+            }
+            layout {
+                sequence: 420
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column COD_SUCURSAL (
+            type: hidden
+            heading {
+                heading: Cod Sucursal
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 580
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        column COD_VENDEDOR (
+            type: hidden
+            heading {
+                heading: Cod Vendedor
+            }
+            layout {
+                sequence: 460
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column CONDICION_VENTA (
+            type: hidden
+            heading {
+                heading: Condicion Venta
+            }
+            layout {
+                sequence: 410
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column COND_VENTA (
+            type: hidden
+            heading {
+                heading: Cond Venta
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column DECIMALES (
+            type: hidden
+            heading {
+                heading: Decimales
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column DESC_EMPRESA (
+            type: plainText
+            heading {
+                heading: Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column DESC_TIPO_COMPROBANTE (
+            type: hidden
+            heading {
+                heading: Desc Tipo Comprobante
+            }
+            layout {
+                sequence: 510
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column DIA (
+            type: hidden
+            heading {
+                heading: Dia
+            }
+            layout {
+                sequence: 480
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha de Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID_COMPROBANTE (
+            type: hidden
+            heading {
+                heading: Id Comprobante
+            }
+            layout {
+                sequence: 650
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BE
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 360
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            heading {
+                heading: Id Sucursal
+            }
+            layout {
+                sequence: 390
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column IND_HECHAUKA (
+            type: hidden
+            heading {
+                heading: Ind Hechauka
+            }
+            layout {
+                sequence: 300
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column MES (
+            type: hidden
+            heading {
+                heading: Mes
+            }
+            layout {
+                sequence: 490
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column MONEDA (
+            type: hidden
+            heading {
+                heading: Moneda
+            }
+            layout {
+                sequence: 430
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: link
+            heading {
+                heading: Nro. Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            link {
+                target: {
+                    page: 135
+                    items: {
+                        P135_ID: #ID_COMPROBANTE#
+                    }
+                }
+                linkText: #NRO_COMPROBANTE#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NRO_CUOTAS (
+            type: hidden
+            heading {
+                heading: Nro Cuotas
+            }
+            layout {
+                sequence: 350
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column NRO_TIMBRADO (
+            type: plainText
+            heading {
+                heading: Nro Timbrado
+                alignment: center
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column RUC_CLIENTE (
+            type: plainText
+            heading {
+                heading: RUC Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column RUC_EMPRESA (
+            type: plainText
+            heading {
+                heading: RUC Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column SERIE (
+            type: hidden
+            heading {
+                heading: Nro. de Serie
+            }
+            layout {
+                sequence: 330
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column SERIE_FACTURA (
+            type: hidden
+            heading {
+                heading: Serie Factura
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column SIGLAS (
+            type: hidden
+            heading {
+                heading: Siglas
+            }
+            layout {
+                sequence: 440
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column SUCURSAL (
+            type: plainText
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column TIPO_DOCUMENTO (
+            type: hidden
+            heading {
+                heading: Tipo Documento
+            }
+            layout {
+                sequence: 370
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            heading {
+                heading: Tip Cambio
+            }
+            layout {
+                sequence: 450
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column TOT_EXENTA (
+            type: plainText
+            heading {
+                heading: Tot Exenta
+                alignment: end
+            }
+            layout {
+                sequence: 610
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BA
+            }
+        )
+
+        column TOT_GRAVADA (
+            type: plainText
+            heading {
+                heading: Tot Gravada
+                alignment: end
+            }
+            layout {
+                sequence: 590
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AY
+            }
+        )
+
+        column TOT_GRAVADA_10 (
+            type: plainText
+            heading {
+                heading: Tot Gravada 10
+                alignment: end
+            }
+            layout {
+                sequence: 620
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BB
+            }
+        )
+
+        column TOT_GRAVADA_5 (
+            type: plainText
+            heading {
+                heading: Tot Gravada 5
+                alignment: end
+            }
+            layout {
+                sequence: 600
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AZ
+            }
+        )
+
+        column TOT_IVA (
+            type: plainText
+            heading {
+                heading: Total Iva
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column TOT_IVA_10 (
+            type: plainText
+            heading {
+                heading: Tot Iva 10
+                alignment: end
+            }
+            layout {
+                sequence: 630
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column TOT_IVA_5 (
+            type: plainText
+            heading {
+                heading: Tot Iva 5
+                alignment: end
+            }
+            layout {
+                sequence: 640
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BD
+            }
+        )
+
+        column TOT_IVA_DECIMAL (
+            type: hidden
+            heading {
+                heading: Tot Iva Decimal
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column VENDEDOR (
+            type: hidden
+            heading {
+                heading: Vendedor
+            }
+            layout {
+                sequence: 470
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Libro de Ventas
+        }
+
+        savedReport 439938 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CLIENTE (
+                sequence: 4
+            )
+
+            displayColumn DESC_EMPRESA (
+                sequence: 7
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn NRO_TIMBRADO (
+                sequence: 6
+            )
+
+            displayColumn RUC_CLIENTE (
+                sequence: 5
+            )
+
+            displayColumn RUC_EMPRESA (
+                sequence: 8
+            )
+
+            displayColumn SUCURSAL (
+                sequence: 9
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 11
+            )
+
+            displayColumn TOT_IVA (
+                sequence: 10
+            )
+
+        )
+
+    )
+
+    pageItem PV_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p>Hasta la fecha: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+    )
+
+    pageItem PV_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Desde la fecha: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+    )
+
+    pageItem PV_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursales: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: --SIN SELECCIONAR--
+        }
+    )
+
+    button b-ejecutar (
+        buttonName: B_EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button b-print (
+        buttonName: B_PRINT
+        label: Imprimir
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: PV_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:PV_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:PV_FEC_FIN,'/','');
+                            conv_fecha := substr(:PV_FEC_FIN,1,2)||'/'||
+                                                      substr(:PV_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:PV_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :PV_FEC_FIN := conv_fecha;
+                            ELSIF (length(:PV_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:PV_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: PV_FEC_FIN
+                itemsToReturn: PV_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: PV_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:PV_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:PV_FEC_INI,'/','');
+                            conv_fecha := substr(:PV_FEC_INI,1,2)||'/'||
+                                                      substr(:PV_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:PV_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :PV_FEC_INI := conv_fecha;
+                            ELSIF (length(:PV_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:PV_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: PV_FEC_INI
+                itemsToReturn: PV_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 182
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 182
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @b-print
+        }
+    )
+
+)
+

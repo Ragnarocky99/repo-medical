@@ -1,0 +1,1027 @@
+page 651 (
+    name: Impresiones de Cheques
+    alias: IMPRESIONES-DE-CHEQUES
+    title: Impresiones de Cheques
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+              const input = document.getElementById('P651_FEC_DESDE');
+              const input2 = document.getElementById('P651_FEC_HASTA');
+            
+              input.addEventListener('change', function() {
+                formatDate(this);
+              });
+            
+              function formatDate(input) {
+                let val = input.value.replace(/\D/g, '');
+                if (val.length > 2) {
+                  val = val.substring(0, 2) + '/' + val.substring(2);
+                }
+                if (val.length > 5) {
+                  val = val.substring(0, 5) + '/' + val.substring(5, 9);
+                }
+                input.value = val;
+              }
+              
+              input2.addEventListener('change', function() {
+                formatDate(this);
+              });
+            
+              function formatDate(input) {
+                let val = input.value.replace(/\D/g, '');
+                if (val.length > 2) {
+                  val = val.substring(0, 2) + '/' + val.substring(2);
+                }
+                if (val.length > 5) {
+                  val = val.substring(0, 5) + '/' + val.substring(5, 9);
+                }
+                input.value = val;
+              }
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: 13.5px;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            canvas#image-preview{  
+            text-align: center;  
+            margin-left: 100px;  
+            margin-top: 30px;  
+            border: 1px solid black; 
+             width: 240px !important;
+            }
+            
+            label {
+              margin-left: 1px;
+              align-self: flex-start; /* Align labels to the start of the container */
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalle (
+        name: Detalle
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT T.SUBTIPO_TRANS,O.SER_VALOR,O.NUM_VALOR,O.FEC_EMISION,O.BENEFICIARIO,O.TOT_VALOR
+                FROM CPW_VALORES_cAJAS o 
+                JOIN BSW_SUBTIPOs_TRANS T ON O.ID_SUB_TIPO_TRANS = T.ID
+                where o.ID_empresa     = :P0_ID_empresa --P_ID_EMPRESA
+                and o.id_sub_tipo_trans     = :P651_TIP_VALOR --P_ID_SUB_TIPO_TRANS
+                and o.ser_valor     = :P651_SER_VALOR  --P_SER_VALOR
+                and o.id_cuenta  = :P651_ID_CUENTA  and --P_ID_CUENTA
+                nvl( o.anulado, 'X' ) <> 'S' 
+                and id_sub_tipo_trans in (SELECT a.ID
+                		FROM BSW_subtipos_trans a
+                        join bsw_tipos_trans t on a.id_tipo_trans = t.id
+                		where a.id_empresa   = :P0_ID_EMPRESA --P_ID_EMPRESA
+                		  and a.tip_documento = 'CHE'
+                                  and t.tipo_trans  = '10')
+                                                          --P_NRO_INICIAL                  --P_NRO_FINAL                
+                and to_number(num_valor) between to_number(:P651_NRO_INICIAL) and to_number(:P651_NRO_FINAL) 
+                                                --P_FEC_DESDE                              --P_FEC_HASTA
+                and fec_emision between TO_DATE(:P651_FEC_DESDE,'DD/MM/YYYY') and TO_DATE(:P651_FEC_HASTA,'DD/MM/YYYY')
+                ```
+            pageItemsToSubmit: [
+                P651_TIP_VALOR
+                P651_SER_VALOR
+                P651_ID_CUENTA
+                P651_NRO_INICIAL
+                P651_NRO_FINAL
+                P651_FEC_DESDE
+                P651_FEC_HASTA
+            ]
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 57003877290919001
+        }
+
+        savedReport 570112 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @SER_VALOR
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @BENEFICIARIO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @FEC_EMISION
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @TOT_VALOR
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @SUBTIPO_TRANS
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NUM_VALOR
+                layout {
+                    sequence: 3
+                }
+            )
+
+        )
+
+        column BENEFICIARIO (
+            type: textField
+            heading {
+                heading: <p>Beneficiario</p>
+                alignment: center
+                alternativeLabel: Beneficiario
+            }
+            layout {
+                sequence: 40
+            }
+            validation {
+                maxLength: 70
+            }
+            source {
+                databaseColumn: BENEFICIARIO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_EMISION (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Emisión</p>
+                alignment: center
+                alternativeLabel: Fecha Emisión
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: FEC_EMISION
+                dataType: date
+            }
+        )
+
+        column NUM_VALOR (
+            type: textField
+            heading {
+                heading: <p>Numero</p>
+                alignment: center
+                alternativeLabel: Numero
+            }
+            layout {
+                sequence: 30
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: NUM_VALOR
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SER_VALOR (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+                alternativeLabel: Serie
+            }
+            layout {
+                sequence: 20
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_VALOR
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SUBTIPO_TRANS (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+                alternativeLabel: Tipo
+            }
+            layout {
+                sequence: 10
+            }
+            validation {
+                valueRequired: true
+                maxLength: 10
+            }
+            source {
+                databaseColumn: SUBTIPO_TRANS
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_VALOR (
+            type: numberField
+            heading {
+                heading: <p>Total</p>
+                alignment: center
+                alternativeLabel: Total
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: TOT_VALOR
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--showIcon
+                t-Region--scrollBody
+                t-Form--noPadding
+                margin-top-none
+                margin-bottom-none
+            ]
+            icon: fa-search
+        }
+    )
+
+    pageItem P651_CANTIDAD (
+        type: textField
+        label {
+            label: <p>Cantidad</p>
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 1
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_COD_BANCO (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tab tabindex="-1"
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_DESC_BANCO (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tab tabindex="-1"
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_DESC_VALOR (
+        type: textField
+        label {
+            label: <p>Descripción</p>
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Rango de Fecha:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_FEC_HASTA (
+        type: datePicker
+        label {
+            label: Fec Hasta
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: pattern="\d{2}/\d{2}/\d{4}"
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_ID_CUENTA (
+        type: popupLov
+        label {
+            label: <p>Cuenta:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 750
+            popupHeight: 750
+            additionalOutputs: REFERENCIA:P651_REFERENCIA,COD_PERSONA:P651_COD_BANCO,NOMB_FANTASIA:P651_DESC_BANCO
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_NRO_FINAL (
+        type: textField
+        label {
+            label: <p>Nro. Final</p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_NRO_INICIAL (
+        type: textField
+        label {
+            label: <p>Nro. Inicial</p>
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_REFERENCIA (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tab tabindex="-1"
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_SER_VALOR (
+        type: textField
+        label {
+            label: <p>Serie</p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P651_TIPO_IMPRESION (
+        type: radioGroup
+        label {
+            label: <p>Tipo Impresión</p>
+            alignment: left
+        }
+        settings {
+            noOfCols: 2
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Al Dia;N,Diferido;S
+            displayNullValue: false
+        }
+        layout {
+            sequence: 160
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P651_TIP_VALOR (
+        type: popupLov
+        label {
+            label: <p>Tipo</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            additionalOutputs: DESCRIPCION:P651_DESC_VALOR
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-subtipos-cheque-cp
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button buscar (
+        buttonName: Buscar
+        label: Buscar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-search
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction impresion (
+        name: Impresion
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @imprimir
+        }
+
+        action plugin-com-fos-redirect (
+            action: plugin/fosRedirect
+            settings {
+                targetPageUrl: {
+                    page: 654
+                }
+                options: [
+                    submitPageItemsBeforeRedirect
+                    executePlSqlBeforeRedirect
+                ]
+                executePlSql:
+                    ```plsql
+                    APEX_UTIL.SET_SESSION_STATE('P654_TIP_VALOR',:P651_TIP_VALOR);
+                    APEX_UTIL.SET_SESSION_sTATE('P654_SER_VALOR',:P651_SER_VALOR);
+                    APEX_UTIL.SET_SESSION_sTATE('P654_ID_CUENTA',:P651_ID_CUENTA);
+                    APEX_UTIL.SET_SESSION_sTATE('P654_NRO_INI',:P651_NRO_INICIAL);
+                    APEX_UTIL.SET_SESSION_STATE('P654_NRO_FIN',:P651_NRO_FINAL);
+                    APEX_UTIL.SET_SESSION_sTATE('P654_FECHA_INI',:P651_FEC_DESDE);
+                    APEX_UTIL.SET_SESSION_sTATE('P654_FECHA_FIN',:P651_FEC_HASTA);
+                    APEX_UTIL.SET_SESSION_sTATE('P654_ES_DIFERIDO',:P651_TIPO_IMPRESION);
+                    ```
+                pageItemsToSubmit: [
+                    P651_ID_CUENTA
+                    P651_FEC_DESDE
+                    P651_FEC_HASTA
+                    P651_TIP_VALOR
+                    P651_SER_VALOR
+                    P651_NRO_INICIAL
+                    P651_NRO_FINAL
+                    P651_TIPO_IMPRESION
+                ]
+                openTargetInNewWindow: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @buscar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalle
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction traer-nro-inicial-y-final (
+        name: Traer Nro Inicial y Final
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P651_SER_VALOR
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :P651_SER_VALOR IS NOT NULL THEN
+                    	BEGIN
+                    		SELECT MIN(NUM_VALOR)
+                    		  INTO :P651_NRO_INICIAL
+                    		FROM CPW_VALORES_CAJAS
+                    		WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                    		  AND ID_SUB_TIPO_TRANS = :P651_TIP_VALOR
+                    		  AND SER_VALOR = :P651_SER_VALOR
+                    		  AND ID_CUENTA = :P651_ID_CUENTA
+                    		  AND FEC_EMISION BETWEEN TO_DATE(:P651_FEC_DESDE,'DD/MM/YYYY') AND TO_DATE(:P651_FEC_HASTA,'DD/MM/YYYY');
+                    	EXCEPTION
+                    		WHEN NO_DATA_FOUND THEN
+                    		  RAISE_APPLICATION_ERROR(-20000,'No se encuentra valores con estos parametros');
+                    		  --raise form_trigger_failure;
+                    		WHEN OTHERS THEN
+                    		  RAISE_APPLICATION_ERROR(-20000,'Error al buscar los nro a imprimir '||sqlerrm);
+                    		  --raise form_trigger_failure;
+                    	END;
+                    	BEGIN
+                    		SELECT MAX(NUM_VALOR)
+                    		  INTO :P651_NRO_FINAL
+                    		FROM CPW_VALORES_CAJAS
+                    		WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                    		  AND ID_SUB_TIPO_TRANS = :P651_TIP_VALOR
+                    		  AND SER_VALOR = :P651_SER_VALOR
+                    		  AND ID_CUENTA = :P651_ID_CUENTA
+                    		  AND FEC_EMISION BETWEEN TO_DATE(:P651_FEC_DESDE,'DD/MM/YYYY') AND TO_DATE(:P651_FEC_HASTA,'DD/MM/YYYY');
+                    	EXCEPTION
+                    		WHEN NO_DATA_FOUND THEN
+                    		  RAISE_APPLICATION_ERROR(-20000,'No se encuentra valores con estos parametros');
+                    		  --raise form_trigger_failure;
+                    		WHEN OTHERS THEN
+                    		  RAISE_APPLICATION_ERROR(-20000,'Error al buscar los nro a imprimir '||sqlerrm);
+                    		  --raise form_trigger_failure;
+                    	END;
+                    end if;
+                    ```
+                itemsToSubmit: [
+                    P651_SER_VALOR
+                    P651_TIP_VALOR
+                    P651_ID_CUENTA
+                    P651_FEC_DESDE
+                    P651_FEC_HASTA
+                ]
+                itemsToReturn: [
+                    P651_NRO_INICIAL
+                    P651_NRO_FINAL
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

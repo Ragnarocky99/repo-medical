@@ -1,0 +1,1262 @@
+page 425 (
+    name: Existencia de Articulos
+    alias: EXISTENCIA-DE-ARTICULOS
+    title: Existencia de Articulos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 225px;
+            height: 23px;
+            vertical-align: bottom;
+            border-style: dashed;
+            font-weight: lighter;
+            font-size: 13px;
+            text-align: center;
+            border-width: thin;
+            border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region artículo-por-lote (
+        name: Artículo por Lote
+        type: staticContent
+        layout {
+            sequence: 20
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region artículo-por-sucursal (
+        name: Artículo por Sucursal
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 60
+            parentRegion: @filtros
+            slot: regionBody
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalle-por-lote (
+        name: Detalle por Lote
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT 
+                    E.ID,
+                    --e.id_lote,
+                    E.ID_EMPRESA,
+                    AR.COD_ARTICULO,
+                    E.ID_SUCURSAL,
+                    LO.NRO_LOTE,
+                    AR.ID ID_ARTICULO, 
+                    /*SUM(*/NVL(E.CANT_DISPON,  0)/*)*/ AS CANT_DISPON,
+                   LO.FEC_VENCIMIENTO,
+                   E.NRO_ESTANTE,
+                   E.NRO_FILA
+                FROM STW_EXISTENCIA_ART E,
+                     STW_ARTICULOS AR ,
+                     STW_LOTES LO,
+                     BSW_SUCURSALES SU
+                WHERE E.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND E.ID_ARTICULO = AR.ID
+                   AND E.ID_LOTE = LO.ID---(+)
+                   AND NVL(E.CANT_DISPON,  0) != 0
+                   AND E.ID_ARTICULO = :P425_ARTICULOS
+                   AND SU.ID = E.ID_SUCURSAL
+                   AND NVL(SU.IND_DEPOSITO_VENCIDOS, 'N') != 'S'
+                ```
+            pageItemsToSubmit: [
+                P425_SUCURSAL
+                P425_ARTICULOS
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @artículo-por-lote
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 11499345390128915
+        }
+
+        savedReport 117461 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @CANT_DISPON
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ESTANTE
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @NRO_FILA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANT_DISPON (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: CANT_DISPON
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cód. Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+                queryOnly: true
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: selectList
+            heading {
+                heading: <p>Sucursal</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 60
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column NRO_ESTANTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Estante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: NRO_ESTANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_FILA (
+            type: textField
+            heading {
+                heading: <p>Nro. Fila</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: NRO_FILA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle por Lote
+        }
+    )
+
+    region existencia (
+        name: Existencia
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT 
+                    E.ID_EMPRESA,
+                    A.COD_ARTICULO,
+                    A.DESCRIPCION,
+                    --E.ID_SUCURSAL,
+                    SU.ID_SUCURSAL_CENTRAL ID_SUCURSAL,
+                    A.ID,
+                    SUM(NVL(E.CANT_DISPON,  0)) AS CANT_DISPON,
+                    obtener_cantidad_bloqueo(A.id, SU.id_sucursal_CENTRAL, 'S') AS CANT_BLOQUEO,
+                    SUM(NVL(E.CANT_DISPON,  0)) - obtener_cantidad_bloqueo(A.id, SU.id_sucursal_CENTRAL, 'S') AS DISPONIBILIDAD,
+                    A.Cod_Origen_Art as Cod_Fabricante,
+                    A.Descripcion as Desc_Art,
+                    ENV.Descripcion as Desc_Env,
+                    UNI.Descripcion as Unidad_Medida,
+                    MAR.Descripcion as Marca,
+                    DECODE(SU.ID_SUCURSAL_CENTRAL, 690, 0, NVL(CANTIDAD_EN_OCP_PENDIENTE(E.ID_ARTICULO), 0)) CANT_PEND_OCP,
+                    SUM(NVL(E.CANT_DISPON,  0)) - NVL((SELECT SUM(NVL(B.CANT_RESERVADA, 0))
+                                                       FROM STWV_ARTICULOS_BLOQUEO B
+                                                      WHERE B.ID_ARTICULO = A.ID
+                                                        AND B.ID_SUCURSAL = SU.ID_SUCURSAL_CENTRAL
+                                                        AND B.CANT_BLOQUEO > 0), 0) RESERVA_DISPONIBLE
+                   
+                FROM STW_EXISTENCIA_ART E
+                JOIN STW_ARTICULOS A ON E.ID_ARTICULO = A.ID
+                LEFT JOIN stw_envases ENV ON A.Id_Envase = ENV.ID
+                LEFT JOIN stw_unidades_medida UNI ON A.Id_Unidad_Medida = UNI.ID
+                LEFT JOIN stw_marcas MAR ON A.Id_Marca = MAR.Id
+                LEFT JOIN BSW_SUCURSALES SU ON E.ID_SUCURSAL = SU.ID
+                
+                WHERE E.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND (A.ID = :P425_ARTICULOS OR :P425_ARTICULOS IS NULL AND :P425_DESC_ART IS NOT NULL)
+                   AND (E.ID_SUCURSAL = :P425_SUCURSAL OR :P425_SUCURSAL IS NULL)
+                   and (A.id_marca = :P425_ID_MARCA or :P425_ID_MARCA is null)
+                   and (a.cod_origen_art like :P425_COD_FABRICANTE||'%' or :P425_COD_FABRICANTE is null)
+                   and (upper(a.descripcion) like '%'||:P425_DESC_ART||'%' or :P425_DESC_ART is null)
+                   and NVL(SU.IND_DEPOSITO_VENCIDOS, 'N') != 'S'
+                
+                GROUP BY 
+                    E.ID_EMPRESA,
+                    A.COD_ARTICULO,
+                    A.DESCRIPCION,
+                    SU.ID_SUCURSAL_CENTRAL,---E.ID_SUCURSAL,
+                    A.ID,
+                    A.Cod_Origen_Art,
+                    A.Descripcion,
+                    ENV.Descripcion,
+                    UNI.Descripcion,
+                    MAR.Descripcion,
+                    NVL(CANTIDAD_EN_OCP_PENDIENTE(E.ID_ARTICULO), 0)
+                
+                /*SELECT 
+                    E.ID_EMPRESA,
+                    A.COD_ATICULO,
+                    A.DESCRIPCION,
+                    E.ID_SUCURSAL,
+                    A.ID,
+                    SUM(NVL(E.CANT_DISPON,  0)) AS CANT_DISPON,
+                    ---SUM(NVL(AB.CANT_BLOQUEO,0)) AS CANT_BLOQUEO,
+                    obtener_cantidad_bloqueo(A.id,e.id_sucursal,'S') AS CANT_BLOQUEO,
+                    --SUM(NVL(E.CANT_DISPON,  0)) - SUM(NVL(AB.CANT_BLOQUEO,0)) AS DISPONIBILIDAD
+                    SUM(NVL(E.CANT_DISPON,  0)) - obtener_cantidad_bloqueo(A.id,e.id_sucursal,'S') AS DISPONIBILIDAD
+                   
+                FROM STW_EXISTENCIA_AT E,
+                     STW_ATICULOS A ,
+                     STWV_ATICULOS_BLOQUEO AB
+                WHERE E.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND (A.ID = :P425_ATICULOS OR :P425_ATICULOS IS NULL)
+                   AND (E.ID_SUCURSAL = :P425_SUCURSAL OR :P425_SUCURSAL IS NULL)
+                   AND E.ID_ATICULO = A.ID
+                   AND E.ID_ATICULO = AB.ID_ATICULO(+)
+                   AND E.ID_SUCURSAL = AB.ID_SUCURSAL(+)
+                   
+                GROUP BY 
+                    E.ID_EMPRESA,
+                    A.COD_ATICULO,
+                    A.DESCRIPCION,
+                    E.ID_SUCURSAL,
+                    ---AB.CANT_BLOQUEO,
+                    A.ID
+                */
+                ```
+            pageItemsToSubmit: [
+                P0_ID_EMPRESA
+                P425_SUCURSAL
+                P425_ARTICULOS
+                P425_DESC_ART
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @artículo-por-sucursal
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 68842468283775325
+        }
+
+        column CANT_BLOQUEO (
+            type: link
+            heading {
+                heading: Cant Bloqueo
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 646
+                    items: {
+                        P646_ID: #ID#
+                    }
+                }
+                linkText: #CANT_BLOQUEO#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column CANT_DISPON (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column CANT_PEND_OCP (
+            type: plainText
+            heading {
+                heading: Cant. Pendiente OCP
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Código Artículo
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column COD_FABRICANTE (
+            type: plainText
+            heading {
+                heading: Cód. Fabricante
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripción
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESC_ART (
+            type: hidden
+            heading {
+                heading: Descripción
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column DESC_ENV (
+            type: plainText
+            heading {
+                heading: Presentación
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column DISPONIBILIDAD (
+            type: plainText
+            heading {
+                heading: Disponibilidad
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column MARCA (
+            type: plainText
+            heading {
+                heading: Marca
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column RESERVA_DISPONIBLE (
+            type: plainText
+            heading {
+                heading: Saldo Reserva
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column UNIDAD_MEDIDA (
+            type: plainText
+            heading {
+                heading: Unidad Medida
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Existencia
+        }
+
+        savedReport 698585 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANT_BLOQUEO (
+                sequence: 9
+            )
+
+            displayColumn CANT_DISPON (
+                sequence: 8
+            )
+
+            displayColumn CANT_PEND_OCP (
+                sequence: 12
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 1
+            )
+
+            displayColumn COD_FABRICANTE (
+                sequence: 2
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 6
+            )
+
+            displayColumn DESC_ENV (
+                sequence: 3
+            )
+
+            displayColumn DISPONIBILIDAD (
+                sequence: 10
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 7
+            )
+
+            displayColumn MARCA (
+                sequence: 5
+            )
+
+            displayColumn RESERVA_DISPONIBLE (
+                sequence: 11
+            )
+
+            displayColumn UNIDAD_MEDIDA (
+                sequence: 4
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P425_ARTICULOS (
+        type: popupLov
+        label {
+            label: <p>Articulos: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos-exis
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P425_COD_FABRICANTE (
+        type: textField
+        label {
+            label: <p>Cod Fabricante</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P425_DESC_ART (
+        type: textField
+        label {
+            label: <p>Desc Art</p>
+            alignment: left
+        }
+        settings {
+            textCase: upper
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P425_ID_MARCA (
+        type: selectList
+        label {
+            label: <p>Marca</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-marcas
+            nullDisplayValue: -- Todos --
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P425_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @botones
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button inventario (
+        buttonName: Inventario
+        label: Reporte para Inventario
+        layout {
+            sequence: 10
+            region: @botones
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+            icon: fa-file-excel-o
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 637
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button refrescar (
+        buttonName: REFRESCAR
+        label: Refrescar
+        layout {
+            sequence: 20
+            region: @botones
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+    )
+
+    process detalle-por-lote-save-interactive-grid-data (
+        name: Detalle por Lote - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle-por-lote
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 11500755280128929
+        }
+    )
+
+    branch (
+        name: Go To Page 495
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 495
+                items: {
+                    P495_ARTICULO: &P425_ARTICULOS.
+                    P495_SUCURSAL: &P425_SUCURSAL.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

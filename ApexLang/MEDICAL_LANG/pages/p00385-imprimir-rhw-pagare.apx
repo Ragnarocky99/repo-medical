@@ -1,0 +1,111 @@
+page 385 (
+    name: Imprimir RHW_PAGARE
+    alias: IMPRIMIR-RHW-PAGARE
+    title: Imprimir RHW_PAGARE
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                if :P331_POR_TOTAL = 'N' THEN
+                    declare
+                              l_proc varchar2(100) := 'show report';
+                              l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                    BEGIN
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('RHW_PAGARE'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => ('P_ID_EMPRESA='||:P0_COD_EMPRESA||'&'||'P_COD_USUARIO='||:APP_USER||'&'||'P_ID_EMPLEADO='||:P331_ID_EMPLEADO||'&'||'P_NRO_PROGRAMA='||:P331_NRO_PROGRAMA)
+                                  );
+                          apex_application.stop_apex_engine();
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                          NULL;
+                          when others then 
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                ELSE 
+                        declare
+                          l_proc varchar2(100) := 'show report';
+                          l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                        BEGIN    
+                        --raise_application_error(-20000, :P250_G_ACTIVO||' '||:P250_G_DEBE||' ' );
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('RHW_PAGARE_POR_EL_TOTAL'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => ('P_ID_EMPRESA='||:P0_COD_EMPRESA
+                                                            ||'&'||'P_COD_USUARIO='||:APP_USER
+                                                            ||'&'||'P_ID_EMPLEADO='||:P331_ID_EMPLEADO
+                                                            ||'&'||'P_NRO_PROGRAMA='||:P331_NRO_PROGRAMA
+                                                           )
+                                  );
+                
+                
+                          apex_application.stop_apex_engine();
+                
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                                    NULL;
+                          when others then 
+                
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                END IF;
+                ```
+        }
+    )
+
+)
+

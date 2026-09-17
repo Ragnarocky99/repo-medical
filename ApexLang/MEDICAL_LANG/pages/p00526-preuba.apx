@@ -1,0 +1,158 @@
+page 526 (
+    name: PREUBA
+    alias: PREUBA
+    title: PREUBA
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region prueba (
+        name: prueba
+        type: chart
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                js-showMaximizeButton
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            htmlDomId: gantt
+            regionDisplaySelector: true
+        }
+        chart {
+            type: gantt
+        }
+        chartLayout {
+            height: 400
+        }
+        settings {
+            showHorizontalGrid: true
+            showVerticalGrid: true
+        }
+        animation {
+            onDisplay: none
+            onDataChange: none
+        }
+        tooltip {
+            showRow: false
+            showBaseline: false
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function( options ) {
+                
+                    var event = new Date();
+                    // Define Reference Object line on the chart
+                    var constantLine = [ { value: event.toISOString() } ];
+                    
+                    // Set the referenceObjects option as part of the chart initialization
+                    options.referenceObjects = constantLine;
+                    
+                    return options;
+                }
+                ```
+        }
+
+        series task (
+            name: task
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select task_name    task_name,
+                           id           task_id,
+                           start_date   task_start_date,
+                           end_date     task_end_date,
+                           decode(status,'Closed',1,'Open',0.6,'On-Hold',0.1,'Pending',0) status,
+                           (select min(start_date) -5 from eba_demo_chart_tasks) gantt_start_date,
+                           (select max(end_date) from eba_demo_chart_tasks)  gantt_end_date
+                    from eba_demo_chart_tasks
+                    order by id asc
+                    ```
+            }
+            timeline {
+                startDateSourceType: databaseColumn
+                startDateColumn: GANTT_START_DATE
+                endDateSourceType: databaseColumn
+                endDateColumn: GANTT_END_DATE
+            }
+            columnMapping {
+                taskId: TASK_ID
+                taskName: TASK_NAME
+                taskStartDate: TASK_START_DATE
+                taskEndDate: TASK_END_DATE
+                progress: STATUS
+            }
+            label {
+                show: true
+                fontColor: #f81a1a
+                taskLabelPosition: innerCenter
+            }
+        )
+
+        axis major (
+            name: major
+            showAxis: false
+            timeScale {
+                scale: months
+            }
+        )
+
+        axis minor (
+            name: minor
+            timeScale {
+                scale: months
+            }
+            zoomScale {
+                days: false
+                weeks: false
+                months: false
+                quarters: false
+            }
+        )
+
+    )
+
+)
+

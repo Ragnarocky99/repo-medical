@@ -1,0 +1,95 @@
+page 275 (
+    name: Imprimir Balance General
+    alias: IMPRIMIR-BALANCE-GENERAL
+    title: Imprimir Balance General
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                 declare
+                          l_proc varchar2(100) := 'show report';
+                          l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                        BEGIN    
+                        --raise_application_error(-20000, :P681_G_ACTIVO||' '||:P681_G_DEBE||' ' );
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('BalanceGeneralProv'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => ('P_ID_EMPRESA='||:P0_COD_EMPRESA
+                                                            ||'&'||'P_COD_USUARIO='||:APP_USER
+                                                            ||'&'||'P_COD_EJERCICIO='||:P0_COD_EJERCICIO
+                                                            ||'&'||'P_COD_CUENTA_INI='||:P681_G_COD_CUENTA_INI
+                                                            ||'&'||'P_COD_CUENTA_FIN='||:P681_G_COD_CUENTA_FIN
+                                                            ||'&'||'P_COD_CENTRO_INI='||:P681_G_CENTRO_COSTO_INI||'&'||'P_COD_CENTRO_FIN='||:P681_G_CENTRO_COSTO_FIN||'&'||'P_IP_MAQUINA='||:P681_IP_MAQUINA||'&'||'P_FEC_INI='||:P681_G_FEC_INI
+                                                            ||'&'||'P_FEC_FIN='||:P681_G_FEC_FIN
+                                                            ||'&'||'P_ACTIVO='||nvl(replace(:P681_G_ACTIVO,'.',''), 0)
+                                                            ||'&'||'P_PASIVO='||nvl(replace(:P681_G_PASIVO,'.',''), 0)
+                                                            ||'&'||'P_NETO='||replace(:P681_G_PATRIMONIO_NETO,'.','')
+                                                            ||'&'||'P_DEBE='||nvl(replace(:P681_G_DEBE,'.',''),0)
+                                                            ||'&'||'P_HABER='||nvl(replace(:P681_G_HABER,'.',''),0)
+                                                            ||'&'||'P_RESUMEN='||NVL(:P681_G_IMPRIMIR_RESUMEN, 'S')
+                                                            ||'&'||'P_IND_EXT='||NVL(:P681_IND_EXT, 'N'))
+                                  );
+                
+                
+                          apex_application.stop_apex_engine();
+                
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                                    NULL;
+                          when others then 
+                
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                ```
+        }
+    )
+
+)
+

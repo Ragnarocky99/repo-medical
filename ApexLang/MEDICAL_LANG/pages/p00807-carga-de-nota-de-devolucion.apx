@@ -1,0 +1,2308 @@
+page 807 (
+    name: Carga de Nota de Devolucion
+    alias: CARGA-DE-NOTA-DE-DEVOLUCION
+    title: Carga de Nota de Devolucion
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-nota-de-devolucion (
+        name: Carga de Nota de Devolucion
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_SUCURSAL,
+                       FEC_COMPROBANTE,
+                       TIP_COMPROBANTE,
+                       SER_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       ID_CLIENTE,
+                       ID_MOTIVO_DEV,
+                       ID_FACTURA_REF,
+                       ID_NCR_REF,
+                       IND_AUTORIZA_LOG,
+                       IND_AUTORIZA_COM,
+                       IND_AUTORIZA_ADM,
+                       ID_TIPO_COMP,
+                       ID_SERIE_COMP,
+                       FEC_AUTORIZA_LOG,
+                       COD_USUARIO_AUTORIZA_LOG,
+                       FEC_AUTORIZA_COM,
+                       COD_USUARIO_AUTORIZA_COM,
+                       FEC_AUTORIZA_ADM,
+                       COD_USUARIO_AUTORIZA_ADM,
+                       COD_USUARIO_AUD,
+                       FEC_ALTA,
+                       COMENTARIO,
+                       (SELECT NRO_OCC
+                         FROM VTW_COMPROBANTES_CABECERA VC
+                        WHERE VC.ID = ID_FACTURA_REF) NRO_OCC,
+                       (SELECT TO_CHAR(PC.NRO_COMPROBANTE)
+                         FROM VTW_COMPROBANTES_CABECERA VC
+                         JOIN VTW_PEDIDOS_CABECERA      PC ON PC.ID = VC.ID_PEDIDO_REF
+                        WHERE VC.ID = ID_FACTURA_REF) NRO_PEDIDO
+                  from VTW_COMPROBANTES_CABECERA_SOL
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DS.ID,
+                       DS.ID_EMPRESA,
+                       AR.COD_ARTICULO,
+                       VD.DESC_ARTICULO,
+                       LO.NRO_LOTE,
+                       VD.CANTIDAD,
+                       VD.PRECIO_UNITARIO_C_IVA,
+                       VD.PORC_DESCUENTO,
+                       VD.MONTO_TOTAL_C_IVA,
+                       DS.CANT_DEVUELTA,
+                       DS.ID_FACTURA_DET,
+                       DS.ID_FACTURA_CAB,
+                       DS.ID_COMPROBANTE_CAB
+                  FROM VTW_COMPROBANTES_DETALLE_SOL DS
+                  JOIN VTW_COMPROBANTES_DETALLE     VD ON VD.ID = DS.ID_FACTURA_DET
+                  JOIN STW_ARTICULOS                AR ON AR.ID = VD.ID_ARTICULO
+                  JOIN STW_LOTES                    LO ON LO.ID = VD.ID_LOTE
+                 WHERE DS.ID_COMPROBANTE_CAB = :P807_ID
+                ```
+            pageItemsToSubmit: P807_ID
+        }
+        layout {
+            sequence: 20
+            parentRegion: @carga-de-nota-de-devolucion
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 62142610350119102
+        }
+
+        savedReport 621488 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @PORC_DESCUENTO
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_C_IVA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @CANT_DEVUELTA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_FACTURA_DET
+                layout {
+                    show: false
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_C_IVA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_FACTURA_CAB
+                layout {
+                    show: false
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE_CAB
+                layout {
+                    sequence: 14
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_DEVUELTA (
+            type: numberField
+            heading {
+                heading: <p>Cant. Devuelta</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: CANT_DEVUELTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod. Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Articulo</p>
+            }
+            layout {
+                sequence: 100
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 3000
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COMPROBANTE_CAB (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_FACTURA_CAB (
+            type: numberField
+            heading {
+                heading: Id Factura Cab
+                alignment: end
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_FACTURA_CAB
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_FACTURA_DET (
+            type: numberField
+            heading {
+                heading: Id Factura Det
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_FACTURA_DET
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_TOTAL_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_TOTAL_C_IVA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Nro Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column PORC_DESCUENTO (
+            type: numberField
+            heading {
+                heading: <p>% Descuento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: PORC_DESCUENTO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column PRECIO_UNITARIO_C_IVA (
+            type: numberField
+            heading {
+                heading: <p>Precio Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO_C_IVA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    pageItem P807_COD_USUARIO_AUD (
+        type: displayOnly
+        label {
+            label: <p>Creado Por:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 20
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+    )
+
+    pageItem P807_COD_USUARIO_AUTORIZA_ADM (
+        type: displayOnly
+        label {
+            label: <p>Autorizado Por:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 240
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: COD_USUARIO_AUTORIZA_ADM
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_COD_USUARIO_AUTORIZA_COM (
+        type: displayOnly
+        label {
+            label: <p>Autorizado Por:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: COD_USUARIO_AUTORIZA_COM
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_COD_USUARIO_AUTORIZA_LOG (
+        type: displayOnly
+        label {
+            label: <p>Autorizado Por:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 180
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: COD_USUARIO_AUTORIZA_LOG
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_COMENTARIO (
+        type: textarea
+        label {
+            label: <p>Comentario:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            autoHeight: true
+            charCounter: true
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 300
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: COMENTARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P807_FEC_ALTA (
+        type: displayOnly
+        label {
+            label: <p>Fecha Alta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 30
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: FEC_ALTA
+            dataType: date
+        }
+    )
+
+    pageItem P807_FEC_AUTORIZA_ADM (
+        type: displayOnly
+        label {
+            label: <p>Fecha Autorizacion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 250
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: FEC_AUTORIZA_ADM
+            dataType: date
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_FEC_AUTORIZA_COM (
+        type: displayOnly
+        label {
+            label: <p>Fecha Autorizacion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 220
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: FEC_AUTORIZA_COM
+            dataType: date
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_FEC_AUTORIZA_LOG (
+        type: displayOnly
+        label {
+            label: <p>Fecha Autorizacion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: FEC_AUTORIZA_LOG
+            dataType: date
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_FEC_COMPROBANTE (
+        type: datePicker
+        label {
+            label: <p>Fec. Devolucion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: FEC_COMPROBANTE
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P807_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P807_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_CLIENTE
+            dataType: number
+        }
+    )
+
+    pageItem P807_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P807_ID_FACTURA_REF (
+        type: popupLov
+        label {
+            label: <p>Factura Venta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-facturas-p
+        }
+        cascadingLov {
+            parentItems: P807_ID_CLIENTE
+            itemsToSubmit: P807_ID_CLIENTE
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_FACTURA_REF
+            dataType: number
+        }
+    )
+
+    pageItem P807_ID_MOTIVO_DEV (
+        type: popupLov
+        label {
+            label: <p>Motivo Devolucion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-motivos-ncr
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_MOTIVO_DEV
+            dataType: number
+        }
+    )
+
+    pageItem P807_ID_NCR_REF (
+        type: popupLov
+        label {
+            label: <p>Nota de Credito:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-notas-de-credito-p
+        }
+        cascadingLov {
+            parentItems: P807_ID_FACTURA_REF
+            itemsToSubmit: P807_ID_FACTURA_REF
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_NCR_REF
+            dataType: number
+        }
+    )
+
+    pageItem P807_ID_SERIE_COMP (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_SERIE_COMP
+            dataType: number
+        }
+    )
+
+    pageItem P807_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P807_ID_TIPO_COMP (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: ID_TIPO_COMP
+            dataType: number
+        }
+    )
+
+    pageItem P807_IND_AUTORIZA_ADM (
+        type: checkbox
+        label {
+            label: <p>Autoriza Administracion</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 230
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: IND_AUTORIZA_ADM
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_IND_AUTORIZA_COM (
+        type: checkbox
+        label {
+            label: <p>Autoriza Comercial</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: IND_AUTORIZA_COM
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_IND_AUTORIZA_LOG (
+        type: checkbox
+        label {
+            label: <p>Autoriza Logistica</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 170
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: IND_AUTORIZA_LOG
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_IND_IMPRIMIR (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 290
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+    )
+
+    pageItem P807_JSON_DETALLES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 280
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+        sessionState {
+            dataType: clob
+        }
+    )
+
+    pageItem P807_NRO_COMPROBANTE (
+        type: displayOnly
+        label {
+            label: <p>Nro. Devolucion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P807_NRO_OCC (
+        type: displayOnly
+        label {
+            label: <p>Nro. OCC:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: NRO_OCC
+            dataType: varchar2
+            queryOnly: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_NRO_PEDIDO (
+        type: displayOnly
+        label {
+            label: <p>Nro. Pedido:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 160
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: NRO_PEDIDO
+            dataType: varchar2
+            queryOnly: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+    )
+
+    pageItem P807_SER_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 120
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: A
+        }
+    )
+
+    pageItem P807_TIP_COMPROBANTE (
+        type: displayOnly
+        label {
+            label: <p>Tipo:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-nota-de-devolucion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-nota-de-devolucion
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @carga-de-nota-de-devolucion
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 804
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 40
+            region: @carga-de-nota-de-devolucion
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P807_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @carga-de-nota-de-devolucion
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--danger
+                t-Button--iconLeft
+            ]
+            icon: fa-trash-o
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button print (
+        buttonName: PRINT
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @carga-de-nota-de-devolucion
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @carga-de-nota-de-devolucion
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P807_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction auditoria-adm (
+        name: Auditoria ADM
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P807_IND_AUTORIZA_ADM
+        }
+
+        action nulo (
+            name: Nulo
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: [
+                    P807_COD_USUARIO_AUTORIZA_ADM
+                    P807_FEC_AUTORIZA_ADM
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_ADM
+                value: N
+            }
+        )
+
+        action p807-cod-usuario-autoriza-adm (
+            name: P807_COD_USUARIO_AUTORIZA_ADM
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P807_COD_USUARIO_AUTORIZA_ADM
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_ADM
+                value: S
+            }
+        )
+
+        action p807-cod-usuario-autoriza-adm-2 (
+            name: P807_COD_USUARIO_AUTORIZA_ADM
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P807_FEC_AUTORIZA_ADM
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_ADM
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction auditoria-com (
+        name: Auditoria COM
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P807_IND_AUTORIZA_COM
+        }
+
+        action nulo (
+            name: Nulo
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: [
+                    P807_COD_USUARIO_AUTORIZA_COM
+                    P807_FEC_AUTORIZA_COM
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_COM
+                value: N
+            }
+        )
+
+        action p807-cod-usuario-autoriza-com (
+            name: P807_COD_USUARIO_AUTORIZA_COM
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P807_COD_USUARIO_AUTORIZA_COM
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_COM
+                value: S
+            }
+        )
+
+        action p807-cod-usuario-autoriza-com-2 (
+            name: P807_COD_USUARIO_AUTORIZA_COM
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P807_FEC_AUTORIZA_COM
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_COM
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction auditoria-log (
+        name: Auditoria LOG
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P807_IND_AUTORIZA_LOG
+        }
+
+        action nulo (
+            name: Nulo
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: [
+                    P807_COD_USUARIO_AUTORIZA_LOG
+                    P807_FEC_AUTORIZA_LOG
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_LOG
+                value: N
+            }
+        )
+
+        action p807-cod-usuario-autoriza-log (
+            name: P807_COD_USUARIO_AUTORIZA_LOG
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P807_COD_USUARIO_AUTORIZA_LOG
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_LOG
+                value: S
+            }
+        )
+
+        action p807-cod-usuario-autoriza-log-2 (
+            name: P807_COD_USUARIO_AUTORIZA_LOG
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P807_FEC_AUTORIZA_LOG
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P807_IND_AUTORIZA_LOG
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction cargar-datos-de-factura (
+        name: Cargar datos de Factura
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P807_ID_FACTURA_REF
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      l_cursor SYS_REFCURSOR;
+                      json_detalle CLOB;
+                    BEGIN
+                    
+                    
+                      
+                      OPEN l_cursor FOR
+                        SELECT E.ID ID_FACTURA_DET,
+                               A.COD_ARTICULO,
+                               E.DESC_ARTICULO,
+                               E.NRO_LOTE,
+                               E.CANTIDAD,
+                               E.PRECIO_UNITARIO_C_IVA,
+                               E.PORC_DESCUENTO,
+                               E.MONTO_TOTAL_C_IVA,
+                               E.ID_COMPROBANTE_CABECERA ID_FACTURA_CAB
+                        FROM   VTW_COMPROBANTES_DETALLE E
+                        JOIN   STW_ARTICULOS            A ON A.ID = E.ID_ARTICULO
+                        JOIN   STW_LOTES                L ON L.ID = E.ID_LOTE
+                        WHERE  ID_COMPROBANTE_CABECERA=:P807_ID_FACTURA_REF
+                        AND E.ID_ARTICULO=A.ID;
+                    
+                      APEX_JSON.initialize_clob_output;
+                    
+                      APEX_JSON.open_object;
+                      APEX_JSON.write('DETALLE', l_cursor);
+                      APEX_JSON.close_object;
+                    
+                      JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                    
+                      :P807_JSON_DETALLES:=JSON_DETALLE;
+                    
+                    
+                      EXCEPTION 
+                      WHEN OTHERS THEN 
+                      RAISE_APPLICATION_ERROR(-20000,'Error al recuperar el detalle');
+                    
+                    END;
+                    ```
+                itemsToSubmit: P807_ID_FACTURA_REF
+                itemsToReturn: P807_JSON_DETALLES
+                showProcessing: true
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $model.clearChanges();
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var orden =0;
+                    var json_detalle = JSON.parse($v('P807_JSON_DETALLES'));
+                    
+                    
+                    
+                    
+                    //console.log(json_detalle);
+                    if ((Object.keys(json_detalle.DETALLE).length)!=0){
+                    
+                    
+                    for(let i=0;i<json_detalle.DETALLE.length;i++){
+                    
+                    
+                    //Con este codigo podemos insertar una nueva fila en el detalle de comprobantes 
+                    
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                         $grid.setEditMode(true);
+                    //insert new record on a model
+                    var newRecordId = $model.insertNewRecord();
+                    
+                    //continuation of above code
+                    //get the new record
+                    
+                    var $newRecord = $model.getRecord(newRecordId);
+                    orden=orden+1;
+                    $model.setValue($newRecord, "CANTIDAD",(json_detalle.DETALLE[i].CANTIDAD).toString());
+                    if((json_detalle.DETALLE[i].NRO_LOTE!=null)){
+                    $model.setValue($newRecord, "NRO_LOTE",(json_detalle.DETALLE[i].NRO_LOTE).toString());
+                    }
+                    $model.setValue($newRecord, "PRECIO_UNITARIO_C_IVA",(json_detalle.DETALLE[i].PRECIO_UNITARIO_C_IVA).toString().replace(/\./g,','));
+                    $model.setValue($newRecord, "DESC_ARTICULO",(json_detalle.DETALLE[i].DESC_ARTICULO).toString().replace(/\./g,','));
+                    $model.setValue($newRecord, "COD_ARTICULO",(json_detalle.DETALLE[i].COD_ARTICULO).toString().replace(/\./g,','));
+                    if((json_detalle.DETALLE[i].ID_FACTURA_DET!=null)){
+                    $model.setValue($newRecord, "ID_FACTURA_DET",(json_detalle.DETALLE[i].ID_FACTURA_DET).toString())
+                    }
+                    if((json_detalle.DETALLE[i].PORC_DESCUENTO!=null)){
+                    $model.setValue($newRecord, "PORC_DESCUENTO",(json_detalle.DETALLE[i].PORC_DESCUENTO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].MONTO_TOTAL_C_IVA!=null)){
+                    $model.setValue($newRecord, "MONTO_TOTAL_C_IVA",(json_detalle.DETALLE[i].MONTO_TOTAL_C_IVA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_FACTURA_CAB!=null)){
+                    $model.setValue($newRecord, "ID_FACTURA_CAB",(json_detalle.DETALLE[i].ID_FACTURA_CAB).toString())
+                    }
+                    }
+                    
+                    }
+                    
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction imprimir (
+        name: Imprimir
+        execution {
+            sequence: 70
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @print
+        }
+
+        action plugin-com-fos-redirect (
+            action: plugin/fosRedirect
+            settings {
+                targetPageUrl: {
+                    page: 807
+                    items: {
+                        P807_IND_IMPRIMIR: S
+                        P807_ID: &P807_ID.
+                    }
+                }
+                options: submitPageItemsBeforeRedirect
+                pageItemsToSubmit: P807_ID
+                openTargetInNewWindow: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: Inicializar
+        execution {
+            sequence: 60
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    //grid.view$.grid("option", "editable", true);
+                    //editable true
+                        grid.model.setOption("editable", true);
+                        //grid.setEditMode(true);
+                    //editable false
+                    //grid.model.setOption("editable", false);
+                        grid.setEditMode(true);
+                    
+                    let actions = apex.region("Detalles").call("getActions");
+                    //actions.hide("selection-duplicate");
+                    //actions.hide("selection-delete");
+                    actions.hide("selection-copy-down");
+                    actions.hide("selection-copy");
+                    actions.hide("selection-refresh"); 
+                    actions.hide("selection-revert"); 
+                    actions.hide("selection-add-row");
+                    actions.hide("selection-fill"); 
+                    actions.hide("selection-clear"); 
+                    actions.hide("single-row-view");
+                    actions.hide("row-add-row");
+                    actions.hide("row-duplicate");
+                    //actions.hide("row-delete"); 
+                    actions.hide("row-refresh");  
+                    actions.hide("row-revert");
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation validar-cantidad-devuelta (
+        name: Validar cantidad devuelta
+        execution {
+            sequence: 10
+        }
+        validation {
+            editableRegion: @detalles
+            plsqlExpression: TO_NUMBER(:CANT_DEVUELTA) <= TO_NUMBER(:CANTIDAD)
+        }
+        error {
+            errorMessage: Cantidad de vuelta no puede ser mayor a la cantidad facturada
+            associatedColumn: CANT_DEVUELTA
+        }
+    )
+
+    computation p807-id-serie-comp (
+        itemName: P807_ID_SERIE_COMP
+        execution {
+            sequence: 30
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT ID
+                  FROM BSW_SERIES_COMPROB
+                 WHERE TIP_COMPROBANTE = W_BUSCA_PARAMETRO('VT', 'TIP_COMPROBANTE_NOTA_DEVOLUCION')
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P807_ID_SERIE_COMP
+        }
+    )
+
+    computation p807-id-tipo-comp (
+        itemName: P807_ID_TIPO_COMP
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT ID
+                  FROM BSW_TIPOS_COMPROBANTES
+                 WHERE ID_MODULO = TRAE_ID_MODULO('VT')
+                   AND TIP_COMPROBANTE = W_BUSCA_PARAMETRO('VT', 'TIP_COMPROBANTE_NOTA_DEVOLUCION')
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P807_ID_TIPO_COMP
+        }
+    )
+
+    computation p807-nro-comprobante (
+        itemName: P807_NRO_COMPROBANTE
+        execution {
+            sequence: 30
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(NRO_COMPROBANTE), 0) + 1
+                  FROM VTW_COMPROBANTES_CABECERA_SOL
+                 WHERE TIP_COMPROBANTE = W_BUSCA_PARAMETRO('VT', 'TIP_COMPROBANTE_NOTA_DEVOLUCION')
+                   AND ID_EMPRESA = :P0_ID_EMPRESA
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P807_ID
+        }
+    )
+
+    computation p807-tip-comprobante (
+        itemName: P807_TIP_COMPROBANTE
+        execution {
+            sequence: 20
+        }
+        computation {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('VT', 'TIP_COMPROBANTE_NOTA_DEVOLUCION')
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P807_ID
+        }
+    )
+
+    process detalless-save-interactive-grid-data (
+        name: Detalless - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 62143670105119112
+        }
+    )
+
+    process elimina-detalles (
+        name: Elimina detalles
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DELETE
+                  FROM VTW_COMPROBANTES_DETALLE_SOL
+                 WHERE ID_COMPROBANTE_CAB = :P807_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 63288071515288428
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process initialize-form-carga-de-nota-de-devolucion (
+        name: Initialize form Carga de Nota de Devolucion
+        type: formInitialization
+        formRegion: @carga-de-nota-de-devolucion
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 62027516998219767
+        }
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 63288112849288429
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process process-form-carga-de-nota-de-devolucion (
+        name: Process form Carga de Nota de Devolucion
+        type: formAutoRowProcessing
+        formRegion: @carga-de-nota-de-devolucion
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 62027905759219767
+        }
+    )
+
+    process unir-cab-det (
+        name: Unir cab det
+        type: executeCode
+        editableRegion: @detalles
+        source {
+            plsqlCode: :ID_COMPROBANTE_CAB := :P807_ID;
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 63287785914288425
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                declare
+                  l_proc varchar2(100) := 'show report';
+                  l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                BEGIN
+                  :P807_IND_IMPRIMIR := NULL;
+                  xlog (l_proc, 'url (orig):' || l_report_url);
+                
+                  xlib_jasperreports.set_report_url(l_report_url);
+                  xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('NotaDevolucion'),
+                          p_rep_format          => apex_util.url_encode('pdf'),
+                          p_data_source         => apex_util.url_encode('default'),
+                          p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                          p_rep_locale          => apex_util.url_encode('es_ES'),
+                          p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                          p_additional_params   => ('P_ID='||:P807_ID),
+                          p_print_is_enabled    => case when :P3_print_is_enabled='1' then true else false end,
+                          p_print_printer_name  => apex_util.url_encode(:P3_print_printer_name),
+                          p_print_media         => apex_util.url_encode(:P3_print_media),
+                          p_print_copies        => apex_util.url_encode(:P3_print_copies),
+                          p_print_duplex        => case when :P3_print_duplex='1' then true else false end,
+                          p_print_collate       => case when :P3_print_collate='1' then true else false end,
+                          p_save_is_enabled     => case when :P3_save_is_enabled='1' then true else false end,
+                          p_save_filename       => apex_util.url_encode(:P3_save_filename),
+                          p_rep_time_zone       => apex_util.url_encode(:P3_rep_time_zone),
+                          p_print_job_name      => apex_util.url_encode(:P3_print_job_name)
+                          );
+                  
+                  -- this was used before apex 4.1
+                  --apex_application.g_unrecoverable_error := true;
+                  apex_application.stop_apex_engine();
+                
+                exception
+                  when apex_application.e_stop_apex_engine then
+                    null; -- ok, stop engine raises exception, we can ignore that
+                  when others then 
+                    xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                    raise;
+                end;   
+                                                     
+                ```
+        }
+        serverSideCondition {
+            type: item=value
+            item: P807_IND_IMPRIMIR
+            value: S
+        }
+    )
+
+)
+

@@ -1,0 +1,2998 @@
+page 486 (
+    name: Carga de Inventario de Bienes
+    alias: CARGA-DE-INVENTARIO-DE-BIENES
+    title: Carga de Inventario de Bienes
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: [
+            #DEFAULT#
+            ui-dialog--stretch
+        ]
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 214px;
+                height: 25px;
+                pointer-events: none;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: left;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            canvas#image-preview{  
+            text-align: center;  
+            margin-left: 100px;  
+            margin-top: 30px;  
+            border: 1px solid black; 
+             width: 240px !important;
+            }
+            
+            td[headers="Mostrar"] img {   width: 74px; } 
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region bien (
+        name: Bien
+        type: staticContent
+        layout {
+            sequence: 280
+            parentRegion: @carga-de-inventario-de-bienes
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noUI
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region carga-de-inventario-de-bienes (
+        name: Carga de Inventario de Bienes
+        type: form
+        source {
+            location: localDatabase
+            tableName: COW_BIENES_USO
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region datos (
+        name: Datos
+        type: staticContent
+        layout {
+            sequence: 40
+            parentRegion: @bien
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                margin-top-md
+            ]
+        }
+    )
+
+    region datos-de-baja-de-bien (
+        name: Datos de Baja de Bien
+        type: staticContent
+        layout {
+            sequence: 30
+            parentRegion: @estado
+            slot: regionBody
+            columnSpan: 6
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+    )
+
+    region estado (
+        name: Estado
+        type: staticContent
+        layout {
+            sequence: 310
+            parentRegion: @carga-de-inventario-de-bienes
+            slot: regionBody
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--noUI
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    region imagenes (
+        name: Imagenes
+        type: form
+        source {
+            location: localDatabase
+            tableName: COW_IMG_BIENES_USO
+        }
+        layout {
+            sequence: 290
+            parentRegion: @carga-de-inventario-de-bienes
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-top-lg
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    region imagenes-grilla (
+        name: Imagenes Grilla
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT "ID",
+                       "FILENAME",
+                       "MIMETYPE",
+                          /*'<Img src="/i/IMAGENES_APEX/'
+                       || ID_LOCAL||'-'||ID
+                       || '.jpg" alt="Smiley face" height="40" width="40">'
+                          AS img,*/
+                          descripcion,
+                          ID_BIEN||'-'||ID  AS IMAGE,
+                          ID_EMPRESA,
+                          ID_BIEN
+                  FROM COW_IMG_BIENES_USO
+                  WHERE ID_BIEN=:P486_ID
+                ```
+            pageItemsToSubmit: P486_ID
+        }
+        layout {
+            sequence: 10
+            parentRegion: @imagenes
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-left-lg
+                margin-right-lg
+            ]
+        }
+        advanced {
+            htmlDomId: IMG
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                actionsMenu
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 88843481381312322
+        }
+
+        savedReport 899529 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @FILENAME
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @MIMETYPE
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @IMAGE
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_BIEN
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 0
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_SELECTOR
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @URL
+                layout {
+                    sequence: 9
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                type: none
+            }
+        )
+
+        column DESCRIPCION (
+            type: textField
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FILENAME (
+            type: textarea
+            heading {
+                heading: Filename
+            }
+            layout {
+                sequence: 40
+            }
+            validation {
+                maxLength: 255
+            }
+            source {
+                databaseColumn: FILENAME
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID (
+            type: numberField
+            heading {
+                heading: Id
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_BIEN (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_BIEN
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IMAGE (
+            type: link
+            heading {
+                heading: <p>Imagen</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            link {
+                target: {
+                    page: 1001
+                    items: {
+                        P1001_ID: &ID.
+                        P1001_ID_BIEN: &ID_BIEN.
+                    }
+                }
+                linkText: <img src="/i/IMAGENES_BIENES/&IMAGE..jpg" height="65" width="65" alt="Sin Imagen" >
+            }
+            source {
+                databaseColumn: IMAGE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: IMAGEN
+            }
+        )
+
+        column MIMETYPE (
+            type: textarea
+            heading {
+                heading: Mimetype
+            }
+            layout {
+                sequence: 50
+            }
+            validation {
+                maxLength: 255
+            }
+            source {
+                databaseColumn: MIMETYPE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column URL (
+            type: textField
+            heading {
+                heading: Url
+            }
+            layout {
+                sequence: 80
+            }
+            validation {
+                maxLength: 102
+            }
+            source {
+                type: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Imagenes Grilla
+        }
+    )
+
+    region indicadores (
+        name: Indicadores
+        type: staticContent
+        layout {
+            sequence: 60
+            parentRegion: @bien
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region sliding-bar (
+        name: Sliding Bar
+        type: regionDisplaySelector
+        layout {
+            sequence: 20
+            parentRegion: @carga-de-inventario-de-bienes
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--noUI
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            excludeTitleFromTranslation: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        settings {
+            includeShowAll: false
+            rememberSelection: bySession
+        }
+    )
+
+    region valores-de-procesos-anuales (
+        name: "Valores de Procesos Anuales "
+        type: staticContent
+        layout {
+            sequence: 40
+            parentRegion: @estado
+            slot: regionBody
+            startNewRow: false
+            column: 7
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+    )
+
+    region valores-de-procesos-mensuales (
+        name: Valores de Procesos Mensuales
+        type: staticContent
+        layout {
+            sequence: 60
+            parentRegion: @estado
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P486_ABREVIATURA (
+        type: textField
+        label {
+            label: <p>Abreviatura: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 40
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ABREVIATURA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_CANTIDAD (
+        type: numberField
+        label {
+            label: <p>Cantidad: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: CANTIDAD
+            dataType: number
+        }
+    )
+
+    pageItem P486_COD_BIEN (
+        type: textField
+        label {
+            label: <p>Cod. Bien: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @bien
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: COD_BIEN
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @datos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :APP_USER
+                
+                ```
+        }
+    )
+
+    pageItem P486_DEPRE_ACUM (
+        type: textField
+        label {
+            label: <p>Depreciación Acumulada:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @valores-de-procesos-anuales
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.MON_DEP_ACUMULADO FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    pageItem P486_DEPRE_ACUM_ANUAL (
+        type: textField
+        label {
+            label: <p>Depreciación Acumulada:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @valores-de-procesos-mensuales
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P486_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @bien
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_DESCRIPCION_1 (
+        type: textField
+        label {
+            label: <p>Descripción: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @imagenes
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--large
+            ]
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            formRegion: @imagenes
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_ESTADO (
+        type: checkbox
+        label {
+            label: <p>Activo </p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 10
+            region: @indicadores
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: is-readonly
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ESTADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P486_FEC_BAJA (
+        type: datePicker
+        label {
+            label: <p>Fec. Baja:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @datos-de-baja-de-bien
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 2
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: FEC_BAJA
+            dataType: date
+        }
+    )
+
+    pageItem P486_FEC_COMPRA (
+        type: datePicker
+        label {
+            label: <p>Fec. de Compra: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: FEC_COMPRA
+            dataType: date
+        }
+    )
+
+    pageItem P486_FEC_UBICACION (
+        type: datePicker
+        label {
+            label: <p>Fec. de Ubicación: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: FEC_UBICACION
+            dataType: date
+        }
+    )
+
+    pageItem P486_FILENAME (
+        type: hidden
+        layout {
+            sequence: 70
+            region: @imagenes
+            slot: regionBody
+        }
+        source {
+            formRegion: @imagenes
+            column: FILENAME
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_ID (
+        type: hidden
+        layout {
+            sequence: 330
+            region: @datos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: COW_BIENES_USO_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P486_ID_1 (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @imagenes
+            slot: regionBody
+        }
+        source {
+            formRegion: @imagenes
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: COW_IMG_BIENES_USO_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P486_ID_BIEN (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @imagenes
+            slot: regionBody
+        }
+        source {
+            formRegion: @imagenes
+            column: ID_BIEN
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :p486_id
+        }
+    )
+
+    pageItem P486_ID_CENTRO (
+        type: popupLov
+        label {
+            label: <p>Centro Costo: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-centro-costo
+            displayExtraValues: false
+        }
+        layout {
+            sequence: 90
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_CENTRO
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_CUENTA (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_CUENTA
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_DEPARTAMENTO (
+        type: popupLov
+        label {
+            label: <p>Departamento: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-departamentos-rrhh
+        }
+        layout {
+            sequence: 120
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_DEPARTAMENTO
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @datos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P486_ID_EMPRESA_1 (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @imagenes
+            slot: regionBody
+        }
+        source {
+            formRegion: @imagenes
+            column: ID_EMPRESA
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: expression
+            plsqlExpression: :p0_cod_Empresa
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P486_ID_GRUPO (
+        type: popupLov
+        label {
+            label: <p> Grupo: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-grupos-bienes
+        }
+        layout {
+            sequence: 280
+            region: @datos
+            slot: regionBody
+            alignment: left
+            column: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_GRUPO
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_MOTIVO_BAJA (
+        type: popupLov
+        label {
+            label: <p>Motivo:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-motivos-bajas
+        }
+        layout {
+            sequence: 20
+            region: @datos-de-baja-de-bien
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_MOTIVO_BAJA
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+        }
+        layout {
+            sequence: 180
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_PROVEEDOR
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_RESPONSABLE (
+        type: popupLov
+        label {
+            label: <p>Responsable: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-responsables-bien
+        }
+        layout {
+            sequence: 210
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_RESPONSABLE
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_SECCION (
+        type: popupLov
+        label {
+            label: <p>Sección: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-secciones
+        }
+        layout {
+            sequence: 150
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_SECCION
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 60
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_TIPO_BIEN (
+        type: popupLov
+        label {
+            label: <p>Tipo Bien: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tipo-bien
+            displayNullValue: false
+        }
+        layout {
+            sequence: 240
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_TIPO_BIEN
+            dataType: number
+        }
+    )
+
+    pageItem P486_ID_TIPO_COMPRA (
+        type: popupLov
+        label {
+            label: <p>Tipo Compra: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tipo-compra
+        }
+        layout {
+            sequence: 260
+            region: @datos
+            slot: regionBody
+            alignment: left
+            column: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: ID_TIPO_COMPRA
+            dataType: number
+        }
+    )
+
+    pageItem P486_IMAGEN (
+        type: fileUpload
+        label {
+            label: <p>Imagen: &ensp;</p>
+            alignment: left
+        }
+        storage {
+            type: appTempFiles
+            fileTypes: image/*
+        }
+        layout {
+            sequence: 50
+            region: @imagenes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P486_IND_DEPRECIA (
+        type: checkbox
+        label {
+            label: <p>Ind. Depreciación </p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 30
+            region: @indicadores
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: IND_DEPRECIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_IND_REVALUA (
+        type: checkbox
+        label {
+            label: <p>Ind. Revaluación </p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 20
+            region: @indicadores
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: IND_REVALUA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_MIMETYPE (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @imagenes
+            slot: regionBody
+        }
+        source {
+            formRegion: @imagenes
+            column: MIMETYPE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_MON_COSTO (
+        type: numberField
+        label {
+            label: <p>Costo Nacional: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: MON_COSTO
+            dataType: number
+        }
+    )
+
+    pageItem P486_MON_COSTO_EXT (
+        type: numberField
+        label {
+            label: <p>Costo Extranjero: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: MON_COSTO_EXT
+            dataType: number
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P486_NETO_FISCAL (
+        type: textField
+        label {
+            label: <p>Neto Fiscal:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @valores-de-procesos-anuales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.MON_NETO 
+                FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID
+                
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    pageItem P486_NETO_FISCAL_ANUAL (
+        type: textField
+        label {
+            label: <p>Neto Fiscal:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @valores-de-procesos-mensuales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P486_PC_RESIDUAL_ANUAL (
+        type: textField
+        label {
+            label: <p>% Valor Residual:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @valores-de-procesos-anuales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT T.PORC_VALOR_RESIDUAL 
+                FROM COW_BIENES_USO B, COW_TIPOS_BIENES T 
+                WHERE T.ID = B.ID_TIPO_BIEN AND B.ID = :P486_ID
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    pageItem P486_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Ref. Factura: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 60
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_REF_COD_BIEN (
+        type: textField
+        label {
+            label: <p> Ref Cod Bien: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @bien
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 10
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: REF_COD_BIEN
+            dataType: varchar2
+        }
+    )
+
+    pageItem P486_RESTO_UTIL_CONTABLE (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @datos-de-baja-de-bien
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: RESTO_UTIL_CONTABLE
+            dataType: number
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.ANIO_RESTO_VIDA_CONT 
+                FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID
+                ```
+        }
+    )
+
+    pageItem P486_REVAL_ACUM (
+        type: textField
+        label {
+            label: <p>Revaluo Acumulado:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @valores-de-procesos-anuales
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.MON_REV_ACUMULADO FROM 
+                COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    pageItem P486_REVAL_ACUM_ANUAL (
+        type: textField
+        label {
+            label: <p>Revaluo Acumulado:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @valores-de-procesos-mensuales
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P486_VALOR_RESIDUAL_ANUAL (
+        type: textField
+        label {
+            label: <p>Valor Residual:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @valores-de-procesos-anuales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                
+                SELECT R.VALOR_RESIDUAL 
+                FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    pageItem P486_VIDA_RESTANTE (
+        type: textField
+        label {
+            label: <p>Vida Util Restante:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @valores-de-procesos-anuales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.ANIO_RESTO_VIDA 
+                FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID
+                
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    pageItem P486_VIDA_RESTANTE_ANUAL (
+        type: textField
+        label {
+            label: <p>Vida Util Restante:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @valores-de-procesos-mensuales
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P486_VIDA_UTIL (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @datos
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: VIDA_UTIL
+            dataType: number
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT T.VIDA_UTIL
+                FROM COW_TIPOS_BIENES T, COW_BIENES_USO B 
+                WHERE B.ID_TIPO_BIEN=T.ID;
+                ```
+        }
+    )
+
+    pageItem P486_VIDA_UTIL_CONTABLE (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @datos-de-baja-de-bien
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: VIDA_UTIL_CONTABLE
+            dataType: number
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.VIDA_UTIL_CONT 
+                FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID
+                ```
+        }
+    )
+
+    pageItem P486_VIDA_UTIL_INI (
+        type: hidden
+        layout {
+            sequence: 40
+            region: @datos-de-baja-de-bien
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-inventario-de-bienes
+            column: VIDA_UTIL_INI
+            dataType: number
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT R.ANIO_RESTO_VIDA 
+                FROM COW_REVALUO R, COW_BIENES_USO B 
+                WHERE B.ID = R.ID_BIEN AND B.ID = :P486_ID
+                ```
+        }
+    )
+
+    button baja (
+        buttonName: BAJA
+        label: Baja
+        layout {
+            sequence: 30
+            region: @datos-de-baja-de-bien
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 528
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button centro (
+        buttonName: CENTRO
+        label: Centro
+        layout {
+            sequence: 100
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 82
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P486_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button create-img (
+        buttonName: CREATE_IMG
+        label: Agregar Imagen
+        layout {
+            sequence: 60
+            region: @imagenes
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message:
+                ```html
+                &APP_TEXT$DELETE_MSG!RAW.
+                
+                ```
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+    )
+
+    button departamento (
+        buttonName: DEPARTAMENTO
+        label: Departamento
+        layout {
+            sequence: 130
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 324
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button grupo (
+        buttonName: GRUPO
+        label: Grupo
+        layout {
+            sequence: 290
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 478
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button proveedor (
+        buttonName: PROVEEDOR
+        label: Proveedor
+        layout {
+            sequence: 190
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 180
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button responsable (
+        buttonName: RESPONSABLE
+        label: Responsable
+        layout {
+            sequence: 220
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 493
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P486_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button seccion (
+        buttonName: SECCION
+        label: Seccion
+        layout {
+            sequence: 160
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 311
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button sucursal (
+        buttonName: SUCURSAL
+        label: Sucursal
+        layout {
+            sequence: 70
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 35
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button tipo-bien (
+        buttonName: TIPO_BIEN
+        label: Tipo Bien
+        layout {
+            sequence: 250
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 480
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button tipo-compra (
+        buttonName: TIPO_COMPRA
+        label: Tipo Compra
+        layout {
+            sequence: 270
+            region: @datos
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 494
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inactivar-bien (
+        name: Inactivar Bien
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P486_FEC_BAJA
+        }
+        clientSideCondition {
+            type: itemIsNotNull
+            item: P486_FEC_BAJA
+        }
+
+        action inactivar (
+            name: Inactivar
+            action: setValue
+            settings {
+                value: N
+            }
+            affectedElements {
+                selectionType: items
+                items: P486_ESTADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-centro (
+        name: Refrescar Centro
+        execution {
+            sequence: 40
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @centro
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_CENTRO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-dep (
+        name: Refrescar Dep
+        execution {
+            sequence: 50
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @departamento
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_DEPARTAMENTO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-grupo (
+        name: Refrescar Grupo
+        execution {
+            sequence: 120
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @grupo
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_GRUPO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-mot (
+        name: Refrescar MOT
+        execution {
+            sequence: 110
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @baja
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_MOTIVO_BAJA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-proveedor (
+        name: Refrescar proveedor
+        execution {
+            sequence: 70
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @proveedor
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_PROVEEDOR
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-responsable (
+        name: Refrescar responsable
+        execution {
+            sequence: 80
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @responsable
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_RESPONSABLE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-seccion (
+        name: Refrescar Seccion
+        execution {
+            sequence: 60
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @seccion
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_SECCION
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-sucursal (
+        name: Refrescar Sucursal
+        execution {
+            sequence: 30
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @sucursal
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_SUCURSAL
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-tb (
+        name: Refrescar TB
+        execution {
+            sequence: 90
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @tipo-bien
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_TIPO_BIEN
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-tc (
+        name: Refrescar TC
+        execution {
+            sequence: 100
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @tipo-compra
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P486_ID_TIPO_COMPRA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process borrar-imagenes (
+        name: Borrar imagenes
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                delete cow_img_bienes_uso
+                where id_bien = :P486_ID
+                and id_empresa = :p0_id_empresa;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 88844703072312335
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process cerrar-recuadro-de-diálogo (
+        name: Cerrar Recuadro de Diálogo
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 62281479754785326
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,DELETE
+        }
+    )
+
+    process guardar-datos-de-imagenes (
+        name: Guardar Datos de Imagenes
+        type: formAutoRowProcessing
+        formRegion: @imagenes
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 88844974963312337
+        }
+        serverSideCondition {
+            whenButtonPressed: @create-img
+        }
+    )
+
+    process guardar-img-en-directorio (
+        name: Guardar IMG en Directorio
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  l_file UTL_FILE.file_type;
+                  l_blob BLOB;
+                  l_buffer RAW(32767);
+                  l_amount BINARY_INTEGER := 32767;
+                  l_pos INTEGER := 1;
+                  l_filename varchar2(300);
+                  l_mimetype varchar2(300);
+                BEGIN
+                  -- Retrieve the BLOB image data from the page item
+                  SELECT blob_content,filename,mime_type
+                   into l_blob, l_filename,l_mimetype
+                                   FROM apex_application_temp_files
+                                  WHERE name = :P486_IMAGEN;
+                  -- Open the file for writing to the directory
+                  l_file := UTL_FILE.fopen('IMAGENES_BIENES_USO', :P486_ID||'-'||:P486_ID_1||'.jpg', 'wb', 32767);
+                
+                  -- Loop through the BLOB data and write it to the file in chunks
+                  WHILE l_amount >= 32767 LOOP
+                    DBMS_LOB.read(l_blob, l_amount, l_pos, l_buffer);
+                    UTL_FILE.put_raw(l_file, l_buffer, TRUE);
+                    l_pos := l_pos + l_amount;
+                  END LOOP;
+                
+                  -- Close the file
+                  UTL_FILE.fclose(l_file);
+                
+                  -- Insert a record into the file table with the file details
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 88845063504312338
+        }
+        serverSideCondition {
+            whenButtonPressed: @create-img
+        }
+    )
+
+    process imagenes-grilla-save-interactive-grid-data (
+        name: Imagenes Grilla - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @imagenes-grilla
+        target {
+            targetType: tableView
+            tableName: COW_IMG_BIENES_USO
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 88844563740312333
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-inventario-de-bienes (
+        name: Initialize form Carga de Inventario de Bienes
+        type: formInitialization
+        formRegion: @carga-de-inventario-de-bienes
+        execution {
+            sequence: 30
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 62282244472785334
+        }
+    )
+
+    process initialize-form-imagenes (
+        name: Initialize form Imagenes
+        type: formInitialization
+        formRegion: @imagenes
+        execution {
+            sequence: 40
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 88842427364312312
+        }
+    )
+
+    process mimetype-y-filename (
+        name: MImeType y Filename
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                 declare
+                 l_filename varchar2(100);
+                 l_mimetype varchar2(100);
+                 begin
+                  SELECT filename,mime_type
+                   into  l_filename,l_mimetype
+                                   FROM apex_application_temp_files
+                                  WHERE name = :P486_IMAGEN;
+                
+                :P486_MIMETYPE:=l_mimetype;
+                :P486_FILENAME:=l_FILENAME;
+                 end;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 88844896807312336
+        }
+        serverSideCondition {
+            whenButtonPressed: @create-img
+        }
+    )
+
+    process procesar-pantalla-carga-de-inventario-de-bienes (
+        name: Procesar pantalla Carga de Inventario de Bienes
+        type: formAutoRowProcessing
+        formRegion: @carga-de-inventario-de-bienes
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 63925560525489502
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+)
+

@@ -1,0 +1,1951 @@
+page 791 (
+    name: Carga de Aplicacion de Notas de Credito
+    alias: CARGA-DE-APLICACION-DE-NOTAS-DE-CREDITO
+    title: Carga de Aplicacion de Notas de Credito
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+             function calculaTotales(){
+                var model= apex.region("det").widget().interactiveGrid("getCurrentView").model;
+                var v_cantidad = model.getFieldKey("MONTO_OCULTO");
+                var v_total_cantidad     = 0;
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                         console.log('jyyju'+r[v_cantidad]);
+                          
+                        v_total_cantidad      = v_total_cantidad     + parseFloat(r[v_cantidad].replace(/\./g,''));
+                    }
+                    
+                });
+            
+                if(isNaN(v_total_cantidad)){
+                     v_total_cantidad=1;
+                 }
+            
+                 $s('P791_TOTAL',v_total_cantidad);
+            }
+            
+            /*
+               function diferencia() {
+                    var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                    function getVal(item) {
+                        if (document.getElementById(item).value !== "") {
+                            return parseFloat(document.getElementById(item).value);
+                        } else {
+                            return 0;
+                        }
+                    }
+                    document.getElementById('PX_TOTAL').value = getVal('PX_1') - getVal('PX_2');
+                }
+                */
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Roboto","Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+                pointer-events: none;
+            }
+            .no-pointer{
+                pointer-events: none;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                font-weight: bold;
+            }
+            .columnas{
+                font-weight: bold;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                color: #365ee4;
+                background-color: #d7d7d7;
+                box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+                border-style:solid;
+                border-color: #585151;
+                text-align: right;
+                height: 26px;
+                pointer-events: none;
+            }
+            
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-aplicacion-de-notas-de-credito (
+        name: Carga de Aplicacion de Notas de Credito
+        type: form
+        source {
+            location: localDatabase
+            tableName: CCW_CANCELA_CUOTAS
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    region detalle (
+        name: Detalle
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.NRO_CANCELACION,
+                       C.NRO_CUOTA,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.IMPORTE,
+                       C.TIPO_MOVIMIENTO,
+                       C.COD_USUARIO_AUD,
+                       C.ID_COMPROBANTE_CAB,
+                       C.ID_NOTA_DEBCRED,
+                       C.ID_CANCELA_CUOTAS_CAB,
+                       C.MONTO_CUOTA,
+                       M.DESCRIPCION AS DESC_MONEDA,
+                       C.ID_SALDO,
+                       (SELECT C1.TIP_COMPROBANTE||'-'||C1.SER_COMPROBANTE||'-'||C1.NRO_COMPROBANTE
+                          FROM VTW_COMPROBANTES_CABECERA C1
+                         WHERE C1.ID_EMPRESA = C.ID_EMPRESA
+                           AND C1.ID = C.ID_COMPROBANTE_CAB) AS REFERENCIA
+                  from CCW_CANCELA_CUOTAS_DET C,BSW_MONEDAS M
+                  WHERE ID_CANCELA_CUOTAS_CAB = :P791_ID
+                  AND M.ID=C.ID_MONEDA
+                ```
+            pageItemsToSubmit: P791_ID
+        }
+        layout {
+            sequence: 180
+            parentRegion: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+            ]
+        }
+        advanced {
+            htmlDomId: det
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 73969479921484676
+        }
+
+        savedReport 74284 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @DESC_MONEDA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_OCULTO
+                layout {
+                    show: false
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_CANCELACION
+                layout {
+                    show: false
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @NRO_CUOTA
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @IMPORTE
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_MOVIMIENTO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE_CAB
+                layout {
+                    width: 159
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_NOTA_DEBCRED
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_CANCELA_CUOTAS_CAB
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_CUOTA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_SALDO
+                layout {
+                    show: false
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @REFERENCIA
+                layout {
+                    sequence: 6
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESC_MONEDA (
+            type: textField
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: DESC_MONEDA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: DESC_MONEDA
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: ccw_cancela_cuotas_det_id_seq
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CANCELA_CUOTAS_CAB (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: ID_CANCELA_CUOTAS_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COMPROBANTE_CAB (
+            type: popupLov
+            heading {
+                heading: <P>Comprobante</P>
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                popupWidth: 700
+                additionalOutputs: ID_MONEDA:ID_MONEDA,NRO_CUOTA:NRO_CUOTA,DESCRIPCION:DESC_MONEDA,TIPO_CAMBIO:TIP_CAMBIO,SALDO_CUOTA:IMPORTE,SALDO_CUOTA_C:MONTO_CUOTA,ID_SALDO:ID_SALDO
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-comprobantes-det
+            }
+            cascadingLov {
+                parentColumns: P791_ID_CLIENTE
+                itemsToSubmit: P791_ID_CLIENTE
+            }
+            layout {
+                sequence: 50
+            }
+            appearance {
+                width: 30
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE_CAB
+                dataType: number
+            }
+            advanced {
+                htmlDomId: ID_COMPROBANTE_CAB
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: numberField
+            heading {
+                heading: Moneda
+                alignment: end
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: ID_MONEDA
+            }
+        )
+
+        column ID_NOTA_DEBCRED (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: ID_NOTA_DEBCRED
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SALDO (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            layout {
+                sequence: 200
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+            advanced {
+                htmlDomId: ID_SALDO
+            }
+        )
+
+        column IMPORTE (
+            type: numberField
+            heading {
+                heading: <P>Crédito</P>
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: IMPORTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: IMPORTE
+            }
+        )
+
+        column MONTO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Monto Cuota</p>
+                alignment: end
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_CUOTA
+                dataType: number
+            }
+            advanced {
+                htmlDomId: MONTO_CUOTA
+            }
+        )
+
+        column MONTO_OCULTO (
+            type: textField
+            layout {
+                sequence: 190
+            }
+            source {
+                type: none
+            }
+        )
+
+        column NRO_CANCELACION (
+            type: numberField
+            heading {
+                heading: Numero
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_CANCELACION
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_CUOTA (
+            type: numberField
+            heading {
+                heading: <P>Cuota</P>
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: NRO_CUOTA
+            }
+        )
+
+        column REFERENCIA (
+            type: textField
+            heading {
+                heading: <p>Referencia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 210
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 54
+            }
+            source {
+                databaseColumn: REFERENCIA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIPO_MOVIMIENTO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: TIPO_MOVIMIENTO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            advanced {
+                htmlDomId: TIPO_MOVIMIENTO
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: numberField
+            heading {
+                heading: <p>Cambio</p>
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: TIP_CAMBIO
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle
+        }
+    )
+
+    pageItem P791_ANULADO (
+        type: checkbox
+        label {
+            label: <p class="totales">Anulado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-lg
+                margin-bottom-sm
+                margin-left-lg
+                margin-right-none
+            ]
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ANULADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P791_COD_USUARIO_AUD (
+        type: textField
+        label {
+            label: <p>Usuario:&ensp;</p
+            alignment: left
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+            columnCssClasses: no-pointer
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-lg
+            ]
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P791_DIFERENCIA (
+        type: numberField
+        label {
+            label: <p class="totales">Diferencia:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 230
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            customAttributes: tabindex="-1"
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: DIFERENCIA
+            dataType: number
+        }
+    )
+
+    pageItem P791_FECHA_ANULADO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 240
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: FECHA_ANULADO
+            dataType: date
+        }
+    )
+
+    pageItem P791_FECHA_DESANULADO (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: FECHA_DESANULADO
+            dataType: date
+        }
+    )
+
+    pageItem P791_FEC_CANCELACION (
+        type: datePicker
+        label {
+            label: <p>Fecha:&ensp;</p
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 32
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: FEC_CANCELACION
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                sysdate
+                
+                ```
+        }
+    )
+
+    pageItem P791_FEC_CARGA (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: FEC_CARGA
+            dataType: date
+        }
+    )
+
+    pageItem P791_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: CCW_CANCELA_CUOTAS_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P791_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_CLIENTE
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_COMPROBANTE_CAB (
+        type: popupLov
+        label {
+            label: <p>Comprobante:&ensp;</p
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 1000
+            additionalOutputs: SER_COMPROBANTE:P791_SER_COMPROBANTE,SALDO_CUOTA:P791_IMPORTE,NRO_COMPROBANTE:P791_NRO_COMPROBANTE,NRO_CUOTA:P791_NRO_CUOTA,DESCRIPCION:P791_ID_MONEDA,TIPO_CAMBIO:P791_TIP_CAMBIO,ID_SALDO:P791_ID_SALDO
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-comprobantes
+        }
+        cascadingLov {
+            parentItems: P791_ID_CLIENTE
+            itemsToSubmit: P791_ID_CLIENTE
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_COMPROBANTE_CAB
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_CORPORACION (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_CORPORACION
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_EMPRESA
+        }
+    )
+
+    pageItem P791_ID_MONEDA (
+        type: textField
+        label {
+            label: <p>Moneda:&ensp;</p
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+    )
+
+    pageItem P791_ID_NOTA_DEBCRED (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_NOTA_DEBCRED
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_SALDO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 250
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_SALDO
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_USUARIO (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_USUARIO
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_USUARIO_ANULA (
+        type: hidden
+        layout {
+            sequence: 290
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_USUARIO_ANULA
+            dataType: number
+        }
+    )
+
+    pageItem P791_ID_USUARIO_DESANULA (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: ID_USUARIO_DESANULA
+            dataType: number
+        }
+    )
+
+    pageItem P791_IMPORTE (
+        type: numberField
+        label {
+            label: Importe
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 110
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 32
+            valuePlaceholder: Monto
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: IMPORTE
+            dataType: number
+        }
+    )
+
+    pageItem P791_NRO_CANCELACION (
+        type: numberField
+        label {
+            label: <p>Numero:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            columnCssClasses: no-pointer
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: NRO_CANCELACION
+            dataType: number
+        }
+    )
+
+    pageItem P791_NRO_COMPROBANTE (
+        type: textField
+        label {
+            label: Nro Comprobante
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Numero
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+    )
+
+    pageItem P791_NRO_CUOTA (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Cuota
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: NRO_CUOTA
+            dataType: number
+        }
+    )
+
+    pageItem P791_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: Ser Comprobante
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Serie
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P791_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Cambio:&ensp;</p
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+            columnCssClasses: no-pointer
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P791_TOTAL (
+        type: numberField
+        label {
+            label: <p class="totales">Total :</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-lg
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            customAttributes: tabindex="-1"
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            formRegion: @carga-de-aplicacion-de-notas-de-credito
+            column: TOTAL
+            dataType: number
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 20
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P791_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 30
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: never
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 10
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P791_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @carga-de-aplicacion-de-notas-de-credito
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 790
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction carga-referencia (
+        name: carga_referencia
+        execution {
+            sequence: 80
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: ID_COMPROBANTE_CAB
+        }
+        clientSideCondition {
+            type: jsExpression
+            javaScriptExpression: apex.region("det").widget().interactiveGrid("getViews", "grid").model._data.length !== 0
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT C.TIP_COMPROBANTE||'-'||C.SER_COMPROBANTE||'-'||C.NRO_COMPROBANTE
+                    ---  INTO :P791_SER_COMPROBANTE
+                      FROM VTW_COMPROBANTES_CABECERA C
+                     WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                       AND C.ID = :ID_COMPROBANTE_CAB
+                    ```
+                itemsToSubmit: [
+                    ID_COMPROBANTE_CAB
+                    REFERENCIA
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: REFERENCIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction fecha-anulacion (
+        name: Fecha Anulacion
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P791_ANULADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: sysdate
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P791_FECHA_ANULADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P791_ANULADO
+                value: S
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    NULL
+                    
+                    ```
+            }
+            affectedElements {
+                selectionType: items
+                items: P791_FECHA_ANULADO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P791_ANULADO
+                value: N
+            }
+        )
+
+    )
+
+    dynamicAction setear-tip-cambio (
+        name: Setear Tip Cambio
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P791_ID_MONEDA
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    if not :P791_ID_MONEDA is null then
+                        return ftipos_cambio(:P791_ID_MONEDA, sysdate, 'F', 'V');
+                    end if;
+                    ```
+                itemsToSubmit: P791_ID_MONEDA
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P791_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction substraction (
+        name: substraction
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: [
+                P791_TOTAL
+                P791_IMPORTE
+            ]
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var importe = parseFloat($v("P791_IMPORTE").replace(/\./g,''));
+                    var total = parseFloat($v("P791_TOTAL").replace(/\./g,''));
+                    
+                    // Check if both values are not empty and are numeric
+                    if (!isNaN(importe) && !isNaN(total)) {
+                        // Convert total to positive if it's negative
+                        if (total < 0) {
+                            total = Math.abs(total);
+                        }
+                    
+                        var diferencia = importe - total;
+                        $s("P791_DIFERENCIA", diferencia); // Set the result to another page item named P791_DIFERENCIA
+                    } else {
+                        //alert("Please enter numeric values for subtraction.");
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction sum-tot (
+        name: SUM_TOT
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: IMPORTE
+        }
+        clientSideCondition {
+            type: jsExpression
+            javaScriptExpression: apex.region("det").widget().interactiveGrid("getViews", "grid").model._data.length !== 0
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales()
+            }
+            affectedElements {
+                selectionType: items
+                items: P791_TOTAL
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :IMPORTE
+                itemsToSubmit: IMPORTE
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_OCULTO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction trae-comprobante-fve (
+        name: TRAE_COMPROBANTE_FVE
+        execution {
+            sequence: 70
+        }
+        when {
+            event: ready
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT C.SER_COMPROBANTE
+                      FROM VTW_COMPROBANTES_CABECERA C
+                     WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                       AND C.ID = :P791_ID_COMPROBANTE_CAB
+                    ```
+                itemsToSubmit: [
+                    P791_ID_COMPROBANTE_CAB
+                    P791_SER_COMPROBANTE
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P791_SER_COMPROBANTE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT C.NRO_COMPROBANTE
+                      FROM VTW_COMPROBANTES_CABECERA C
+                     WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                       AND C.ID = :P791_ID_COMPROBANTE_CAB
+                    ```
+                itemsToSubmit: [
+                    P791_ID_COMPROBANTE_CAB
+                    P791_NRO_COMPROBANTE
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P791_NRO_COMPROBANTE
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    validation validar-diferencia-cero (
+        name: Validar diferencia cero
+        execution {
+            sequence: 10
+        }
+        validation {
+            plsqlExpression: REPLACE(:P791_DIFERENCIA, '.', '') = 0
+        }
+        error {
+            errorMessage: La diferencia debe ser cero
+            associatedItem: @P791_DIFERENCIA
+        }
+    )
+
+    computation p791-nro-cancelacion (
+        itemName: P791_NRO_CANCELACION
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                    SELECT NVL(MAX(NRO_CANCELACION),0)+1
+                                FROM CCW_CANCELA_CUOTAS DC
+                                WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P791_ID
+        }
+    )
+
+    process detalle-save-interactive-grid-data (
+        name: Detalle - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 49763896642639826
+        }
+    )
+
+    process initialize-form-carga-de-aplicacion-de-notas-de-credito (
+        name: Initialize form Carga de Aplicacion de Notas de Credito
+        type: formInitialization
+        formRegion: @carga-de-aplicacion-de-notas-de-credito
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 49754335885639815
+        }
+    )
+
+    process limpiar-sesion (
+        name: LIMPIAR_SESION
+        type: clearSessionState
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 49765534005639831
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: DELETE
+        }
+        comments {
+            comments: Proceso limpiar la pantalla
+        }
+    )
+
+    process process-form-carga-de-aplicacion-de-notas-de-credito (
+        name: Process form Carga de Aplicacion de Notas de Credito
+        type: formAutoRowProcessing
+        formRegion: @carga-de-aplicacion-de-notas-de-credito
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 49754789736639817
+        }
+    )
+
+    process set-id (
+        name: set id
+        type: executeCode
+        editableRegion: @detalle
+        source {
+            plsqlCode: :ID_CANCELA_CUOTAS_CAB:=:P791_ID;
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 49764226236639826
+        }
+    )
+
+)
+

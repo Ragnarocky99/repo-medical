@@ -1,0 +1,593 @@
+page 83 (
+    name: Entrada/Salida de Articulos
+    alias: ENTRADA-SALIDA-DE-ARTICULOS
+    title: Entrada/Salida de Articulos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Roboto","Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region entrada-salida-de-artículos (
+        name: Entrada/Salida de Artículos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.ID_SUCURSAL,
+                       C.TIP_ENT_SAL,
+                       C.SER_ENT_SAL,
+                       C.NUM_ENT_SAL,
+                       C.FEC_ENT_SAL,
+                       C.ID_MOTIVO_ENT_SAL,
+                       C.COMENTARIO,
+                       C.COD_USUARIO_AUD,
+                       C.ID_REFERENCIA,
+                       C.ID_PROVEEDOR,
+                       C.FAC_REFERENCIA,
+                    (SELECT SUM(COSTO_C_IVA) FROM STW_ENTSAL_DET D WHERE D.ID_ENTSAL_CAB=C.ID) AS TOT_COSTO,  -- C.TOT_COSTO,
+                    (SELECT SUM(CANTIDAD)    FROM STW_ENTSAL_DET D WHERE D.ID_ENTSAL_CAB=C.ID) AS TOT_CANTIDAD,
+                      -- C.TOT_CANTIDAD,
+                       REPLACE(REPLACE(C.ASIENTOS,'*'),'stock') ASIENTOS,
+                       (SELECT D.ID
+                       FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(C.ASIENTOS,'*'),'stock'))
+                        AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(C.FEC_ENT_SAL)
+                        AND D.ID_EMPRESA  = C.ID_EMPRESA) ASIENTOS_ID
+                  from STW_ENTSAL_CAB C
+                  WHERE C.ID_EMPRESA=:P0_COD_EMPRESA
+                    AND (C.TIP_ENT_SAL = 'AJS' OR C.TIP_ENT_SAL IS NULL)
+                  --  AND (C.ID_COMPROBANTE_REF = :P83_COMPROBANTE_REF OR :P83_COMPROBANTE_REF IS NULL)
+                    
+                    
+                    --AND TIP_ENT_SAL = 'AJS'
+                    --AND SER_ENT_SAL = 'A'
+                ```
+            pageItemsToSubmit: P83_COMPROBANTE_REF
+        }
+        layout {
+            sequence: 20
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 171
+                items: {
+                    P171_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 40050167717233117
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 210
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTOS_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column ASIENTOS_ID (
+            type: plainText
+            heading {
+                heading: Asientos Id
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 11
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column COMENTARIO (
+            type: plainText
+            heading {
+                heading: Comentario
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FAC_REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column FEC_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_MOTIVO_ENT_SAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Motivo
+                alignment: center
+            }
+            lov {
+                lov: @lv-motivo-entsal
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainText
+            heading {
+                heading: Id Proveedor
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column ID_REFERENCIA (
+            type: plainText
+            heading {
+                heading: Id Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Id Sucursal
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column NUM_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Número
+                alignment: center
+            }
+            layout {
+                sequence: 200
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column SER_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column TIP_ENT_SAL (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column TOT_CANTIDAD (
+            type: plainText
+            heading {
+                heading: Cantidad
+                alignment: center
+            }
+            layout {
+                sequence: 29
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column TOT_COSTO (
+            type: plainText
+            heading {
+                heading: Costo
+                alignment: center
+            }
+            layout {
+                sequence: 28
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Entrada/Salida de Artículos
+        }
+
+        savedReport 400633 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 10
+            )
+
+            displayColumn COMENTARIO (
+                sequence: 2
+            )
+
+            displayColumn FAC_REFERENCIA (
+                sequence: 6
+            )
+
+            displayColumn FEC_ENT_SAL (
+                sequence: 1
+            )
+
+            displayColumn ID_MOTIVO_ENT_SAL (
+                sequence: 7
+            )
+
+            displayColumn NUM_ENT_SAL (
+                sequence: 5
+            )
+
+            displayColumn SER_ENT_SAL (
+                sequence: 4
+            )
+
+            displayColumn TIP_ENT_SAL (
+                sequence: 3
+            )
+
+            displayColumn TOT_CANTIDAD (
+                sequence: 9
+            )
+
+            displayColumn TOT_COSTO (
+                sequence: 8
+            )
+
+            sort (
+                column: NUM_ENT_SAL
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P83_COMPROBANTE_REF (
+        type: popupLov
+        label {
+            label: <p>Referencia:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 650
+            popupHeight: 650
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-remisiones
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 10
+            region: @entrada-salida-de-artículos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @entrada-salida-de-artículos
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 171
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    dynamicAction refrescar-grilla (
+        name: Refrescar Grilla
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P83_COMPROBANTE_REF
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @entrada-salida-de-artículos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

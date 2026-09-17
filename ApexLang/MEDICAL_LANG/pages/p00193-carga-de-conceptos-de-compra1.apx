@@ -1,0 +1,635 @@
+page 193 (
+    name: Carga de Conceptos de Compra
+    alias: CARGA-DE-CONCEPTOS-DE-COMPRA1
+    title: Carga de Conceptos de Compra
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 171px;
+                height: 23px;
+              
+                vertical-align: middle;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-conceptos-de-compra (
+        name: Carga de Conceptos de Compra
+        type: form
+        source {
+            location: localDatabase
+            tableName: CPW_CONCEPTOS_COMPRAS
+            whereClause: ID_EMPRESA = :P0_ID_EMPRESA
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P193_ABREVIATURA (
+        type: textField
+        label {
+            label: <p>Abreviatura</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: ABREVIATURA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P193_COD_CONCEPTO_COMP (
+        type: displayOnly
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Concepto:</a>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: COD_CONCEPTO_COMP
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT MAX(TO_NUMBER(A.COD_CONCEPTO_COMP))+1
+                from CPW_CONCEPTOS_COMPRAS A
+                WHERE A.ID_EMPRESA = :P0_COD_EMPRESA;
+                ```
+        }
+    )
+
+    pageItem P193_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 70
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P193_DESCRIPCION (
+        type: textField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Descripción:</a>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P193_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P193_ID_CUENTA (
+        type: popupLov
+        label {
+            label: <p>Cuenta:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas-contables-asentable
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: ID_CUENTA
+            dataType: number
+        }
+    )
+
+    pageItem P193_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_EMPRESA
+        }
+    )
+
+    pageItem P193_ID_SUBTIP_DENOMINACION (
+        type: popupLov
+        label {
+            label: <p>Sub-Categoria</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION, ID
+                  FROM FCW_SUBTIP_DENOMINACIONES_CAB
+                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                   AND ID_TIP_DENOMINACION = :P193_ID_TIP_DENOMINACION
+                ```
+        }
+        cascadingLov {
+            parentItems: P193_ID_TIP_DENOMINACION
+            itemsToSubmit: P193_ID_TIP_DENOMINACION
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: ID_SUBTIP_DENOMINACION
+            dataType: number
+        }
+    )
+
+    pageItem P193_ID_TIP_DENOMINACION (
+        type: popupLov
+        label {
+            label: <p>Categoria:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-categoria-flujo-caja
+            nullDisplayValue: -- SIN SELECCIONAR --
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: ID_TIP_DENOMINACION
+            dataType: number
+        }
+    )
+
+    pageItem P193_IND_ACTIVO (
+        type: switch
+        label {
+            label: <p>Activo</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            offValue: N
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: IND_ACTIVO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P193_IND_INGRESO (
+        type: switch
+        label {
+            label: <p>Es Ingreso</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            offValue: N
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: IND_INGRESO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P193_IND_NO_PRORRATEO (
+        type: switch
+        label {
+            label: <p>No Prorrateo</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            offValue: N
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-conceptos-de-compra
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-conceptos-de-compra
+            column: IND_NO_PRORRATEO
+            dataType: varchar2
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P193_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P193_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P193_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 39780133264285095
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-conceptos-de-compra (
+        name: Initialize form Carga de Conceptos de Compra
+        type: formInitialization
+        formRegion: @carga-de-conceptos-de-compra
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 39779340117285093
+        }
+    )
+
+    process process-form-carga-de-conceptos-de-compra (
+        name: Process form Carga de Conceptos de Compra
+        type: formAutoRowProcessing
+        formRegion: @carga-de-conceptos-de-compra
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 39779701766285095
+        }
+    )
+
+)
+

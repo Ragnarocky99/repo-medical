@@ -1,0 +1,769 @@
+page 751 (
+    name: Cargar Saldos - Clientes
+    alias: CARGAR-SALDOS-CLIENTES
+    title: Cargar Saldos - Clientes
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: [
+            #DEFAULT#
+            ui-dialog--stretch
+        ]
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                width: 65px;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region saldos (
+        name: Saldos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT      S.ID ID_SALDO,
+                            NVL(VC.FEC_COMPROBANTE, AC.FEC_COMPROBANTE) FEC_COMPROBANTE,
+                            S.TIPO_COMPROBANTE,
+                            S.SER_COMPROBANTE,
+                            TO_CHAR(S.NRO_COMPROBANTE) NRO_COMPROBANTE,
+                            S.MONTO_CUOTA,
+                            S.SALDO_CUOTA,
+                            S.ID_MONEDA_CUOTA,
+                            S.FEC_VENCIMIENTO
+                FROM        CCW_SALDOS S
+                LEFT JOIN   VTW_COMPROBANTES_CABECERA  VC ON VC.ID = S.ID_COMPROBANTE
+                LEFT JOIN   CCW_ANTICIPOS_CLIENTES_CAB AC ON AC.ID = S.ID_ANTICIPO --AND S.TIPO_COMPROBANTE = W_BUSCA_PARAMETRO('CC', 'TIP_ANTI_CLIENTE_CRE')
+                LEFT JOIN   CCW_CONDICIONES_VENTAS     CV ON CV.ID = VC.ID_CONDICION_VENTA
+                WHERE       S.ID_CLIENTE       = :P751_ID_CLIENTE
+                AND         (S.ID_MONEDA_CUOTA  = :P751_ID_MONEDA OR :P751_ID_MONEDA IS NULL)
+                AND         S.ID_EMPRESA       = :P0_ID_EMPRESA
+                AND         S.ID_SUCURSAL      = :P0_ID_SUCURSAL
+                AND         S.ID NOT IN (SELECT N001 FROM APEX_COLLECTIONS WHERE COLLECTION_NAME = 'SALDOS_CLIENTE_SELECCION')
+                AND         S.SALDO_CUOTA <> 0
+                AND         NVL(S.REC_PENDIENTES,0) != S.MONTO_CUOTA
+                --AND         S.TIPO_COMPROBANTE <> W_BUSCA_PARAMETRO('CC', 'TIP_ANTI_CLIENTE_CRE')
+                AND         (CV.PLAZO <> 0 OR CV.PLAZO IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P751_ID_CLIENTE
+                P751_ID_MONEDA
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        edit {
+            enabled: true
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        pagination {
+            type: page
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(options) {
+                  options.defaultGridViewOptions = {
+                    persistSelection: true
+                  };
+                  return options;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 26019267629355302
+        }
+
+        savedReport 464476 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 270
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 91
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_COMPROBANTE
+                layout {
+                    width: 81
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 121
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 168
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_CUOTA
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @SALDO_CUOTA
+                layout {
+                    width: 227
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_SALDO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA_CUOTA
+                layout {
+                    width: 187
+                    sequence: 6
+                }
+            )
+
+            sort (
+                column: @FEC_VENCIMIENTO
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+        )
+
+        column ID_MONEDA_CUOTA (
+            type: popupLov
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_MONEDA_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_SALDO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_SALDO
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Número</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SALDO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Saldo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: SALDO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIPO_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 5
+            }
+            source {
+                databaseColumn: TIPO_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Saldos
+        }
+    )
+
+    pageItem P751_BANDERA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            region: @saldos
+            slot: regionBody
+        }
+    )
+
+    pageItem P751_ID_CLIENTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @saldos
+            slot: regionBody
+        }
+    )
+
+    pageItem P751_ID_MONEDA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @saldos
+            slot: regionBody
+        }
+    )
+
+    pageItem P751_NOMB_CLIENTE (
+        type: displayOnly
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 10
+            region: @saldos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    dynamicAction cargar-seleccion (
+        name: Cargar Seleccion
+        execution {
+            sequence: 30
+        }
+        when {
+            event: custom
+            customEvent: cargar-seleccion
+            selectionType: region
+            region: @saldos
+        }
+
+        action monedas-distintas (
+            name: Monedas distintas
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        V_CANTIDAD NUMBER;
+                    BEGIN
+                        SELECT  COUNT(DISTINCT(N002))
+                        INTO    V_CANTIDAD
+                        FROM    APEX_COLLECTIONS
+                        WHERE   COLLECTION_NAME = 'SALDOS_CLIENTE_SELECCION';
+                    
+                        IF V_CANTIDAD > 1 THEN
+                            :P751_BANDERA := 'S';
+                            apex_collection.delete_members( 
+                                p_collection_name => 'SALDOS_CLIENTE_SELECCION',
+                                p_attr_number     => 1,
+                                p_attr_value      => 'N' );
+                        ELSE
+                            :P751_BANDERA := 'N';
+                        END IF;
+                    END;
+                    ```
+                itemsToReturn: P751_BANDERA
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-alert (
+            action: alert
+            settings {
+                message: No se puede seleccionar comprobantes con diferentes monedas
+                style: warning
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P751_BANDERA
+                value: S
+            }
+        )
+
+        action native-dialog-close (
+            action: submitPage
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P751_BANDERA
+                value: N
+            }
+        )
+
+        action plugin-com-fos-interactive-grid-process-rows (
+            action: plugin/fosInteractiveGridProcessRows
+            settings {
+                action: processSelectedRows
+                plSqlCode:
+                    ```plsql
+                    APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => 'SALDOS_CLIENTE_SELECCION',
+                        p_c001  => 'N',
+                        p_n001  => :ID_SALDO,
+                        p_n002  => :ID_MONEDA_CUOTA);
+                    ```
+                itemsToSubmit: [
+                    ID_SALDO
+                    ID_MONEDA_CUOTA
+                ]
+                errorMessage: #SQLERRM#
+                extraOptions: escapeSpecialCharactersInMessages
+            }
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction change-cliente (
+        name: Change Cliente
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P751_ID_CLIENTE
+        }
+
+        action native-set-value (
+            name: P751_NOMB_CLIENTE
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT  P.NOMB_FANTASIA
+                    FROM    CCW_CLIENTES C
+                    JOIN    BSW_PERSONAS P ON P.ID = C.ID_PERSONA
+                    WHERE   C.ID = :P751_ID_CLIENTE
+                    ```
+                itemsToSubmit: P751_ID_CLIENTE
+            }
+            affectedElements {
+                selectionType: items
+                items: P751_NOMB_CLIENTE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction inicializacion (
+        name: Inicializacion
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action boton-cargar-seleccion (
+            name: Boton Cargar Seleccion
+            action: plugin/fosInteractiveGridAddButton
+            settings {
+                addButtonTo: toolbarAddRowGroup
+                label: Cargar Seleccion
+                onClick: triggerEvent
+                eventName: cargar-seleccion
+                extraOptions: toolbarOnlyHot
+            }
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action boton-cargar-seleccion-todos (
+            name: Boton Cargar Seleccion Todos
+            action: plugin/fosInteractiveGridAddButton
+            settings {
+                addButtonTo: toolbarAddRowGroup
+                label: Cargar Todos
+                onClick: triggerEvent
+                eventName: cargar-todo
+                extraOptions: toolbarOnlyHot
+            }
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 30
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action coleccion (
+            name: Coleccion
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                        IF NOT APEX_COLLECTION.COLLECTION_EXISTS('SALDOS_CLIENTE_SELECCION') THEN
+                            APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION('SALDOS_CLIENTE_SELECCION');
+                        END IF;
+                    END;
+                    ```
+            }
+            execution {
+                sequence: 40
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 6719687142156903
+        }
+    )
+
+    process saldos-save-interactive-grid-data (
+        name: Saldos - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @saldos
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 13219506847811303
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

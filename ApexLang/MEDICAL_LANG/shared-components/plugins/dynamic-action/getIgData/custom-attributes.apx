@@ -1,0 +1,152 @@
+customAttribute attribute_01 (
+    apexlangName: igRegionStaticId
+    attribute: 1
+    name: IG Region Static ID
+    appearance {
+        sequence: 10
+    }
+    help {
+        helpText:
+            ```
+            <p>Enter the static ID of the Interactive Grid region.</p>
+            <p>Data from the associated Interactive Grid will be placed into the identified page item as a JSON string. That page item can then be submitted for processing as server side code within a Dynamic Action step or as an item to submit for a report region. <strong>The select statement used to process the data will be shown in the browser console.</strong> The INSUM$ROW column is always added as an indicator of the way the data was sorted at the time it was taken from the IG. An example is shown below.
+            </p>
+            <pre>
+            select
+                   a.ID,
+                   a.FIRST_NAME,
+                   a.LAST_NAME,
+                   a.INSUM$ROW
+              from json_table (:P1_GRID_DATA , '$[*]'
+                     columns 
+                       ID                              varchar2(4000) path '$.ID',
+                       FIRST_NAME                      varchar2(4000) path '$.FIRST_NAME',
+                       LAST_NAME                       varchar2(4000) path '$.LAST_NAME',
+                       INSUM$ROW                       number         path '$.INSUM$ROW'
+                             ) a 
+            </pre>
+            
+            This may be used within an "Execute PL/SQL Code" Dynamic Action as shown below:
+            
+            <pre>
+            begin
+              for i in (
+                        select
+                          a.ID,
+                          a.FIRST_NAME,
+                          a.LAST_NAME,
+                          a.INSUM$ROW
+                        from json_table (:P1_GRID_DATA , '$[*]'
+                            columns 
+                              ID                              varchar2(4000) path '$.ID',
+                              FIRST_NAME                      varchar2(4000) path '$.FIRST_NAME',
+                              LAST_NAME                       varchar2(4000) path '$.LAST_NAME',
+                              INSUM$ROW                       number         path '$.INSUM$ROW'
+                             ) a 
+                                    )
+                  ) loop
+            
+                my_procedure(i.id, i.first_name, i.last_name);
+            
+              end loop;
+            end;
+            </pre>
+            ```
+    }
+)
+
+customAttribute attribute_02 (
+    apexlangName: itemToHoldData
+    attribute: 2
+    name: Item to Hold Data
+    type: pageItem
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 20
+    }
+    help {
+        helpText:
+            ```
+            <p>This DA will put JSON data from the grid into the value of this item on the page. The item can then be sent back to the database with another DA or as part of a region refresh.</p>
+            <p>This item will usually be a hidden item with protection set to "off."</p>
+            ```
+    }
+    examples {
+        examples: P1_GRID_DATA
+    }
+)
+
+customAttribute attribute_03 (
+    apexlangName: rowsToReturn
+    attribute: 3
+    name: Rows to Return
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 30
+    }
+    default {
+        value: ALL
+    }
+    help {
+        helpText: Indicate if all rows or only selected rows should be returned. Note: In both cases, only rows displayed on the screen will be returned.
+    }
+
+    entry allRows (
+        sequence: 10
+        display: All Rows
+        return: ALL
+        help {
+            helpText: Return all rows regardless of the row selector state.
+        }
+    )
+
+    entry selectedRows (
+        sequence: 20
+        display: Selected Rows
+        return: SELECTED
+        help {
+            helpText: Only return rows where the row selector is checked.
+        }
+    )
+
+)
+
+customAttribute attribute_04 (
+    apexlangName: includeColumns
+    attribute: 4
+    name: Include Columns
+    appearance {
+        sequence: 40
+    }
+    help {
+        helpText: List of IG columns that you wish to include. If empty all columns except those listed in "Exclude Columns" will be included. Note: these are the column names/aliases that you have defined in your query or table. This list is case sensitive and will typically be upper case.
+    }
+    examples {
+        examples: ID,FIRST_NAME,LAST_NAME
+    }
+)
+
+customAttribute attribute_05 (
+    apexlangName: excludeColumns
+    attribute: 5
+    name: Exclude Columns
+    appearance {
+        sequence: 50
+    }
+    help {
+        helpText:
+            ```
+            <p>List of IG columns that you do not wish to exclude. Note: these are the column names/aliases that you have defined in your query or table. This list is case sensitive and will typically be upper case.</p>
+            <p>This value will be ignored if Include Columns is populated</p>
+            ```
+    }
+    examples {
+        examples: CREATED_BY,CREATE_DATE,UPDATED_BY,UPDATE_DATE
+    }
+)
+

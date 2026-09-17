@@ -1,0 +1,1131 @@
+page 724 (
+    name: Lista de Planillas de Reparto
+    alias: LISTA-DE-PLANILLAS-DE-REPARTO
+    title: Lista de Planillas de Reparto
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 85px;
+                height: 24px;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: bold;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .solo-mostrar{
+                   background-color:#eeeeee;
+                width: 171px;
+                height: 24.5px;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: center;
+              height: 26px;
+            }
+            
+            .borrar{
+                width: 93px;
+                background-color:#FF0000;
+            }
+            
+            .no-pointer {
+                pointer-events: none;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: FILTROS
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region lista-de-planillas-de-reparto (
+        name: Lista de Planillas de Reparto
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select RC.ID,
+                       RC.ID_EMPRESA,
+                       RC.NRO_PLANILLA,
+                       RC.FEC_PLANILLA,
+                       RC.ID_REPARTIDOR,
+                       RC.ID_VEHICULO,
+                       RC.ID_SUCURSAL,
+                       'RENDIDO',
+                       /*Case RC.ESTADO
+                       WHEN 'S' THEN
+                        'Rendido'
+                       ELSE
+                        'Pendiente'*/
+                       CASE nvl(rc.estado,'N')
+                         WHEN 'N' then 'Pendiente a Rendir'
+                         when 'S' then 'Rendido'
+                       END AS ESTADO,
+                       RC.ID_USUARIO,
+                       RC.ID_ZONA,
+                       RC.FEC_VENCIMIENTO,
+                       RC.COD_USUARIO_AUD,
+                       RC.ID_PLANILLA_INGRESO,
+                       RC.ID_SUCURSAL_CENTRAL,
+                       RC.ID_REPARTIDOR_AYUDANTE,
+                       RC.HORA_SALIDA,
+                       RC.HORA_VUELTA,
+                       RC.KM_INICIAL,
+                       RC.KM_FINAL,
+                       ID_VENDEDOR,
+                       RC.OBSERVACION,
+                       MR.DESCRIPCION AS MOTIVO_REPARTO,
+                       'IMPRIMIR',
+                       '<span class="fa fa-send" aria-hidden="true"></span>' IMPRI_LINK,
+                       'ORDENAR',
+                       '<span class="fa fa-send" aria-hidden="true"></span>' ORDEN_LINK
+                  from RPW_REPARTO_CABECERA RC
+                  left join RPW_MOTIVOS_REPARTO MR ON MR.ID = RC.ID_MOTIVO_REPARTO
+                  WHERE RC.ID_EMPRESA = :P0_ID_EMPRESA
+                   or 1=1
+                    AND RC.ID_SUCURSAL = :P0_COD_SUCURSAL
+                    AND (:P724_NRO_PLANILLA = RC.NRO_PLANILLA OR :P724_NRO_PLANILLA IS NULL)
+                    AND (:P724_VENDEDOR = RC.ID_VENDEDOR OR :P724_VENDEDOR IS NULL)
+                    AND (:P724_REPARTIDOR = RC.ID_REPARTIDOR OR :P724_REPARTIDOR IS NULL)
+                    AND (:P724_UNIDAD = RC.ID_VEHICULO OR :P724_UNIDAD IS NULL)
+                    AND (:P724_ESTADO = RC.ESTADO OR :P724_ESTADO IS NULL)
+                    AND (:P724_ZONA = RC.ID_ZONA OR :P724_ZONA IS NULL)
+                    AND RC.FEC_PLANILLA BETWEEN :P724_FEC_DESDE AND :P724_FEC_HASTA
+                    AND (:P724_ARTICULO IN (SELECT CD.ID_ARTICULO 
+                                                     FROM VTW_COMPROBANTES_DETALLE CD, VTW_COMPROBANTES_CABECERA CC, RPW_REPARTO_DETALLE RD 
+                                                    WHERE RD.ID_COMPROBANTE_CABECERA = CC.ID
+                                                      AND CC.ID = CD.ID_COMPROBANTE_CABECERA
+                                                      AND RD.ID_REPARTO_CABECERA = RC.ID)
+                            OR :P724_ARTICULO IS NULL)
+                    AND (RC.ID_MOTIVO_REPARTO = :P724_ID_MOTIVO_REPARTO OR :P724_ID_MOTIVO_REPARTO IS NULL)
+                  ORDER BY RC.NRO_PLANILLA DESC
+                    
+                ```
+            pageItemsToSubmit: [
+                P724_NRO_PLANILLA
+                P724_FEC_DESDE
+                P724_FEC_HASTA
+                P724_VENDEDOR
+                P724_UNIDAD
+                P724_REPARTIDOR
+                P724_ESTADO
+                P724_ZONA
+                P724_ARTICULO
+                P724_ID_MOTIVO_REPARTO
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 725
+                items: {
+                    P725_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            savePublicReport: true
+        }
+        advanced {
+            savedReportMappingIdentifier: 122986511094087973
+        }
+
+        column 'IMPRIMIR' (
+            type: link
+            heading {
+                heading: <p>Imprimir Planilla de Reparto</p>
+                alignment: center
+            }
+            layout {
+                sequence: 141
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 686
+                    items: {
+                        P686_ID: #ID#
+                    }
+                }
+                linkText: #IMPRI_LINK#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column 'ORDENAR' (
+            type: link
+            heading {
+                heading: <p>Imprimir Orden de Carga</p>
+                alignment: center
+            }
+            layout {
+                sequence: 161
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 671
+                    items: {
+                        P671_ID: #ID#
+                    }
+                }
+                linkText: #ORDEN_LINK#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column 'RENDIDO' (
+            type: plainText
+            heading {
+                heading: &#x27;rendido&#x27;
+            }
+            layout {
+                sequence: 131
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 12
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 8
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column FEC_PLANILLA (
+            type: plainText
+            heading {
+                heading: Fec Planilla
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fec Vencimiento
+            }
+            layout {
+                sequence: 11
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column HORA_SALIDA (
+            type: plainText
+            heading {
+                heading: Hora Salida
+            }
+            layout {
+                sequence: 16
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column HORA_VUELTA (
+            type: plainText
+            heading {
+                heading: Hora Vuelta
+            }
+            layout {
+                sequence: 17
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                primaryKey: true
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: end
+            }
+            layout {
+                sequence: 31
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ID_PLANILLA_INGRESO (
+            type: plainText
+            heading {
+                heading: Id Planilla Ingreso
+                alignment: end
+            }
+            layout {
+                sequence: 91
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column ID_REPARTIDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Repartidor</p>
+            }
+            lov {
+                lov: @lv-repartidores
+            }
+            layout {
+                sequence: 41
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ID_REPARTIDOR_AYUDANTE (
+            type: plainText
+            heading {
+                heading: Id Repartidor Ayudante
+                alignment: end
+            }
+            layout {
+                sequence: 111
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Id Sucursal
+                alignment: end
+            }
+            layout {
+                sequence: 61
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column ID_SUCURSAL_CENTRAL (
+            type: plainText
+            heading {
+                heading: Id Sucursal Central
+                alignment: end
+            }
+            layout {
+                sequence: 101
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column ID_USUARIO (
+            type: plainText
+            heading {
+                heading: Id Usuario
+                alignment: end
+            }
+            layout {
+                sequence: 71
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column ID_VEHICULO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Vehiculo</p>
+            }
+            lov {
+                lov: @lv-vehiculos
+            }
+            layout {
+                sequence: 51
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Vendedor</p>
+            }
+            lov {
+                lov: @lv-vendedores
+            }
+            layout {
+                sequence: 121
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_ZONA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: <p>Zona</p>
+            }
+            lov {
+                lov: @lv-zonas-geo-pg
+            }
+            layout {
+                sequence: 81
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column IMPRI_LINK (
+            type: hidden
+            heading {
+                heading: Impri Link
+            }
+            layout {
+                sequence: 151
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column KM_FINAL (
+            type: plainText
+            heading {
+                heading: Km Final
+                alignment: end
+            }
+            layout {
+                sequence: 19
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column KM_INICIAL (
+            type: plainText
+            heading {
+                heading: Km Inicial
+                alignment: end
+            }
+            layout {
+                sequence: 18
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column MOTIVO_REPARTO (
+            type: plainText
+            heading {
+                heading: Motivo Reparto
+            }
+            layout {
+                sequence: 181
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column NRO_PLANILLA (
+            type: plainText
+            heading {
+                heading: Nro Planilla
+            }
+            layout {
+                sequence: 3
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column OBSERVACION (
+            type: plainText
+            heading {
+                heading: Observacion
+            }
+            layout {
+                sequence: 21
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column ORDEN_LINK (
+            type: hidden
+            heading {
+                heading: Orden Link
+            }
+            layout {
+                sequence: 171
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lista de Planillas de Reparto
+        }
+
+        savedReport 101617 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ESTADO (
+                sequence: 7
+            )
+
+            displayColumn FEC_PLANILLA (
+                sequence: 2
+            )
+
+            displayColumn ID_REPARTIDOR (
+                sequence: 4
+            )
+
+            displayColumn ID_VEHICULO (
+                sequence: 5
+            )
+
+            displayColumn ID_VENDEDOR (
+                sequence: 3
+            )
+
+            displayColumn ID_ZONA (
+                sequence: 6
+            )
+
+            displayColumn NRO_PLANILLA (
+                sequence: 1
+            )
+
+            sort (
+                column: NRO_PLANILLA
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P724_ARTICULO (
+        type: textField
+        label {
+            label: <p>Buscar artículo: </p>
+            alignment: left
+        }
+        settings {
+        }
+        layout {
+            sequence: 100
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P724_ESTADO (
+        type: selectList
+        label {
+            label: <p>Estado: </p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Rendido;S,Pendiente;N
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P724_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Desde: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: ADD_MONTHS(SYSDATE, -1)
+        }
+    )
+
+    pageItem P724_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P724_ID_MOTIVO_REPARTO (
+        type: selectList
+        label {
+            label: <p>Motivo Reparto</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select descripcion, id
+                from rpw_motivos_reparto
+                ```
+            nullDisplayValue: -- Sin Seleccionar --
+        }
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    pageItem P724_NRO_PLANILLA (
+        type: numberField
+        label {
+            label: <p>Nro Planilla: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P724_REPARTIDOR (
+        type: popupLov
+        label {
+            label: <p>Repartidor: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-repartidores
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P724_UNIDAD (
+        type: popupLov
+        label {
+            label: <p>Unidad: </p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 450
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vehiculos
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P724_VENDEDOR (
+        type: popupLov
+        label {
+            label: <p>Vendedor: </p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 450
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vendedores
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P724_ZONA (
+        type: popupLov
+        label {
+            label: <p>Zona: </p>
+            alignment: left
+        }
+        settings {
+            popupWidth: 300
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-zonas-geo-pg
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @lista-de-planillas-de-reparto
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 725
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+        comments {
+            comments: no se tiene que poder crear desde aca.
+        }
+    )
+
+    dynamicAction paginacion-ir (
+        name: PAGINACION IR
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total número de filas:
+                titleOfFirstPage: Primera página
+                titleOfLastPage: Última página
+            }
+            affectedElements {
+                selectionType: region
+                region: @lista-de-planillas-de-reparto
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P724_NRO_PLANILLA
+                P724_FEC_DESDE
+                P724_FEC_HASTA
+                P724_VENDEDOR
+                P724_UNIDAD
+                P724_REPARTIDOR
+                P724_ESTADO
+                P724_ZONA
+                P724_ARTICULO
+                P724_ID_MOTIVO_REPARTO
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @lista-de-planillas-de-reparto
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

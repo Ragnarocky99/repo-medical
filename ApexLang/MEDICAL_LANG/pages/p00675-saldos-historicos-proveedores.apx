@@ -1,0 +1,744 @@
+page 675 (
+    name: Saldos Historicos Proveedores
+    alias: SALDOS-HISTORICOS-PROVEEDORES
+    title: Saldos Historicos Proveedores
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .anulado {
+                color: red;
+            }
+            .presupuestado {
+            color: orangered;
+            }
+            .cotizado{
+                color: green;
+            }
+            .confirmado {
+                color: #3f46bb;
+            }
+            .EnDeposito{
+                color: brown;
+            }
+            .EntregadoCliente{
+                color: aqua;
+            }
+            .OrdenCompra{
+                color: yellowgreen;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region saldos (
+        name: saldos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select h.nombre,
+                       h.cod_proveedor,
+                       H.tip_comprobante,
+                       h.referencia,
+                      --- sum(h.saldo),
+                       sum(nvl(h.credito,0) - nvl(h.debito,0)) as saldo
+                from cpwv_saldos_hist h
+                where h.id_empresa      = :p0_id_empresa
+                ---and (h.fec_comprobante between :P675_FEC_DESDE and :P675_FEC_HASTA)
+                and (h.fec_comprobante <= :P675_FEC_HASTA)
+                AND (h.COD_PROVEEDOR    = :P675_PROVEEDOR OR :P675_PROVEEDOR IS NULL)
+                
+                --HAVING  sum(nvl(h.credito,0) - nvl(h.debito,0)) <> 0
+                
+                group by  h.nombre,
+                          h.cod_proveedor,
+                          H.tip_comprobante,
+                          h.referencia
+                having sum(nvl(h.credito,0) - nvl(h.debito,0)) != 0
+                ```
+            pageItemsToSubmit: [
+                P675_FEC_HASTA
+                P675_PROVEEDOR
+                P675_FEC_DESDE
+                P675_TIP_COMPROBANTE
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        performance {
+            lazyLoading: true
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 21758103512839119
+        }
+
+        savedReport 233577 (
+            visibility: primary
+            view {
+                default: grid
+                settingsAreaExpanded: false
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @REFERENCIA
+                layout {
+                    width: 147
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @COD_PROVEEDOR
+                layout {
+                    width: 62
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NOMBRE
+                layout {
+                    width: 600
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @SALDO
+                layout {
+                    width: 104
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 74
+                    sequence: 3
+                }
+            )
+
+            aggregate sum (
+                column: @SALDO
+            )
+
+        )
+
+        column COD_PROVEEDOR (
+            type: textField
+            heading {
+                heading: <p>Cod. Proveedor</p>
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 30
+            }
+            source {
+                databaseColumn: COD_PROVEEDOR
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NOMBRE (
+            type: textField
+            heading {
+                heading: <p>Nombre</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: NOMBRE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column REFERENCIA (
+            type: textField
+            heading {
+                heading: <p>Nro. Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: REFERENCIA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SALDO (
+            type: numberField
+            heading {
+                heading: <P>Saldo<P/>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <P>Tipo<P/>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 3
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: saldos
+        }
+    )
+
+    region saldos-historicos (
+        name: Saldos Historicos
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    pageItem P675_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha Desde: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/01/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P675_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P675_IND_DETALLE (
+        type: checkbox
+        label {
+            label: <p>Ver Detallado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 40
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P675_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedor-cod-proveedor
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 30
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P675_TIP_COMPROBANTE (
+        type: selectList
+        label {
+            label: <p>Tip Comprobante</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Factura Compra;CM,Compra Detallada (Servicios);CP
+            nullDisplayValue: -- Todos --
+        }
+        layout {
+            sequence: 50
+            region: @saldos-historicos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button imprimir (
+        buttonName: imprimir
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button new (
+        buttonName: New
+        label: Volver
+        layout {
+            sequence: 10
+            region: @saldos-historicos
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 242
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P675_FEC_DESDE
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P675_FEC_DESDE) = 8) then
+                    
+                            conv_fecha := replace(:P675_FEC_DESDE,'/','');
+                            conv_fecha := substr(:P675_FEC_DESDE,1,2)||'/'||
+                                                      substr(:P675_FEC_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P675_FEC_DESDE,5,4),4,'0');
+                    
+                        :P675_FEC_DESDE := conv_fecha;
+                        ELSIF (length(:P675_FEC_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P675_FEC_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P675_FEC_DESDE
+                itemsToReturn: P675_FEC_DESDE
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha-hasta (
+        name: CONVERT_FECHA_HASTA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P675_FEC_HASTA
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P675_FEC_HASTA) = 8) then
+                    
+                            conv_fecha := replace(:P675_FEC_HASTA,'/','');
+                            conv_fecha := substr(:P675_FEC_HASTA,1,2)||'/'||
+                                                      substr(:P675_FEC_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P675_FEC_HASTA,5,4),4,'0');
+                    
+                        :P675_FEC_HASTA := conv_fecha;
+                        ELSIF (length(:P675_FEC_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P675_FEC_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P675_FEC_HASTA
+                itemsToReturn: P675_FEC_HASTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh (
+        name: REFRESH
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: [
+                P675_PROVEEDOR
+                P675_TIP_COMPROBANTE
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @saldos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 707
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 707
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

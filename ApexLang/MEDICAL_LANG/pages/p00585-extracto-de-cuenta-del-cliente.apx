@@ -1,0 +1,913 @@
+page 585 (
+    name: Extracto de cuenta del cliente
+    alias: EXTRACTO-DE-CUENTA-DEL-CLIENTE
+    title: Extracto de cuenta del cliente
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 190px;
+            height: 25px;
+            pointer-events: none;
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region extracto-de-cuenta-del-cliente (
+        name: Extracto de cuenta del cliente
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT
+                    T.ORDEN,
+                    T.SUCURSAL,
+                    T.FEC_COMPROBANTE,
+                    T.TIP_COMPROBANTE,
+                    T.SER_COMPROBANTE,
+                    T.NRO_COMPROBANTE,
+                    T.TIP_COMPROBANTE_REF,
+                    T.SER_COMPROBANTE_REF,
+                    TO_CHAR(T.NRO_COMPROBANTE_REF) NRO_COMPROBANTE_REF,
+                    T.DOC_CLIENTE,
+                    T.NOMB_CLIENTE,
+                    T.FEC_VENCIMIENTO,
+                    DECODE(T.ID_COMPROBANTE, NULL, 0, T.DEBITO) DEBITO,
+                    DECODE(T.ID_COMPROBANTE, NULL, 0, T.CREDITO) CREDITO,
+                    T.DETALLE,
+                    T.MONEDA,
+                    T.TIP_CAMBIO,
+                    SUM(T.CREDITO - T.DEBITO) OVER (PARTITION BY T.ID_CLIENTE, MONEDA ORDER BY T.ID_CLIENTE, T.FEC_COMPROBANTE, T.ORDEN) SALDO,
+                    PREPARA_URL_CARGA(:P0_ID_EMPRESA, T.TIP_COMPROBANTE, T.ID_COMPROBANTE) URL,
+                    CASE
+                        WHEN T.TIP_COMPROBANTE NOT IN ('REC', 'CAN') THEN
+                            NVL((SELECT 'Cobrado'
+                                  FROM CCWV_EXTRACTO_CLIENTE EP
+                                 WHERE EP.ID_COMPROBANTE_REF = T.ID_COMPROBANTE
+                                   AND EP.ID_CLIENTE = T.ID_CLIENTE
+                                   AND ROWNUM = 1
+                                   AND EP.FEC_COMPROBANTE <= :P585_FEC_HASTA
+                                   AND EP.TIP_COMPROBANTE IN ('REC', 'CAN')), 'Pendiente')
+                        ELSE
+                            NULL
+                    END ESTADO
+                    --T.ASIENTOS,
+                    -- (SELECT ID
+                    --   FROM COW_DIARIO_CABECERAS_PROV
+                    --  WHERE NUM_ASIENTO = T.ASIENTOS
+                    --    AND ID_EJERCICIO = TRAE_ID_EJERCICIO(T.FEC_COMPROBANTE)) ID_ASIENTO
+                FROM (  
+                    SELECT ROW_NUMBER() OVER (ORDER BY ID_CLIENTE, MONEDA, FEC_COMPROBANTE, ORD) + 1000 ORDEN,
+                           ID_EMPRESA,
+                           SUCURSAL,
+                           FEC_COMPROBANTE,
+                           TIP_COMPROBANTE,
+                           SER_COMPROBANTE,
+                           NRO_COMPROBANTE,
+                           TIP_COMPROBANTE_REF,
+                           SER_COMPROBANTE_REF,
+                           NRO_COMPROBANTE_REF,
+                           DOC_CLIENTE,
+                           NOMB_CLIENTE,
+                           FEC_VENCIMIENTO,
+                           DEBITO,
+                           CREDITO,
+                           DETALLE,
+                           MONEDA,
+                           TIP_CAMBIO,
+                           ID_CLIENTE,
+                           ID_COMPROBANTE,
+                           COD_CLIENTE
+                           --ASIENTOS
+                      FROM CCWV_EXTRACTO_CLIENTE
+                     WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                       AND FEC_COMPROBANTE BETWEEN :P585_FEC_DESDE AND :P585_FEC_HASTA
+                    UNION ALL
+                    SELECT ROW_NUMBER() OVER (ORDER BY ID_CLIENTE, MONEDA) ORDEN,
+                           ID_EMPRESA,
+                           NULL,--SUCURSAL,
+                           MAX(FEC_COMPROBANTE),
+                           NULL,--TIP_COMPROBANTE,
+                           NULL,--SER_COMPROBANTE,
+                           NULL,--NRO_COMPROBANTE,
+                           NULL,--TIP_COMPROBANTE_REF,
+                           NULL,--SER_COMPROBANTE_REF
+                           NULL,--NRO_COMPROBANTE_REF
+                           DOC_CLIENTE,
+                           NOMB_CLIENTE,
+                           NULL,--FEC_VENCIMIENTO,
+                           SUM(DEBITO),
+                           SUM(CREDITO),
+                           'SALDO ANTERIOR',--DETALLE,
+                           MONEDA,
+                           NULL,--TIP_CAMBIO
+                           ID_CLIENTE,
+                           NULL,--ID
+                           COD_CLIENTE
+                           --NULL -- ASIENTOS
+                      FROM CCWV_EXTRACTO_CLIENTE
+                     WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                       AND FEC_COMPROBANTE < :P585_FEC_DESDE
+                    GROUP BY ID_EMPRESA, DOC_CLIENTE, NOMB_CLIENTE, MONEDA, ID_CLIENTE, COD_CLIENTE
+                    HAVING (SUM(CREDITO) - SUM(DEBITO)) != 0
+                ) T
+                WHERE T.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (T.COD_CLIENTE = :P585_CLIENTE OR :P585_CLIENTE IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P585_FEC_DESDE
+                P585_FEC_HASTA
+                P585_CLIENTE
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 17391735103625351
+        }
+
+        column CREDITO (
+            type: plainText
+            heading {
+                heading: Credito
+                alignment: center
+            }
+            layout {
+                sequence: 17
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column DEBITO (
+            type: plainText
+            heading {
+                heading: Debito
+                alignment: center
+            }
+            layout {
+                sequence: 16
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column DETALLE (
+            type: plainText
+            heading {
+                heading: Detalle
+                alignment: center
+            }
+            layout {
+                sequence: 125
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column DOC_CLIENTE (
+            type: plainText
+            heading {
+                heading: R.U.C
+                alignment: center
+            }
+            layout {
+                sequence: 95
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 165
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 35
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Vencimiento
+                alignment: center
+            }
+            layout {
+                sequence: 115
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column MONEDA (
+            type: plainText
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            layout {
+                sequence: 135
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column NOMB_CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 105
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: link
+            heading {
+                heading: Número
+                alignment: center
+            }
+            layout {
+                sequence: 15
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    type: url
+                    url: #URL#
+                }
+                linkText: #NRO_COMPROBANTE#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column NRO_COMPROBANTE_REF (
+            type: link
+            heading {
+                heading: Numero Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 175
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    type: url
+                    url: #URL_REF#
+                }
+                linkText: #NRO_COMPROBANTE_REF#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column ORDEN (
+            type: plainText
+            heading {
+                heading: Orden
+                alignment: end
+            }
+            layout {
+                sequence: 45
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column SALDO (
+            type: plainText
+            heading {
+                heading: Saldo
+                alignment: center
+            }
+            layout {
+                sequence: 145
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 14
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column SER_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Serie Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 75
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column SUCURSAL (
+            type: plainText
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            layout {
+                sequence: 55
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Cambio
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 13
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column TIP_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Tipo Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 65
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column URL (
+            type: hidden
+            heading {
+                heading: Url
+            }
+            layout {
+                sequence: 155
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Extracto de cuenta del cliente
+        }
+
+        savedReport 177984 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CREDITO (
+                sequence: 14
+            )
+
+            displayColumn DEBITO (
+                sequence: 15
+            )
+
+            displayColumn DETALLE (
+                sequence: 9
+            )
+
+            displayColumn DOC_CLIENTE (
+                sequence: 1
+            )
+
+            displayColumn ESTADO (
+                sequence: 18
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 5
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 13
+            )
+
+            displayColumn MONEDA (
+                sequence: 3
+            )
+
+            displayColumn NOMB_CLIENTE (
+                sequence: 2
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 8
+            )
+
+            displayColumn NRO_COMPROBANTE_REF (
+                sequence: 12
+            )
+
+            displayColumn SALDO (
+                sequence: 16
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 7
+            )
+
+            displayColumn SER_COMPROBANTE_REF (
+                sequence: 11
+            )
+
+            displayColumn SUCURSAL (
+                sequence: 4
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 17
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 6
+            )
+
+            displayColumn TIP_COMPROBANTE_REF (
+                sequence: 10
+            )
+
+            sort (
+                column: ORDEN
+                sort {
+                    sequence: 1
+                }
+            )
+
+            controlBreak (
+                column: DOC_CLIENTE
+                layout {
+                    sequence: 1
+                }
+            )
+
+            controlBreak (
+                column: NOMB_CLIENTE
+                layout {
+                    sequence: 2
+                }
+            )
+
+            controlBreak (
+                column: MONEDA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            highlight ir-condition (
+                condition {
+                    column: ESTADO
+                    value: Cobrado
+                }
+                colors {
+                    background: #d0f1cc
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+            highlight ir-condition-2 (
+                condition {
+                    column: ESTADO
+                    value: Pendiente
+                }
+                colors {
+                    background: #fff5ce
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P585_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes-cod-cliente
+            displayExtraValues: false
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P585_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Periodo:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P585_FEC_HASTA (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar paginacion
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @extracto-de-cuenta-del-cliente
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @ejecutar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @extracto-de-cuenta-del-cliente
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 599
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 504
+                items: {
+                    P504_PERIODO_DESDE: &P585_FEC_DESDE.
+                    P504_FEC_FINAL: &P585_FEC_HASTA.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

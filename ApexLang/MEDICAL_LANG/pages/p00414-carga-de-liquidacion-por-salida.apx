@@ -1,0 +1,4616 @@
+page 414 (
+    name: Carga de Liquidacion por Salida
+    alias: CARGA-DE-LIQUIDACION-POR-SALIDA
+    title: Carga de Liquidacion por Salida
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var orden = 0;
+            function calculaTotales(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_monto_detalle    = model.getFieldKey("MONTO_COPIA") || 0;
+                var v_tipo = model.getFieldKey("TIPO");
+                var v_monto_total     = 0;
+            
+            
+            
+                model.forEach(function(r, index, id) {
+            
+                    
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+                  //  console.log('TIPO ES '+JSON.stringify(r[v_tipo]).v);
+                      console.log(r[v_tipo].v);
+                          if(r[v_tipo]=='D') {
+                        v_monto_total     = ((v_monto_total || 0)    +( parseFloat(r[v_monto_detalle].replace(/\./g,'')) || 0)*-1);
+                          }else if (r[v_tipo]=='H'){
+                         v_monto_total     = ((v_monto_total || 0)    +( parseFloat(r[v_monto_detalle].replace(/\./g,'')) || 0))
+                          }
+            
+                     //  console.log('Suma '+r[v_monto_detalle]);
+                    }
+                    
+                    
+                });
+            
+                //v_cambio_debe = ( v_mon_debe * parseFloat(v_cambio.replace(/\./g,'')) );
+                //v_cambio_haber = ( v_mon_haber * parseFloat(v_cambio.replace(/\./g,'')));
+            
+                 $s('P414_TOTAL',v_monto_total.toString().replace('.', ''));
+            
+                 //console.log('cambio es '+ v_cambio_debe + " | " + v_cambio_haber);
+            
+            }
+            
+            /*function getCalcSal () {
+              apex.server.process(
+                'getCalcSal',                             // Process or AJAX Callback name
+              );
+            }*/
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P414_TOTAL").readOnly = true;
+            document.getElementById("P414_INGRESO").readOnly = true;
+            document.getElementById("P414_SUELDO_BASE").readOnly = true;
+            document.getElementById("P414_DIAS").readOnly = true;
+            document.getElementById("P414_SALARIO_MES").readOnly = true;
+            document.getElementById("P414_ANIO_ANTIGUEDAD").readOnly = true;
+            document.getElementById("P414_MES_ANTIGUEDAD").readOnly = true;
+            document.getElementById("P414_SUELDO_PROMEDIO").readOnly = true;
+            document.getElementById("P414_TIP_LIQUID").readOnly = true;
+            document.getElementById("P414_SUELDO_FINAL").readOnly = true;
+            document.getElementById("P414_ASIENTOS").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: right;
+              height: 26px;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 190px;
+            height: 25px;
+            pointer-events: none;
+            
+            vertical-align: text-bottom;
+            font-weight: lighter;
+            font-size: 13px;
+            text-align: left;
+            border-width: thin;
+            border-color: #afa9a9;
+            }
+            
+            .uppercase
+            {
+            
+                text-transform: uppercase;
+            
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-liquidacion-por-salida-de-empleado (
+        name: Carga de Liquidacion por Salida de Empleado
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select R.ID_EMPRESA,
+                       R.SER_LIQUID,
+                       R.NRO_LIQUID,
+                       R.FEC_LIQUID,
+                       R.ID_EMPLEADO,
+                       R.MES,
+                       R.ANIO,
+                       R.ID_ESTADO,
+                       R.COD_USUARIO_AUD,
+                       R.ID,
+                       R.ID_SUCURSAL,
+                       R.ID_CENTRO,
+                       R.IND_VACACIONES,
+                       R.IND_CIERRE_MES,
+                       R.IND_LIQ_FINAL,
+                       R.SUELDO_BASE,
+                       R.TIPO_LIQ,
+                       R.DIAS_VACACIONES,
+                       R.SUELDO_FINAL,
+                       R.JORNAL_BASE,
+                       R.SALARIO_MINIMO,
+                       R.ID_SECTOR_EMP,
+                       R.SALDO_ROJO,
+                       R.PROV_AGUINALDO,
+                       R.PROV_AGUINALDO_LEGAL,
+                       R.COMPENSACION,
+                       R.ASIENTOS,
+                       R.ID_DEPARTAMENTO,
+                       R.MONTO,
+                       R.DIAS,
+                       R.ID_MOTIVO_CALIDA,
+                       R.ID_MOTIVO_SALIDA,
+                       R.CI,
+                       R.ID_CENTRO_PAGO,
+                       R.TIP_LIQUID,
+                       R.ID_CAB_HABILITACION,
+                       R.SUELDO_PROMEDIO,
+                       R.NRO_PATRONAL,
+                       R.DIRECCION_IP,
+                       R.FEC_CARGA,
+                       R.FECHA_RENUNCIA,
+                       R.FECHA_SALIDA,
+                       R.ID_EMPLEADO AS ID_EMPLEADO_1
+                       from rhw_cabecera_liq R
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region detalle (
+        name: Detalle
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT D.ID_CAB_LIQUID, D.ID_EMPRESA, D.ID, D.ID_CONCEPTO, 
+                       D.TIPO, D.CANTIDAD, 
+                       D.MONTO, 
+                       D.OBSERVACION, D.ID_EMPLEADO, D.MONTO AS MONTO_COPIA,
+                       D.NRO_ORDEN, D.COD_USUARIO_AUD,
+                       D.ID_PROGRAMA,
+                       D.NRO_CUOTA,
+                       D.ID_SUCURSAL,
+                       D.MONTO_REAL,
+                       D.TIP_PROGRAMA,
+                       D.FEC_VENCIMIENTO,
+                       D.CANT_AUS,
+                       D.DIRECCION_IP,
+                       D.ANIO,
+                       D.MES
+                FROM RHW_DETALLE_LIQ D
+                WHERE D.ID_CAB_LIQUID=:P414_ID;
+                ```
+            pageItemsToSubmit: P414_ID
+        }
+        layout {
+            sequence: 10
+            parentRegion: @carga-de-liquidacion-por-salida-de-empleado
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--standardPadding
+                t-Form--stretchInputs
+                margin-top-md
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        toolbar {
+            controls: [
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                
+                        $( ".selector" ).grid( {
+                    autoAddRecord: false
+                } );
+                        
+                           
+                
+                
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    calculaTotales();
+                                  //  orden=orden-1;
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    calculaTotales();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    calculaTotales();
+                            }; 
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    calculaTotales();
+                            };    
+                
+                            /*
+                             var rowAddRow = actions.lookup("selection-add-row"),
+                                originalDuplicateAction = rowAddRow.action;
+                
+                            rowAddRow.action = function(_, el){
+                                 var $widget = apex.region("Detalles").widget();
+                               var $grid = $widget.interactiveGrid("getViews", "grid");
+                              var $model = $grid.model;
+                                var cantidadDet= $model.getTotalRecords();
+                                var lineas = $v('P135_LINEAS');
+                                if (cantidadDet>lineas){
+                                    apex.message.alert('El comprobante solo puede contener '+lineas+'  lineas!');
+                                    return;
+                                }
+                                  var newRecordId=  $model.insertNewRecord();
+                                  
+                                   $grid.gotoCell(newRecordId,'COD_ARTICULO');
+                                   
+                            };  
+                
+                */
+                
+                /*
+                
+                            var rowAddRow2 = actions.lookup("row-add-row"),
+                                originalDuplicateAction = rowAddRow2.action;
+                
+                            rowAddRow2.action = function(_, el){
+                                 var det=   apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                                var cantidadDet= det.getTotalRecords();
+                                var lineas = $v('P135_LINEAS');
+                                if (cantidadDet>lineas){
+                                    apex.message.alert('El comprobante solo puede contener '+lineas+'  lineas!');
+                                    return;
+                                }
+                                    originalDuplicateAction(_, el);
+                            }; 
+                       
+                       */
+                                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 78276889646247298
+        }
+
+        savedReport 374915 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_PROGRAMA
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @NRO_CUOTA
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_REAL
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @TIP_PROGRAMA
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @CANT_AUS
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @DIRECCION_IP
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_LEGAL
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ANIO
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @MES
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_CAB_LIQUID
+                layout {
+                    show: false
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ORDEN
+                layout {
+                    show: false
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_COPIA
+                layout {
+                    show: false
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPLEADO
+                layout {
+                    show: false
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @MONTO
+                layout {
+                    sequence: 13
+                }
+            )
+
+        )
+
+        column ANIO (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: ANIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            settings {
+                enableMultiSelect: false
+            }
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_AUS (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: CANT_AUS
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DIRECCION_IP (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: DIRECCION_IP
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: RHW_DETALLE_LIQ_ID_SEQ
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CAB_LIQUID (
+            type: numberField
+            heading {
+                heading: Id Cab Liquid
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_CAB_LIQUID
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_CONCEPTO (
+            type: selectList
+            heading {
+                heading: <p>Concepto</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-conceptos
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_CONCEPTO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPLEADO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_EMPLEADO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PROGRAMA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: ID_PROGRAMA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MES (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: MES
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO (
+            type: numberField
+            heading {
+                heading: <p>Monto</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_COPIA (
+            type: numberField
+            heading {
+                heading: Monto Copia
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MONTO_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_LEGAL (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                type: none
+            }
+        )
+
+        column MONTO_REAL (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: MONTO_REAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_CUOTA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: NRO_CUOTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_ORDEN (
+            type: numberField
+            heading {
+                heading: Nro Orden
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_ORDEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO (
+            type: selectList
+            heading {
+                heading: <p>Tipo</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-tipos-cuentas
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            advanced {
+                htmlDomId: TIPO
+            }
+        )
+
+        column TIP_PROGRAMA (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: TIP_PROGRAMA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 20
+            parentRegion: @carga-de-liquidacion-por-salida-de-empleado
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--textContent
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region variables (
+        name: Variables
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P414_AJAX_MSG (
+        type: textField
+        label {
+            label: Ajax Msg
+            alignment: left
+        }
+        layout {
+            sequence: 280
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_ANIO (
+        type: numberField
+        label {
+            label: <p>Año: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 360
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 4
+        }
+        advanced {
+            customAttributes: TABINDEX= "6"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ANIO
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_ANIO_ANTIGUEDAD (
+        type: textField
+        label {
+            label: <p>Antig.(Año/Mes):</p>
+            alignment: left
+        }
+        layout {
+            sequence: 300
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+    )
+
+    pageItem P414_ASIENTOS (
+        type: textField
+        label {
+            label: <p>Asiento: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 390
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        advanced {
+            cssClasses: asientolink
+            customAttributes: TABINDEX= "7"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ASIENTOS
+            dataType: varchar2
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_ASIENTO_ID (
+        type: hidden
+        layout {
+            sequence: 720
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_CALCULA (
+        type: textField
+        label {
+            label: Calcula
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CI (
+        type: hidden
+        layout {
+            sequence: 640
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: CI
+            dataType: varchar2
+        }
+    )
+
+    pageItem P414_COD_PLANILLA_PROMEDIO (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P414_COMPENSACION (
+        type: hidden
+        layout {
+            sequence: 610
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: COMPENSACION
+            dataType: number
+        }
+    )
+
+    pageItem P414_CONC_AGUIN (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_ANTICIPO (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 190
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_BONIF (
+        type: textField
+        label {
+            label: Conc Bonif
+            alignment: left
+        }
+        layout {
+            sequence: 210
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_COMIS (
+        type: textField
+        label {
+            label: Conc Comis
+            alignment: left
+        }
+        layout {
+            sequence: 270
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_COMPLE (
+        type: textField
+        label {
+            label: Conc Comple
+            alignment: left
+        }
+        layout {
+            sequence: 250
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_INDEMNIZACION (
+        type: textField
+        label {
+            label: Conc Indemnizacion
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_IPS (
+        type: textField
+        label {
+            label: Conc Ips
+            alignment: left
+        }
+        layout {
+            sequence: 130
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_IVA (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_PREAVISO (
+        type: textField
+        label {
+            label: Conc Preaviso
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_PROPORCIONALES (
+        type: textField
+        label {
+            label: Conc Proporcionales
+            alignment: left
+        }
+        layout {
+            sequence: 240
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_SUELDO (
+        type: textField
+        label {
+            label: Sueldo
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_CONC_VACACIONES (
+        type: textField
+        label {
+            label: Conc Vacaciones
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_DCTO_PREAVISO (
+        type: textField
+        label {
+            label: Dcto Preaviso
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_DIAS (
+        type: numberField
+        label {
+            label: <p>Días Trabaj.: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 370
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: DIAS
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_DIAS_ANTIGUEDAD (
+        type: hidden
+        layout {
+            sequence: 750
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_DIAS_VACACIONES (
+        type: hidden
+        layout {
+            sequence: 540
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: DIAS_VACACIONES
+            dataType: number
+        }
+    )
+
+    pageItem P414_DIRECCION_IP (
+        type: hidden
+        layout {
+            sequence: 680
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: DIRECCION_IP
+            dataType: varchar2
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_FECHA_RENUNCIA (
+        type: hidden
+        layout {
+            sequence: 700
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: FECHA_RENUNCIA
+            dataType: date
+        }
+    )
+
+    pageItem P414_FECHA_SALIDA (
+        type: datePicker
+        label {
+            label: <p>Fec. Sal. IPS: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            appearanceBehavior: [
+                monthPicker
+                yearPicker
+            ]
+            showOn: iconClick
+        }
+        layout {
+            sequence: 320
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 10
+        }
+        advanced {
+            customAttributes: TABINDEX= "4"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: FECHA_SALIDA
+            dataType: date
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_FEC_CARGA (
+        type: hidden
+        layout {
+            sequence: 690
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: FEC_CARGA
+            dataType: date
+        }
+    )
+
+    pageItem P414_FEC_LIQUID (
+        type: datePicker
+        label {
+            label: <p>Fecha: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            appearanceBehavior: [
+                monthPicker
+                yearPicker
+            ]
+            showOn: iconClick
+        }
+        layout {
+            sequence: 260
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        validation {
+            maxLength: 10
+        }
+        advanced {
+            customAttributes: TABINDEX= "3"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: FEC_LIQUID
+            dataType: date
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_ID (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: RHW_CABECERA_LIQ_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P414_ID_CAB_HABILITACION (
+        type: hidden
+        layout {
+            sequence: 660
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_CAB_HABILITACION
+            dataType: number
+        }
+    )
+
+    pageItem P414_ID_CENTRO (
+        type: hidden
+        layout {
+            sequence: 490
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_CENTRO
+            dataType: number
+        }
+    )
+
+    pageItem P414_ID_CENTRO_PAGO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 650
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_CENTRO_PAGO
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_ID_DEPARTAMENTO (
+        type: hidden
+        layout {
+            sequence: 620
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_DEPARTAMENTO
+            dataType: number
+        }
+    )
+
+    pageItem P414_ID_EMPLEADO (
+        type: popupLov
+        label {
+            label: <p>Empleado: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados-activos
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 220
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX= "8"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_EMPLEADO
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+    )
+
+    pageItem P414_ID_EMPLEADO_1 (
+        type: popupLov
+        label {
+            label: <p>Empleado: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados
+        }
+        layout {
+            sequence: 230
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_EMPLEADO_1
+            dataType: number
+            queryOnly: true
+        }
+        sessionState {
+            storage: session
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+    )
+
+    pageItem P414_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 460
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P414_ID_ESTADO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 470
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_ESTADO
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_ID_MOTIVO_CALIDA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 630
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_MOTIVO_CALIDA
+            dataType: number
+        }
+    )
+
+    pageItem P414_ID_MOTIVO_SALIDA (
+        type: popupLov
+        label {
+            label: <p>Motivo: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-mot-salida
+        }
+        layout {
+            sequence: 270
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            customAttributes: TABINDEX= "9"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_MOTIVO_SALIDA
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_ID_SECTOR_EMP (
+        type: hidden
+        layout {
+            sequence: 570
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_SECTOR_EMP
+            dataType: number
+        }
+    )
+
+    pageItem P414_ID_SUCURSAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 480
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_INDEMNIZACION (
+        type: textField
+        label {
+            label: Indemnizacion
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_IND_CIERRE_MES (
+        type: hidden
+        layout {
+            sequence: 510
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: IND_CIERRE_MES
+            dataType: varchar2
+        }
+    )
+
+    pageItem P414_IND_LIQ_FINAL (
+        type: hidden
+        layout {
+            sequence: 520
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: IND_LIQ_FINAL
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P414_IND_VACACIONES (
+        type: hidden
+        layout {
+            sequence: 500
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: IND_VACACIONES
+            dataType: varchar2
+        }
+    )
+
+    pageItem P414_INGRESO (
+        type: textField
+        label {
+            label: <p>Fec. Ingreso:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 250
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+    )
+
+    pageItem P414_JORNAL_BASE (
+        type: hidden
+        layout {
+            sequence: 550
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: JORNAL_BASE
+            dataType: number
+        }
+    )
+
+    pageItem P414_JORNAL_MES (
+        type: textField
+        label {
+            label: Jornal Mes
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_JSON_DET_LIQ (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 770
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_LIMITE_BONIF (
+        type: textField
+        label {
+            label: Limite Bonif
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_MES (
+        type: numberField
+        label {
+            label: <p>Mes/Año: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 350
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 2
+        }
+        advanced {
+            customAttributes: TABINDEX= "5"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: MES
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_MES_ANTIGUEDAD (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 310
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+    )
+
+    pageItem P414_MONTO (
+        type: hidden
+        layout {
+            sequence: 400
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: MONTO
+            dataType: number
+        }
+    )
+
+    pageItem P414_MONTO_LEGAL (
+        type: hidden
+        layout {
+            sequence: 730
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_NRO_LIQUID (
+        type: numberField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            customAttributes: TABINDEX= "2"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: NRO_LIQUID
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_NRO_PATRONAL (
+        type: hidden
+        layout {
+            sequence: 670
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: NRO_PATRONAL
+            dataType: varchar2
+        }
+    )
+
+    pageItem P414_OTROS_DESCUENTOS (
+        type: textField
+        label {
+            label: Otros Descuentos
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_PLANILLA_LIQ_FINAL (
+        type: textField
+        label {
+            label: Planilla Liq Final
+            alignment: left
+        }
+        layout {
+            sequence: 180
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_PORC_BONIF (
+        type: textField
+        label {
+            label: Porc Bonif
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_PORC_IPS (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_PREAVISO (
+        type: textField
+        label {
+            label: Preaviso
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_PROV_AGUINALDO (
+        type: hidden
+        layout {
+            sequence: 590
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: PROV_AGUINALDO
+            dataType: number
+        }
+    )
+
+    pageItem P414_PROV_AGUINALDO_LEGAL (
+        type: hidden
+        layout {
+            sequence: 600
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: PROV_AGUINALDO_LEGAL
+            dataType: number
+        }
+    )
+
+    pageItem P414_SALARIO_BASE_PROMEDIO (
+        type: hidden
+        layout {
+            sequence: 740
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_SALARIO_MES (
+        type: numberField
+        label {
+            label: <p>Salario Mes: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 380
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+    )
+
+    pageItem P414_SALARIO_MINIMO (
+        type: hidden
+        layout {
+            sequence: 560
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SALARIO_MINIMO
+            dataType: number
+        }
+    )
+
+    pageItem P414_SALARIO_MINIMO_GLOBAL (
+        type: numberField
+        label {
+            label: salario minimo
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_SALDO_ROJO (
+        type: hidden
+        layout {
+            sequence: 580
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SALDO_ROJO
+            dataType: number
+        }
+    )
+
+    pageItem P414_SERIE (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_SER_LIQUID (
+        type: textField
+        label {
+            label: <p>Número: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 1
+        }
+        advanced {
+            cssClasses: uppercase
+            customAttributes: TABINDEX= "1"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SER_LIQUID
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('RH', 'SERIE_LIQ_SALIDA')
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_SUELDO_BASE (
+        type: numberField
+        label {
+            label: <p>Sueldo Base: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 330
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SUELDO_BASE
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_SUELDO_FINAL (
+        type: numberField
+        label {
+            label: <p>Salario Actual: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 340
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SUELDO_FINAL
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_SUELDO_PROMEDIO (
+        type: numberField
+        label {
+            label: <p>Sueldo Promedio: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 410
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SUELDO_PROMEDIO
+            dataType: number
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_TIPO_LIQ (
+        type: hidden
+        layout {
+            sequence: 530
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: TIPO_LIQ
+            dataType: varchar2
+        }
+    )
+
+    pageItem P414_TIP_LIQUID (
+        type: textField
+        label {
+            label: <p>Tip Liquid: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 420
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            column: 9
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+            ]
+            width: 30
+        }
+        validation {
+            maxLength: 5
+        }
+        advanced {
+            cssClasses: mostrar
+            customAttributes: TABINDEX= "-1"
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: TIP_LIQUID
+            dataType: varchar2
+        }
+        sessionState {
+            storage: session
+        }
+    )
+
+    pageItem P414_TOTAL (
+        type: numberField
+        label {
+            label: " <p class=\"totales\">Total: </p>"
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+    )
+
+    pageItem P414_TOT_VAC_CAUSADAS (
+        type: hidden
+        layout {
+            sequence: 760
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_URL (
+        type: hidden
+        layout {
+            sequence: 710
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+    )
+
+    pageItem P414_VAC_CAUSADAS (
+        type: textField
+        label {
+            label: Vac Causadas
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P414_VAC_PROPORCIONAL (
+        type: textField
+        label {
+            label: Vac Proporcional
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @variables
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button borrar (
+        buttonName: BORRAR
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @totales
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Seguro que desea eliminar?
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button calcular (
+        buttonName: CALCULAR
+        label: Calcular
+        layout {
+            sequence: 430
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-calculator
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            customAttributes: TABINDEX= "10"
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+    )
+
+    button crear (
+        buttonName: CREAR
+        label: Crear
+        layout {
+            sequence: 10
+            region: @totales
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button empleado (
+        buttonName: EMPLEADO
+        label: EMPLEADO
+        layout {
+            sequence: 240
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 424
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 450
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        advanced {
+            customAttributes: TABINDEX= "-1"
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+    )
+
+    button limpiar (
+        buttonName: LIMPIAR
+        label: Limpiar
+        layout {
+            sequence: 20
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+    )
+
+    button motivo-salida (
+        buttonName: MOTIVO_SALIDA
+        label: MOTIVO
+        layout {
+            sequence: 280
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 303
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button recalcular (
+        buttonName: RECALCULAR
+        label: Recalcular
+        layout {
+            sequence: 440
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-calculator
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 10
+            region: @totales
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 434
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction asiento-click (
+        name: ASIENTO_CLICK
+        execution {
+            sequence: 70
+        }
+        when {
+            event: click
+            selectionType: items
+            items: P414_ASIENTOS
+        }
+        clientSideCondition {
+            type: itemIsNotNull
+            item: P414_ASIENTOS
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        l_app number := v('APP_ID');
+                        l_session number := v('APP_SESSION');
+                    BEGIN
+                        :P414_URL:= APEX_UTIL.PREPARE_URL(
+                            p_url => 'f?p=100:235:'||l_session||'::NO::P235_ID:&P414_ASIENTO_ID.',
+                            p_checksum_type => 'SESSION');
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P414_URL
+                    P414_ASIENTO_ID
+                ]
+                itemsToReturn: P414_URL
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: javascript: window.location.href = apex.item('P414_URL').getValue();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calcula-monto-total (
+        name: CALCULA_MONTO_TOTAL
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: MONTO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            affectedElements {
+                selectionType: items
+                items: P414_TOTAL
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :MONTO
+                itemsToSubmit: MONTO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction d235-inicializar (
+        name: D235_INICIALIZAR
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                IF :P414_ID IS NOT NULL THEN
+                RETURN TRUE;
+                ELSE
+                RETURN FALSE;
+                END IF;
+                ```
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    //grid.view$.grid("option", "editable", true);
+                    //editable true
+                    grid.model.setOption("editable", true);
+                    grid.setEditMode(true);
+                    //editable false
+                    //grid.model.setOption("editable", false);
+                    grid.setEditMode(false);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction formato-fecha (
+        name: FORMATO FECHA
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: items
+            items: P414_FEC_LIQUID
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P414_FEC_LIQUID) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P414_FEC_LIQUID,'/','');
+                            conv_fecha := substr(:P414_FEC_LIQUID,1,2)||'/'||
+                                                      substr(:P414_FEC_LIQUID,3,2)||'/'||
+                                                      lpad(substr(:P414_FEC_LIQUID,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P414_FEC_LIQUID := conv_fecha;
+                            ELSIF (length(:P414_FEC_LIQUID) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P414_FEC_LIQUID) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P414_FEC_LIQUID
+                itemsToReturn: P414_FEC_LIQUID
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction insertar-detalle (
+        name: Insertar Detalle
+        execution {
+            sequence: 140
+        }
+        when {
+            event: ready
+        }
+        clientSideCondition {
+            type: itemIsNotNull
+            item: P414_JSON_DET_LIQ
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    SELECT    SUM(NVL(DECODE(TIPO,'D',MONTO*-1,'H',MONTO),0))
+                    INTO :P414_TOTAL 
+                    FROM RHW_TMP_DETALLE_SAL_LIQ
+                    WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                    and DIRECCION_IP = :P414_DIRECCION_IP;
+                    
+                    :P414_JSON_DET_LIQ:=NULL;
+                    DELETE RHW_TMP_DETALLE_SAL_LIQ
+                    where DIRECCION_IP = :P414_DIRECCION_IP;
+                    COMMIT;
+                    
+                    ```
+                itemsToSubmit: P414_DIRECCION_IP
+                itemsToReturn: [
+                    P414_JSON_DET_LIQ
+                    P414_TOTAL
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var json_detalle = JSON.parse($v('P414_JSON_DET_LIQ'));
+                    console.log(json_detalle);
+                    
+                    if ((Object.keys(json_detalle.DETALLE).length)!=0){
+                    var total=0;
+                    
+                    for(let i=0;i<json_detalle.DETALLE.length;i++){
+                    
+                    
+                    //Con este codigo podemos insertar una nueva fila en el detalle de comprobantes 
+                    
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                        $grid.setEditMode(true);
+                    //insert new record on a model
+                    var newRecordId = $model.insertNewRecord();
+                    var $newRecord = $model.getRecord(newRecordId);
+                    
+                    //total=total+json_detalle.DETALLE[i].MONTO;
+                    
+                    if((json_detalle.DETALLE[i].ID_EMPRESA!=null)){
+                        $model.setValue($newRecord, "ID_EMPRESA",(json_detalle.DETALLE[i].ID_EMPRESA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_CONCEPTO!=null)){
+                        $model.setValue($newRecord, "ID_CONCEPTO",(json_detalle.DETALLE[i].ID_CONCEPTO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].DIRECCION_IP!=null)){
+                        $model.setValue($newRecord, "DIRECCION_IP",(json_detalle.DETALLE[i].DIRECCION_IP).toString());
+                    }
+                    if((json_detalle.DETALLE[i].TIPO!=null)){
+                        $model.setValue($newRecord, "TIPO",(json_detalle.DETALLE[i].TIPO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].MONTO!=null)){
+                        $model.setValue($newRecord, "MONTO",(json_detalle.DETALLE[i].MONTO).toString());
+                         $model.setValue($newRecord, "MONTO_COPIA",(json_detalle.DETALLE[i].MONTO).toString());
+                    
+                    }
+                    if((json_detalle.DETALLE[i].MONTO_LEGAL!=null)){
+                        $model.setValue($newRecord, "MONTO_LEGAL",(json_detalle.DETALLE[i].MONTO_LEGAL).toString());
+                    }
+                    if((json_detalle.DETALLE[i].CANTIDAD!=null)){
+                        $model.setValue($newRecord, "CANTIDAD",(json_detalle.DETALLE[i].CANTIDAD).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_PROGRAMA!=null)){
+                        $model.setValue($newRecord, "ID_PROGRAMA",(json_detalle.DETALLE[i].ID_PROGRAMA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].NRO_CUOTA!=null)){
+                        $model.setValue($newRecord, "NRO_CUOTA",(json_detalle.DETALLE[i].NRO_CUOTA).toString());
+                    }
+                    
+                    }
+                    
+                    //calculaTotales();
+                    
+                    }
+                    ```
+            }
+            affectedElements {
+                selectionType: items
+                items: P414_JSON_DET_LIQ
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 100
+        }
+        when {
+            event: focusout
+            selectionType: items
+            items: P414_FECHA_SALIDA
+        }
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: items
+                items: P414_MES
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction nro-lineas-row (
+        name: NRO_LINEAS_ROW
+        execution {
+            sequence: 20
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalle
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: orden += 1
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: orden
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NRO_ORDEN
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction permitir-solo-numeros (
+        name: Permitir Solo Numeros
+        execution {
+            sequence: 160
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    $("#P414_NRO_LIQUID").keypress(function(event){ 
+                        event = (event) ? event : window.event;
+                        var charCode = (event.which) ? event.which : event.keyCode;
+                        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                           return false;
+                        }
+                        return true;
+                    });
+                    
+                    $("#P414_MES").keypress(function(event){ 
+                        event = (event) ? event : window.event;
+                        var charCode = (event.which) ? event.which : event.keyCode;
+                        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                           return false;
+                        }
+                        return true;
+                    });
+                    
+                    $("#P414_ANIO").keypress(function(event){ 
+                        event = (event) ? event : window.event;
+                        var charCode = (event.which) ? event.which : event.keyCode;
+                        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                           return false;
+                        }
+                        return true;
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction reaccion-grilla (
+        name: Reaccion Grilla
+        execution {
+            sequence: 60
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 210
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @empleado
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P414_ID_EMPLEADO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh (
+        name: Refresh
+        execution {
+            sequence: 200
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @motivo-salida
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P414_ID_MOTIVO_SALIDA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction reset-valor (
+        name: "RESET_VALOR "
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 0
+            }
+            affectedElements {
+                selectionType: items
+                items: P414_TOTAL
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction set-fecha (
+        name: Set Fecha
+        execution {
+            sequence: 80
+        }
+        when {
+            event: focusout
+            selectionType: items
+            items: P414_FEC_LIQUID
+        }
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: items
+                items: P414_FECHA_SALIDA
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :P414_FEC_LIQUID
+                itemsToSubmit: P414_FEC_LIQUID
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P414_FECHA_SALIDA
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-focus (
+        name: SET FOCUS
+        execution {
+            sequence: 190
+        }
+        when {
+            event: focusout
+            selectionType: items
+            items: P414_NRO_LIQUID
+        }
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: items
+                items: P414_FEC_LIQUID
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-focus-ser-liquid (
+        name: Set Focus Ser Liquid
+        execution {
+            sequence: 90
+        }
+        when {
+            event: ready
+        }
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: items
+                items: P414_SER_LIQUID
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction set-mes (
+        name: Set Mes
+        execution {
+            sequence: 120
+        }
+        when {
+            event: focusout
+            selectionType: items
+            items: P414_FEC_LIQUID
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    :P414_mes  := to_char( TO_DATE(:P414_fec_liquid,'DD/MM/YYYY'), 'MM'   );
+                    :P414_ANIO  := to_char( TO_DATE(:P414_fec_liquid,'DD/MM/YYYY'), 'YYYY'   );
+                    ```
+                itemsToSubmit: P414_FEC_LIQUID
+                itemsToReturn: [
+                    P414_MES
+                    P414_ANIO
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-tipo (
+        name: Set Tipo
+        execution {
+            sequence: 170
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: ID_CONCEPTO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select tipo
+                    from rhw_conceptos
+                    where id = :ID_CONCEPTO
+                    ```
+                itemsToSubmit: ID_CONCEPTO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: TIPO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-fecha (
+        name: SETEAR FECHA
+        execution {
+            sequence: 180
+        }
+        when {
+            event: ready
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                itemsToSubmit: P414_FEC_LIQUID
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P414_FEC_LIQUID
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: itemIsNull
+                item: P414_FEC_LIQUID
+            }
+        )
+
+    )
+
+    dynamicAction sueldos (
+        name: SUELDOS
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P414_ID_EMPLEADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT SUELDO_FINAL, SUELDO_BASE, ID_ESTADO_IPS, ID_CENTRO_PAGO, ID_SUCURSAL, FEC_INGRESO
+                    FROM RHW_EMPLEADOS 
+                    WHERE ID = :P414_ID_EMPLEADO
+                    AND nvl( activo, 'X' ) = 'S'
+                    AND ID_EMPRESA = :P0_ID_EMPRESA;
+                    ```
+                itemsToSubmit: P414_ID_EMPLEADO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P414_SUELDO_FINAL
+                    P414_SUELDO_BASE
+                    P414_ID_ESTADO
+                    P414_ID_CENTRO_PAGO
+                    P414_ID_SUCURSAL
+                    P414_INGRESO
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p414-asiento-id (
+        itemName: P414_ASIENTO_ID
+        execution {
+            sequence: 40
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select id 
+                from cow_diario_cabeceras_prov
+                where num_asiento  = :P414_ASIENTOS
+                  and id_empresa   = :P0_ID_EMPRESA
+                  and id_ejercicio = trae_id_ejercicio(:P414_FEC_LIQUID);
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ASIENTOS
+        }
+    )
+
+    computation p414-direccion-ip (
+        itemName: P414_DIRECCION_IP
+        execution {
+            sequence: 50
+        }
+        computation {
+            sqlQuery: SELECT owa_util.get_cgi_env('REMOTE_ADDR') FROM DUAL
+        }
+    )
+
+    computation p414-ingreso (
+        itemName: P414_INGRESO
+        execution {
+            sequence: 60
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select fec_ingreso from rhw_empleados
+                where id = :P414_ID_EMPLEADO
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+    )
+
+    computation p414-nro-liquid (
+        itemName: P414_NRO_LIQUID
+        execution {
+            sequence: 30
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                   v_numero number;
+                   
+                   begin
+                   if :P414_NRO_LIQUID is null then
+                      select nvl(max(to_number(NRO_LIQUID)), 0) + 1
+                         into v_numero
+                         from RHW_CABECERA_LIQ
+                         where SER_LIQUID=:P414_SER_LIQUID;
+                       RETURN v_numero;
+                      end if; 
+                      RETURN :P414_NRO_LIQUID;
+                   exception
+                      when no_data_found then
+                        :P414_NRO_LIQUID := 1 ;
+                        RETURN :P414_NRO_LIQUID;
+                      when others then
+                         raise_application_error(-20000,'Error en la tabla de Cabecera de Liquidación' || sqlerrm ) ;
+                   end ;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P414_ID
+        }
+    )
+
+    computation p414-tip-liquid (
+        itemName: P414_TIP_LIQUID
+        execution {
+            sequence: 40
+            point: afterSubmit
+        }
+        computation {
+            type: staticValue
+            staticValue: M
+        }
+    )
+
+    computation p414-total (
+        itemName: P414_TOTAL
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT (SUM(DECODE(TIPO,'H',NVL(MONTO,0))))-(SUM(DECODE(TIPO,'D',NVL(MONTO,0)))) FROM RHW_DETALLE_LIQ D WHERE
+                D.ID_CAB_LIQUID=:P414_ID;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P414_ID
+        }
+    )
+
+    process borrar-det (
+        name: BORRAR_DET
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DELETE RHW_DETALLE_LIQ
+                WHERE ID_CAB_LIQUID = :P414_ID;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 56709041825535106
+        }
+        serverSideCondition {
+            whenButtonPressed: @borrar
+            type: never
+        }
+    )
+
+    process detalles-save-interactive-grid-data (
+        name: Detalles - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 56708639198535102
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,BORRAR,CREAR
+        }
+    )
+
+    process initialize-form-carga-de-liquidacion-por-salida-de-empleado (
+        name: Initialize form Carga de Liquidacion por Salida de Empleado
+        type: formInitialization
+        formRegion: @carga-de-liquidacion-por-salida-de-empleado
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 41226275828963787
+        }
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 56709560314535111
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+    process limpiar-sesion (
+        name: LImpiar Sesion
+        type: clearSessionState
+        execution {
+            sequence: 80
+        }
+        advanced {
+            executionMappingIdentifier: 55619440034508522
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREAR,BORRAR
+        }
+    )
+
+    process parametros (
+        name: PARAMETROS
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                :P414_porc_bonif               := W_Busca_parametro( 'RH', 'RH_PORC_BONIF' );
+                 :P414_limite_bonif            := to_number( ltrim( rtrim( W_busca_parametro( 'RH', 'RH_LIMITE_BONIF' ) ) ) );
+                 :P414_salario_minimo_global   := W_busca_parametro( 'RH', 'RH_SALARIO_MINIMO');
+                 :P414_COD_PLANILLA_PROMEDIO   := W_busca_parametro( 'RH', 'RH_PLANILLA_PROMEDIO' ) ;
+                 :P414_serie                   := W_busca_parametro( 'RH', 'SERIE_LIQ_SALIDA' );
+                 :P414_conc_sueldo             := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_SUELDO'      )) ;
+                 :P414_conc_comple             := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_COMPLEMENTO' )) ;
+                 :P414_conc_ips                := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_IPS'         )) ;
+                 :P414_porc_ips                := W_busca_parametro( 'RH', 'RH_PORC_IPS' ) ;
+                 :P414_conc_vacaciones         := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_VACACIONES'  )) ;
+                 :P414_conc_iva                := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_IVA'         )) ;
+                 --:variables.porc_iva            TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_  := inv.busca_parametro( 'RH', 'RH_PORC_IVA')         ) ;
+                 :P414_conc_comis              := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_COMIS_2'     ) ) ;
+                 :P414_conc_aguin              := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_AGUIN'       )) ;
+                 :P414_conc_preaviso           := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_PREAVISO'    )   ) ;
+                 :P414_conc_indemnizacion      := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_INDEMNIZA'   )    ) ;
+                 :P414_conc_proporcionales     := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_VAC_PROPORCIONAL' )      ) ;
+                 :P414_otros_descuentos        := W_busca_parametro( 'RH', 'RH_CONC_PARA_VALES'  );
+                 :P414_conc_anticipo           := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_ANTICIPO'    )   ) ;
+                 :P414_planilla_liq_final      := W_busca_parametro( 'RH', 'RH_LIQ_FINAL') ;
+                 :P414_jornal_mes              := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_JORNAL'      ) ) ;
+                 :P414_conc_bonif              := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, W_busca_parametro( 'RH', 'RH_CONC_BONIF'       )) ;
+                 END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 55617783269508505
+        }
+    )
+
+    process procesar (
+        name: PROCESAR
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                
+                  vdias_preaviso                number;
+                  vdias_dcto_preaviso           number;
+                  vdias_indemnizacion           number;
+                  vdias_vacaciones              number;
+                  vvacaciones_causadas          number;
+                  vdias                         number;
+                  vfraccion                     number;
+                  vdiasin                       number;
+                  vac                           number;
+                  sal                           number;
+                  vantiguedad                   number;
+                  vjornal_legal                 number;
+                  vsal_minimo                   number;
+                  vanio                         number(4) := 0;
+                  vmeses                        number(4) := 0;
+                  v_cod_sueldo                  varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_SUELDO'      ));
+                  v_cod_aguinaldo               varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_AGUIN'       ));
+                  v_cod_vacaciones_causadas     varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_VAC_CAUSADAS'     ));
+                  v_cod_vacaciones_proporcional varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_VAC_PROPORCIONAL' ));
+                  v_cod_indemnizacion           varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_INDEMNIZA'   ));
+                  v_cod_preaviso                varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_PREAVISO'    )); 
+                  v_cod_dcto_preaviso           varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_DCTO_PRA'    ));
+                  v_cod_ips                     varchar2(5) := TRAE_ID_CONCEPTO_RRHH(:P0_ID_EMPRESA, w_busca_parametro( 'RH', 'RH_CONC_IPS'         ));
+                  vtiene_vac                    varchar2(1);
+                  v_sueldo											rhw_empleados.sueldo_final%type;
+                  v_tip_empleado								varchar2(10);
+                  v_jornal_hora									number(10) :=  TO_NUMBER(w_busca_parametro('RH','RH_CANT_HORAS'));
+                  vantig_dias                   varchar2(10);
+                  vantig_mes                    varchar2(10);
+                  vantig_anio                   varchar2(10);
+                  VTIPO                         VARCHAR2(2);
+                  
+                BEGIN
+                
+                IF :P414_ID_MOTIVO_SALIDA IS NOT NULL AND :P414_ID_EMPLEADO IS NOT NULL AND :P414_FEC_LIQUID IS NOT NULL THEN 
+                	:P414_calcula	:= 'S';
+                
+                  --actualiza_vacaciones;
+                  
+                  BEGIN
+                	  select nvl( indemnizacion, 'N' ), nvl( preaviso, 'N' ), nvl( dcto_preaviso, 'N' ), nvl(vac_proporcionales,'N'), nvl(vac_causada,'N')
+                	    into :P414_indemnizacion, 
+                	         :P414_preaviso, 
+                	         :P414_dcto_preaviso, 
+                	         :P414_vac_proporcional, 
+                	         :P414_vac_causadas
+                	    from rhw_motivos_salida
+                	   where id = :P414_ID_MOTIVO_SALIDA;
+                  EXCEPTION
+                    when no_data_found then
+                		  :P414_indemnizacion     := 'N';
+                		  :P414_preaviso          := 'N';
+                		  :P414_dcto_preaviso     := 'N';
+                		  :P414_vac_proporcional  := 'N';
+                		  :P414_vac_causadas      := 'N';
+                  	WHEN others THEN
+                     RAISE_APPLICATION_ERROR(-20000, 'Error al buscar los indicadores de salida '||sqlerrm);
+                  END;
+                  
+                  BEGIN
+                    select nvl( fec_ingreso, fec_contrato ), sueldo_final, sueldo_base, id_tip_empleado
+                      into :P414_ingreso, :P414_sueldo_final, :P414_sueldo_base, v_tip_empleado
+                      from rhw_empleados
+                     where id_empresa  = :P0_ID_empresa
+                      -- and cod_sucursal = :b_cabecera.cod_sucursal--no se mira la sucursal ya que en AGPAR todos los empleados van a la misma sucursal--descomentar en otra empresa
+                       and ID = :P414_ID_EMPLEADO;
+                  EXCEPTION
+                    WHEN others THEN
+                      RAISE_APPLICATION_ERROR(-20000, 'No se encuentra el código de empleado ' || sqlerrm );
+                      --raise form_trigger_failure;
+                  END;
+                  salario_promedio( :P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_FEC_LIQUID, :P414_SUELDO_PROMEDIO );
+                  salario_base_promedio( :P414_ID_EMPLEADO, :P0_ID_EMPRESA, :P414_FEC_LIQUID, :P414_SALARIO_BASE_PROMEDIO );
+                  saldos_debcred(:P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_ANIO, :P414_MES, :P414_DIRECCION_IP);
+                  
+                  --vantiguedad           := :P414_fec_liquid - TO_DATE(:P414_INGRESO,'DD/MM/YYYY');
+                                             /* vantig_anio:= TO_NUMBER(TO_CHAR(TO_DATE(:P414_FEC_LIQUID,'DD/MM/YYYY'),'YYYY')) - 
+                                                            TO_NUMBER(TO_CHAR(TO_DATE(:P414_INGRESO,'DD/MM/YYYY'),'YYYY'));
+                                              
+                                              vantig_mes := TO_NUMBER(TO_CHAR(TO_DATE(:P414_FEC_LIQUID,'DD/MM/YYYY'),'MM')) - 
+                                                            TO_NUMBER(TO_CHAR(TO_DATE(:P414_INGRESO,'DD/MM/YYYY'),'MM'));
+                
+                                              vantig_dias:= TO_NUMBER(TO_CHAR(TO_DATE(:P414_FEC_LIQUID,'DD/MM/YYYY'),'DD')) - 
+                                                            TO_NUMBER(TO_CHAR(TO_DATE(:P414_INGRESO,'DD/MM/YYYY'),'DD'));*/
+                                                            
+                  vantiguedad                 := TO_DATE(TO_CHAR(:P414_FEC_LIQUID)) - TO_DATE(TO_CHAR(:P414_INGRESO));
+                  
+                  :P414_ANIO_ANTIGUEDAD := floor( nvl( VANTIGUEDAD,0 ) / 365 );
+                  :P414_mes_antiguedad  := trunc( ( nvl( vantiguedad, 0 ) - ( nvl( :P414_anio_antiguedad, 0 ) * 365 ) ) / 30 );
+                  :P414_dias_antiguedad := round( ( nvl( vantiguedad, 0 ) - 
+                                                        ( nvl( :P414_anio_antiguedad, 0 ) * 365 ) - 
+                                                        ( nvl( :P414_mes_antiguedad , 0 ) *  30 ) ) );                                     
+                
+                  /*-----------------------------
+                   Calculo para pago de preaviso
+                  */-----------------------------  
+                  IF nvl( :P414_PREAVISO, 'N' ) = 'S' THEN
+                    BEGIN
+                      /*select nvl( dias, 0 )
+                        into vdias_preaviso
+                        from rhw_parametros_salida
+                       where id_empresa    = :P0_ID_EMPRESA
+                         and cod_parametro  = 'PRE'
+                         and trunc( TO_NUMBER(TO_CHAR(:P414_FEC_LIQUID,'YYYY') - TO_CHAR(:P414_INGRESO,'YYYY')) / 365 ) between nvl( inicial, 0 ) and nvl( final, 0 )
+                         and rownum = '1';*/ --20/03/2023
+                        select nvl( dias, 0 )
+                        into vdias_preaviso
+                        from rhw_parametros_salida
+                       where id_empresa    = :P0_ID_EMPRESA
+                         and cod_parametro  = 'PRE'
+                         and trunc( vantiguedad / 365 ) between nvl( inicial, 0 ) and nvl( final, 0 )
+                         and rownum = 1;
+                    EXCEPTION
+                      WHEN others THEN
+                        vdias_preaviso := 0;
+                    END;
+                
+                    SELECT TIPO
+                    INTO VTIPO
+                    FROM RHW_CONCEPTOS
+                    WHERE ID = v_cod_preaviso;
+                    
+                    INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                    VALUES (v_cod_preaviso, vdias_preaviso, round( round( nvl( :P414_sueldo_promedio, 0 ) / 30,2 ) * nvl( vdias_preaviso, 0 ), 0 ), 
+                       round( round( nvl( :P414_sueldo_promedio , 0 ) / 30 ,2) * nvl( vdias_preaviso, 0 ), 0 ), NULL, NULL, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                  END IF;
+                  
+                  /*-------------------------
+                  -- DIAS DESCUENTO PREAVISO
+                  */-------------------------
+                  IF nvl( :P414_DCTO_PREAVISO, 'N' ) = 'S' THEN     
+                    BEGIN
+                      select trunc( dias ) 
+                        into vdias_dcto_preaviso
+                        from rhw_parametros_salida
+                       where id_empresa    = :P0_ID_EMPRESA
+                         and cod_parametro  = 'DPR'
+                         and trunc( vantiguedad / 365 ) between nvl( inicial, 0 ) and nvl( final, 0 )
+                         and rownum = '1';
+                    EXCEPTION
+                      WHEN others THEN 
+                        vdias_dcto_preaviso := 0;
+                    END;
+                    
+                    vdias_dcto_preaviso := round(vdias_dcto_preaviso / 2,1);
+                
+                    begin
+                    select tipo
+                    into vtipo
+                    from rhw_conceptos
+                    where id = v_cod_dcto_preaviso;
+                    end;
+                    
+                    --inserta_linea( v_cod_dcto_preaviso, vdias_dcto_preaviso, round( round( nvl( :P414_SUELDO_BASE /*salario_prom*/ , 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ),
+                      --                                                       round( round( nvl( :P414_SUELDO_BASE /*salario_base_promedio*/, 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ) );
+                    INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                    VALUES (v_cod_dcto_preaviso, vdias_dcto_preaviso, round( round( nvl( :P414_SUELDO_BASE /*salario_prom*/ , 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ), 
+                    round( round( nvl( :P414_SUELDO_BASE /*salario_base_promedio*/, 0 ) / 30 ) * nvl( vdias_dcto_preaviso, 1 ), 0 ), NULL, NULL, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                  END IF;
+                  
+                  /*------------------------
+                   Calculo de Indemnizacion
+                  */------------------------  
+                  IF nvl( :P414_INDEMNIZACION, 'N' ) = 'S' THEN
+                
+                    BEGIN
+                      select dias, fraccion
+                        into vdias, vfraccion
+                        from rhw_parametros_salida
+                       where id_empresa   = :P0_ID_EMPRESA
+                         and cod_parametro = 'IND'
+                         and inicial       = 0;
+                
+                      IF nvl( vfraccion, 0 ) <= 0 THEN
+                        vfraccion := 1;
+                      END IF;
+                      
+                      IF nvl( :P414_mes_antiguedad, 0 ) >= 2 and nvl( :P414_anio_antiguedad, 0 ) < 1 then-- agregado para los casos que superen 2 meses de antiguedad
+                      	vdiasin := 1;
+                      ELSIF nvl( :P414_mes_antiguedad, 0 ) >= ( 12 / vfraccion ) THEN
+                        vdiasin := 1;
+                      ELSE
+                        vdiasin := 0;
+                      END IF;
+                      
+                      --mensaje( 'EMPLEADO' ||:b_cabecera.cod_empleado||'anio'|| :b_cabecera.anio_antiguedad || 'mes'|| :b_cabecera.mes_antiguedad );
+                      IF ( ( nvl( :P414_anio_antiguedad, 0 ) < 10 ) or 
+                      	   ( nvl( :P414_anio_antiguedad, 0 ) = 10 and 
+                      	     nvl( :P414_mes_antiguedad , 0 ) < 1 ) ) THEN
+                        vdias_indemnizacion := ( nvl( vdiasin, 0 ) + nvl( :P414_anio_antiguedad, 0 ) ) * nvl( vdias, 0 );
+                      ELSE
+                        vdias_indemnizacion := ( ( nvl( vdiasin, 0 ) + nvl( :P414_anio_antiguedad, 0 ) ) * nvl( vdias, 0 ) ) * 2;
+                      END IF;
+                      /*
+                    EXCEPTION
+                      WHEN others THEN
+                
+                        vdias_indemnizacion := 0;*/
+                    END;
+                
+                    BEGIN
+                    SELECT TIPO
+                    INTO VTIPO
+                    FROM RHW_CONCEPTOS
+                    WHERE ID = v_cod_indemnizacion;
+                    END;
+                   -- RAISE_APPLICATION_ERROR(-20000, 'OP ' || VDIAS || ' - ' || vdias_indemnizacion || ' - ' || vdiasin || ' - ' || vfraccion || ' - ' || :p414_anio_antiguedad || ' - ' || :p414_mes_antiguedad || ' - ' || :p414_dias_antiguedad);
+                    --inserta_linea( v_cod_indemnizacion, vdias_indemnizacion, round( round( nvl( :P414_SUELDO_PROMEDIO         , 0 ) / 30 ,2) * nvl( vdias_indemnizacion, 0 ), 0 ),
+                      --                                                       round( round( nvl( :P414_SUELDO_PROMEDIO /*base_promedio*/, 0 ) / 30 ,2 ) * nvl( vdias_indemnizacion, 0 ), 0 ) );
+                    INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                    VALUES (v_cod_indemnizacion, vdias_indemnizacion, round( round( nvl( :P414_SUELDO_PROMEDIO         , 0 ) / 30 ,2) * nvl( vdias_indemnizacion, 0 ), 0 ), 
+                    round( round( nvl( :P414_SUELDO_PROMEDIO /*base_promedio*/, 0 ) / 30 ,2 ) * nvl( vdias_indemnizacion, 0 ), 0 ), 
+                    null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                  END IF;
+                  
+                  
+                  /*----------------------------------
+                   Calculo de Vacaciones Proporcional
+                  */----------------------------------  
+                  if nvl(:P414_vac_proporcional,'N') = 'S' then
+                    vdias_vacaciones := 0;--dias_vacaciones(:P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_FEC_LIQUID, :P414_INGRESO,
+                   -- :P414_ANIO_ANTIGUEDAD, :P414_ID_ESTADO);
+                	  IF nvl( vdias_vacaciones, 0 ) > 0  THEN
+                	  	
+                	  	
+                	  		v_sueldo := :P414_sueldo_final;
+                		  
+                
+                			 	if v_tip_empleado != '4' then --Si no es igual a jornalero 
+                             
+                			  	  :P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 );
+                			      --inserta_linea( v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 )  / 30, 0 )* nvl( vdias_vacaciones, 0 ),
+                	                --                                                    round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) / 30, 0 ) );
+                                
+                                BEGIN
+                                SELECT TIPO
+                                INTO VTIPO
+                                FROM RHW_CONCEPTOS
+                                WHERE ID = v_cod_vacaciones_proporcional;
+                                END;
+                                
+                
+                                  INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, 
+                                  DIRECCION_IP, ID_EMPRESA, TIPO ) 
+                                  VALUES (v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 )  / 30, 0 )* nvl( vdias_vacaciones, 0 ), 
+                                  round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) / 30, 0 ), null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                			 	else
+                			 			v_sueldo := round (( nvl(v_sueldo, 0) * v_jornal_hora) );
+                			 			:P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) , 0 );
+                			 			--inserta_linea( v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 ) , 0 )* nvl( vdias_vacaciones, 0 ),
+                	                      --                                              round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) , 0 ) );
+                                        INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, 
+                                        DIRECCION_IP, ID_EMPRESA, TIPO )
+                                        VALUES (v_cod_vacaciones_proporcional, vdias_vacaciones, round( nvl( v_sueldo     , 0 ) , 0 )* nvl( vdias_vacaciones, 0 ), 
+                                        round( nvl( v_sueldo, 0 ) * nvl( vdias_vacaciones, 0 ) , 0 ), null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                			 	end if;
+                	  END IF;
+                  else
+                  	vdias_vacaciones := 0;
+                  end if;
+                
+                  /*-----------------------
+                  -- Vacaciones Causadas --
+                  */-----------------------
+                  vvacaciones_causadas := 0;--dias_vacaciones_causadas(:P414_FEC_LIQUID, :P414_INGRESO, :P414_ID_EMPRESA,
+                 -- :P414_ID_EMPLEADO, :P414_ANIO_ANTIGUEDAD);
+                  
+                  IF nvl( vvacaciones_causadas, 0 ) > 0  and nvl(:P414_vac_causadas,'N') = 'S' THEN
+                		  	v_sueldo := :P414_sueldo_final;
+                                BEGIN
+                                SELECT TIPO
+                                INTO VTIPO
+                                FROM RHW_CONCEPTOS
+                                WHERE ID = v_cod_vacaciones_causadas;
+                                END;
+                
+                			 	if v_tip_empleado != 4 then
+                			  	:P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 );
+                			    --inserta_linea( v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 ),
+                			      --                                                              :P414_tot_vac_causadas);
+                                  INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, 
+                                  ID_EMPRESA, TIPO ) 
+                                  VALUES (v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ) / 30, 0 ), 
+                                  :P414_tot_vac_causadas, null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                			 	else
+                			 			v_sueldo := round (( nvl(v_sueldo, 0) * v_jornal_hora) );
+                			 			:P414_tot_vac_causadas := round( nvl( v_sueldo, 0 ) * nvl( vvacaciones_causadas, 0 ) , 0 );
+                			      --inserta_linea( v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ), 0 ),
+                			        --                                                            :P414_tot_vac_causadas);
+                                  INSERT INTO RHW_TMP_DETALLE_SAL_LIQ (ID_CONCEPTO, CANTIDAD, MONTO, MONTO_LEGAL, ID_PROGRAMA, NRO_CUOTA, DIRECCION_IP, 
+                                  ID_EMPRESA, TIPO ) 
+                                  VALUES (v_cod_vacaciones_causadas, vvacaciones_causadas, round( nvl( v_sueldo     , 0 ) * nvl( vvacaciones_causadas, 0 ), 0 ), 
+                                  :P414_tot_vac_causadas, null, null, :P414_DIRECCION_IP, :P0_ID_EMPRESA, VTIPO);
+                			  end if;
+                  else
+                    :P414_tot_vac_causadas := 0;
+                  END IF;
+                
+                  /*------------------------
+                   Calculo del Aguinaldo
+                  */---------------------
+                  :P414_SALARIO_MES:=REPLACE(:P414_SALARIO_MES,'.','');
+                  aguinaldo(:P414_tot_vac_causadas, :P0_ID_EMPRESA, :P414_ID_EMPLEADO,to_date(:P414_FEC_LIQUID,'DD/MM/YYYY'), :P414_ANIO, :P414_MES, 
+                  TO_date(:P414_INGRESO,'DD/MM/YYYY'), :P414_DIRECCION_IP, :P414_DCTO_PREAVISO, 
+                  :P414_SALARIO_MES, :P414_SUELDO_BASE, :P414_ANIO_ANTIGUEDAD, :P414_SUELDO_FINAL, :P414_ID_ESTADO, TO_DATE(:P414_FECHA_SALIDA,'DD/MM/YYYY'), :P414_DIAS, :P414_CONC_SUELDO);
+                  
+                  calcula_ips(:P414_ID_ESTADO, :P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_SALARIO_MES, :P414_DIRECCION_IP);
+                  bonificacion(:P0_ID_EMPRESA, :P414_ID_EMPLEADO, :P414_SALARIO_MINIMO, :P414_PORC_BONIF, :P414_CONC_BONIF, :P414_LIMITE_BONIF);
+                  
+                  --set_application_property( cursor_style, 'DEFAULT' );
+                  :P414_calcula	:= 'N';
+                
+                ELSE
+                RAISE_APPLICATION_ERROR (-20000, 'Debe ingresar un motivo, un empleado y la fecha de liquidación');
+                END IF;
+                /*EXCEPTION
+                  WHEN others THEN
+                    --set_application_property( cursor_style, 'DEFAULT' );
+                    RAISE_APPLICATION_ERROR(-20000, 'Se Produjo un Error en el Cálculo ' || sqlerrm);
+                    :P414_calcula	:= 'N';*/
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 55620741545508535
+        }
+        serverSideCondition {
+            whenButtonPressed: @calcular
+        }
+    )
+
+    process procesar-json (
+        name: PROCESAR_JSON
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                
+                  l_cursor SYS_REFCURSOR;
+                  json_detalle CLOB;
+                
+                BEGIN
+                    OPEN l_cursor FOR
+                    SELECT  ID_EMPRESA,
+                            ID_CONCEPTO,
+                            DIRECCION_IP,
+                            TIPO,
+                            MONTO,
+                            MONTO_LEGAL,
+                            CANTIDAD,
+                            ID_PROGRAMA,
+                            NRO_CUOTA
+                    FROM RHW_TMP_DETALLE_SAL_LIQ
+                    WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                    and DIRECCION_IP = :P414_DIRECCION_IP;
+                
+                  APEX_JSON.initialize_clob_output;
+                
+                  APEX_JSON.open_object;
+                  APEX_JSON.write('DETALLE', l_cursor);
+                  APEX_JSON.close_object;
+                
+                  JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                  :P414_JSON_DET_LIQ :=JSON_DETALLE;
+                  
+                  SELECT SUM(NVL(MONTO,0))  
+                  INTO :P414_TOTAL 
+                  FROM RHW_TMP_DETALLE_SAL_LIQ
+                  WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                  and DIRECCION_IP = :P414_DIRECCION_IP;
+                END;
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 55622090542508548
+        }
+        serverSideCondition {
+            whenButtonPressed: @calcular
+        }
+    )
+
+    process process-form-carga-de-salida-de-empleado (
+        name: Process Form Carga de Salida de Empleado
+        type: formAutoRowProcessing
+        formRegion: @carga-de-liquidacion-por-salida-de-empleado
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 56708509395535101
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,BORRAR,CREAR
+        }
+    )
+
+    process recalcular (
+        name: RECALCULAR
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                  	BEGIN
+                      :P414_SALARIO_MES:=REPLACE(:P414_SALARIO_MES, '.', '');
+                     
+                			CALCULA_IPS(:P414_ID_ESTADO, :P0_ID_EMPRESA, :P414_ID_EMPLEADO, REPLACE(:P414_SALARIO_MES,'.',''), :P414_DIRECCION_IP);
+                			aguinaldo(:P414_tot_vac_causadas, :P0_ID_EMPRESA, :P414_ID_EMPLEADO,to_date(:P414_FEC_LIQUID,'DD/MM/YYYY'), :P414_ANIO, :P414_MES, 
+                  TO_date(:P414_INGRESO,'DD/MM/YYYY'), :P414_DIRECCION_IP, :P414_DCTO_PREAVISO, 
+                  :P414_SALARIO_MES, REPLACE(:P414_SUELDO_BASE,'.',''), :P414_ANIO_ANTIGUEDAD, REPLACE(:P414_SUELDO_FINAL,'.',''), :P414_ID_ESTADO, TO_DATE(:P414_FECHA_SALIDA,'DD/MM/YYYY'), 
+                  :P414_DIAS, :P414_CONC_SUELDO);
+                
+                		EXCEPTION
+                			WHEN OTHERS THEN
+                				RAISE_APPLICATION_ERROR(-20000, 'ERROR AL REPROCESAR LOS DATOS '||SQLERRM);
+                		END;
+                ```
+        }
+        execution {
+            sequence: 90
+        }
+        advanced {
+            executionMappingIdentifier: 56709328167535109
+        }
+        serverSideCondition {
+            whenButtonPressed: @recalcular
+        }
+    )
+
+    process setear-id (
+        name: SETEAR_ID
+        type: executeCode
+        editableRegion: @detalle
+        source {
+            plsqlCode:
+                ```plsql
+                --VINCULAR DETALLE CON CABECERA 
+                :ID_CAB_LIQUID:=:P414_ID;
+                :ID_EMPLEADO := :P414_ID_EMPLEADO;
+                :ID_SUCURSAL := :P414_ID_SUCURSAL;
+                :ANIO := :P414_ANIO;
+                :MES := :P414_MES;
+                ```
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 56708740033535103
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREAR,SAVE
+        }
+    )
+
+    branch (
+        name: GO TO PAGE 484
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 484
+                items: {
+                    P414_CONC_SUELDO: &P414_CONC_SUELDO.
+                    P414_SER_LIQUID: &P414_SER_LIQUID.
+                    P414_NRO_LIQUID: &P414_NRO_LIQUID.
+                    P414_ID_EMPRESA: &P414_ID_EMPRESA.
+                    P414_ID_EMPLEADO: &P414_ID_EMPLEADO.
+                    P414_CONC_AGUIN: &P414_CONC_AGUIN.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+            type: itemIsNotNull
+            item: P414_ID
+        }
+    )
+
+)
+

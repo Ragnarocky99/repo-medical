@@ -1,0 +1,521 @@
+page 277 (
+    name: Mandar Mensajes
+    alias: MANDAR-MENSAJES
+    title: Mandar Mensajes
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region mensajes (
+        name: Mensajes
+        type: regionDisplaySelector
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        settings {
+            includeShowAll: false
+            rememberSelection: bySession
+        }
+    )
+
+    region mensajes-enviados (
+        name: Mensajes Enviados
+        type: interactiveReport
+        source {
+            location: restSource
+            restSource: @Mensajes_Recibios
+        }
+        localPostProcessing {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       API,
+                       CASE STATUS
+                        WHEN 'sent' THEN 'fa fa-check u-success-text'
+                        else   'fa fa-remove u-danger-text'
+                       END AS  ESTADO_ICONO,
+                       ACCOUNT,
+                       TO_CHAR(TO_DATE('01/01/1970','DD/MM/YYYY')+NUMTODSINTERVAL(CREATED,'SECOND'),'DD/MM/YYYY HH24:MI:SS') AS FECHA_CREACION,
+                       MESSAGE,
+                       RECIPIENT,
+                       ATTACHMENT,
+                       CASE STATUS 
+                       WHEN 'sent' then 'Enviado'
+                       else  'Pendiente'
+                       end as ESTADO
+                  from #APEX$SOURCE_DATA#
+                
+                
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 133352471275792704
+        }
+
+        column ACCOUNT (
+            type: plainText
+            heading {
+                heading: Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column API (
+            type: hidden
+            heading {
+                heading: Api
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ATTACHMENT (
+            type: hidden
+            heading {
+                heading: Adjunto
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 90
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ESTADO_ICONO#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ESTADO_ICONO (
+            type: hidden
+            heading {
+                heading: Estado Icono
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FECHA_CREACION (
+            type: plainText
+            heading {
+                heading: Fecha Creacion
+                alignment: center
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column MESSAGE (
+            type: plainText
+            heading {
+                heading: Mensaje
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column RECIPIENT (
+            type: plainText
+            heading {
+                heading: Recipiente
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Mensajes Enviados
+        }
+
+        savedReport 666767 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ACCOUNT (
+                sequence: 1
+            )
+
+            displayColumn ESTADO (
+                sequence: 4
+            )
+
+            displayColumn FECHA_CREACION (
+                sequence: 5
+            )
+
+            displayColumn MESSAGE (
+                sequence: 2
+            )
+
+            displayColumn RECIPIENT (
+                sequence: 3
+            )
+
+        )
+
+        parameter (
+            name: @limit
+            value {
+                type: staticValue
+                staticValue: 100
+            }
+        )
+
+    )
+
+    region mensajes-pendientes (
+        name: Mensajes Pendientes
+        type: interactiveReport
+        source {
+            location: restSource
+            restSource: @Mensajes_Pendientes
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 65415119855149948
+        }
+
+        column MESSAGE (
+            type: plainText
+            heading {
+                heading: Message
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column STATUS (
+            type: plainText
+            heading {
+                heading: Status
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Mensajes Pendientes
+        }
+
+        savedReport 666442 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn MESSAGE (
+                sequence: 2
+            )
+
+            displayColumn STATUS (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    button mensaje (
+        buttonName: Mensaje
+        label: Nuevo Mensaje
+        layout {
+            sequence: 10
+            region: @mensajes-enviados
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-send
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 278
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+)
+

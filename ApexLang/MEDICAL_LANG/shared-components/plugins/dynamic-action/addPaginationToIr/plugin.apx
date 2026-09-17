@@ -1,0 +1,78 @@
+plugin addPaginationToIr (
+    name: Add pagination to IR
+    staticId: IR.PAGINATION
+    type: dynamicAction
+    component {
+        standardAttributes: [
+            forRegion
+            defaultFireOnInitialization
+        ]
+    }
+    source {
+        plsqlCode:
+            ```plsql
+            --Authors: Foad Olyaee: foad.olyaee@gmail.com, Morteza Mashhadi: morteza.mashhadi@gmail.com
+            --How to use this plugin:
+            --1. Set your Interactive Report pagination to Row Ranges X to Y of Z
+            --2.a Create a Dynamic Action, on "page load"
+            --2.b Add a true action, and set the action attribute to "Add pagination to IR" 
+            --3. Enjoy it...
+            --Notice: If you dont want to add this feature to an IR, just add `fao-pagination="none"` to the "Custom Attributes" in "Advanced section" of the target IR.
+            function render_irPagination (
+                p_dynamic_action in apex_plugin.t_dynamic_action,
+                p_plugin         in apex_plugin.t_plugin )
+                return apex_plugin.t_dynamic_action_render_result
+            is
+                l_result   apex_plugin.t_dynamic_action_render_result;
+                v_totalRowsLabel varchar2(4000):=coalesce(p_dynamic_action.attribute_01, p_plugin.attribute_01,'Total number of rows:');
+                v_firstpageTitle varchar2(4000):=coalesce(p_dynamic_action.attribute_02, p_plugin.attribute_02,'First page');
+                v_lastpageTitle varchar2(4000):=coalesce(p_dynamic_action.attribute_03, p_plugin.attribute_03,'Last page');
+            begin
+             
+               if apex_application.g_debug
+               then
+                  apex_plugin_util.debug_dynamic_action(
+                     p_plugin         => p_plugin,
+                     p_dynamic_action => p_dynamic_action 
+                  );
+               end if;
+            
+               apex_javascript.add_library(
+                  p_name      => 'addPaginationIR',
+                  p_directory => p_plugin.file_prefix,
+                  p_version   => NULL
+               );
+               
+               APEX_CSS.ADD_FILE(p_name => 'addPaginationIR', p_directory => p_plugin.file_prefix);
+            
+                l_result.javascript_function :=
+                        '
+                        function(){ 	
+                        IRPagination.totalRowsLabel = '''|| v_totalRowsLabel ||''';
+                        IRPagination.firstPageTitle = '''|| v_firstpageTitle ||''';
+                        IRPagination.lastPageTitle = '''|| v_lastpageTitle ||''';
+                        $(document).on("apexafterrefresh", function(e) 
+                        { 
+                            IRPagination.func.addPaginationIR(); 
+                        });
+            	        setTimeout(function() { IRPagination.func.addPaginationIR(); }, 200);
+                        }';
+                return l_result;
+            
+            end  render_irPagination;
+            ```
+    }
+    callbacks {
+        apiInterface: function
+        renderProcedureName: render_irPagination
+    }
+    advanced {
+        category: miscellaneous
+        substituteAttributeValues: true
+    }
+    information {
+        version: 2.0
+        aboutUrl: https://github.com/mortezamashhadi/orclapex-addPaginationToIR
+    }
+)
+

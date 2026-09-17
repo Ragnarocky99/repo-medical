@@ -1,0 +1,632 @@
+page 835 (
+    name: Planilla de Reparto - Aprobaciones
+    alias: PLANILLA-DE-REPARTO-APROBACIONES
+    title: Planilla de Reparto - Aprobaciones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @planillas
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region planillas (
+        name: Planillas
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT NRO_PLANILLA,
+                       RC.ID_REPARTIDOR,
+                       DECODE(NVL(ESTADO, 'N'), 'S', 'Rendido',
+                                                     'Pendiente') ESTADO,
+                       IND_ENTREGADO,
+                       IND_RECEPCIONADO,
+                       IND_RENDIDO,
+                       RC.ID
+                  FROM RPW_REPARTO_CABECERA RC
+                 WHERE RC.ID_EMPRESA = :P0_ID_EMPRESA
+                   --AND NVL(RC.ESTADO, 'N') = 'N'
+                   AND RC.FEC_PLANILLA BETWEEN :P835_FEC_INI AND :P835_FEC_FIN
+                   AND (RC.NRO_PLANILLA = :P835_NRO_PLANILLA OR :P835_NRO_PLANILLA IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P835_FEC_INI
+                P835_FEC_FIN
+                P835_NRO_PLANILLA
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+            columnCssClasses: [
+                col-xxs-12
+                col-xs-12
+                col-sm-12
+                col-md-12
+                col-lg-6
+            ]
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        componentAppearance {
+            selectFirstRow: false
+            fixedRowHeight: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 71882555947216547
+        }
+
+        savedReport 729724 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @NRO_PLANILLA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_REPARTIDOR
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @IND_ENTREGADO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @IND_RECEPCIONADO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @IND_RENDIDO
+                layout {
+                    sequence: 8
+                }
+            )
+
+            sort (
+                column: @NRO_PLANILLA
+                sort {
+                    direction: desc
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            settings {
+                enableMultiSelect: false
+            }
+            layout {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column ESTADO (
+            type: textField
+            heading {
+                heading: <p>Estado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_REPARTIDOR (
+            type: selectList
+            heading {
+                heading: <p>Repartidor</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-repartidores
+            }
+            layout {
+                sequence: 50
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_REPARTIDOR
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column IND_ENTREGADO (
+            type: checkbox
+            heading {
+                heading: <p>Entregado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_ENTREGADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_RECEPCIONADO (
+            type: checkbox
+            heading {
+                heading: <p>Recepcionado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_RECEPCIONADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_RENDIDO (
+            type: checkbox
+            heading {
+                heading: <p>Rendido</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_RENDIDO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_PLANILLA (
+            type: numberField
+            heading {
+                heading: <p>Nro. Planilla</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            link {
+                target: {
+                    page: 836
+                    items: {
+                        P836_ID_REPARTO: &ID.
+                    }
+                }
+                linkText: &NRO_PLANILLA.
+            }
+            source {
+                databaseColumn: NRO_PLANILLA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Planillas
+        }
+    )
+
+    pageItem P835_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P835_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Planilla:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P835_NRO_PLANILLA (
+        type: numberField
+        label {
+            label: <p>Nro. Planilla:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction acciones-al-cargar-la-pagina (
+        name: Acciones al Cargar la Pagina
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.model.setOption("editable", true);
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction change-filtros (
+        name: Change Filtros
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P835_NRO_PLANILLA
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @planillas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @planillas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process planillas-save-interactive-grid-data (
+        name: Planillas - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @planillas
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 72966786243695204
+        }
+    )
+
+)
+

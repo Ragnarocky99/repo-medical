@@ -1,0 +1,183 @@
+page 244 (
+    name: Reporte Saldo de Proveedores
+    alias: REPORTE-SALDO-DE-PROVEEDORES
+    title: Reporte Saldo de Proveedores
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                declare
+                          l_proc varchar2(100) := 'show report';
+                          l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');--'http://localhost:8090/jri/report';
+                          l_parametros varchar2(1000);
+                        BEGIN
+                          xlog (l_proc, 'url (orig):' || l_report_url);
+                            
+                            l_parametros := l_parametros||'Empresa='||:P0_ID_EMPRESA;
+                            l_parametros := l_parametros||'&'||'PROVEEDOR='||:P242_PROVEEDOR;
+                            l_parametros := l_parametros||'&'||'IND_SALDO='||:P242_IND_SALDO;
+                            l_parametros := l_parametros||'&'||'MONEDA='||:P242_MONEDA;
+                            l_parametros := l_parametros||'&'||'Usuario='||:APP_USER;
+                            l_parametros := l_parametros||'&'||'P_SUC='||:P0_COD_SUCURSAL;
+                            l_parametros := l_parametros||'&'||'FEC_INICIO='||:PC_FEC_INIC;
+                            l_parametros := l_parametros||'&'||'FEC_FIN='||:PC_FEC_FINA;
+                
+                          xlib_jasperreports.set_report_url(l_report_url);
+                          xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('Saldo_Proveedores'),
+                                  p_rep_format          => apex_util.url_encode('pdf'),
+                                  p_data_source         => apex_util.url_encode('default'),
+                                  p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                                  p_rep_locale          => apex_util.url_encode('es_ES'),
+                                  p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                                  p_additional_params   => (l_parametros),
+                                  p_print_is_enabled    => case when :P3_print_is_enabled='1' then true else false end,
+                                  p_print_printer_name  => apex_util.url_encode(:P3_print_printer_name),
+                                  p_print_media         => apex_util.url_encode(:P3_print_media),
+                                  p_print_copies        => apex_util.url_encode(:P3_print_copies),
+                                  p_print_duplex        => case when :P3_print_duplex='1' then true else false end,
+                                  p_print_collate       => case when :P3_print_collate='1' then true else false end,
+                                  p_save_is_enabled     => case when :P3_save_is_enabled='1' then true else false end,
+                                  p_save_filename       => apex_util.url_encode(:P3_save_filename),
+                                  p_rep_time_zone       => apex_util.url_encode(:P3_rep_time_zone),
+                                  p_print_job_name      => apex_util.url_encode(:P3_print_job_name)
+                                  );
+                          
+                          -- this was used before apex 4.1
+                          --apex_application.g_unrecoverable_error := true;
+                          apex_application.stop_apex_engine();
+                
+                        exception
+                          when apex_application.e_stop_apex_engine then
+                            null; -- ok, stop engine raises exception, we can ignore that
+                          when others then 
+                            xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                            raise;
+                        end;
+                ```
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                DECLARE
+                vcName PK_JRXML2PDF_TYPES.tName;
+                
+                l_ReportList PK_JRXML2PDF_TYPES.tReportNameList;
+                
+                r_Params PK_JRXML2PDF_REPGEN.TPARAMETER;
+                l_Params PK_JRXML2PDF_REPGEN.TPARAMLIST;
+                
+                bl BLOB;
+                
+                BEGIN
+                
+                
+                vcName := 'Saldo_Proveedores';
+                
+                
+                r_Params.vcName := 'Empresa';
+                r_Params.vcValue := :P0_COD_EMPRESA;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'PROVEEDOR';
+                r_Params.vcValue := :P242_PROVEEDOR;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'IND_SALDO';
+                r_Params.vcValue := :P242_IND_SALDO;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'MONEDA';
+                r_Params.vcValue := :P242_MONEDA;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'Usuario';
+                r_Params.vcValue := :app_user;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'P_SUC';
+                r_Params.vcValue := :P0_COD_SUCURSAL;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'FEC_INICIO';
+                r_Params.vcValue := :PC_FEC_INIC;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'FEC_FIN';
+                r_Params.vcValue := :PC_FEC_FINA;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                
+                
+                
+                l_ReportList(1) := vcName;
+                
+                
+                
+                bl := PK_JRXML2PDF_REPGEN.FK_RUN(i_lReports=>l_ReportList,
+                i_lParams=>l_Params,
+                i_bResetPageNumber=>false
+                );
+                
+                PK_JRXML2PDF_REPGEN.PR_SHOW_REPORT(bl);
+                APEX_APPLICATION.STOP_APEX_ENGINE;
+                
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

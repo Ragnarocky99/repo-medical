@@ -1,0 +1,1158 @@
+page 162 (
+    name: Recibos
+    alias: LISTA-DE-RECIBOS
+    title: Recibos - Sistema Inventiva
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: FILTROS
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region recibos (
+        name: Recibos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_SUCURSAL,
+                       SER_RECIBO,
+                       NRO_RECIBO,
+                       FEC_RECIBO,
+                       FEC_COBRO,
+                       ID_CLIENTE,
+                       ID_COBRADOR,
+                       ID_MONEDA,
+                       TIP_CAMBIO,
+                       ID_USUARIO,
+                       ANULADO,
+                       CASE ANULADO
+                        WHEN 'S' THEN 'fa fa-check u-success-text'
+                        WHEN 'N' THEN 'fa fa-remove u-danger-text'
+                       END ESTADO_ICON,
+                       FEC_ANULACION,
+                       ID_MOV_CAJ,
+                       ESTADO,
+                       FEC_ESTADO,
+                       TOT_RECIBO,
+                       FEC_ANULADO,
+                       ACTUALIZADO_POR,
+                       COMENTARIO,
+                       ID_COBRADOR_ORI,
+                       FEC_AUTORIZADO,
+                       DIAS_AUTORIZADO,
+                       COD_USUARIO_AUD,
+                       TIP_RECIBO,
+                       IND_IMPRESO,
+                       ID_CORPORACION,
+                       ID_COMP_REF_MORA,
+                       TOTAL_MORA,
+                       TOTAL_CARTA,
+                       ID_CONCEPTO,
+                       ID_TRANSFERENCIA_CLIE,
+                       TRANSAC_PRONET,
+                       ID_TALONARIO,
+                       NRO_TRANS_PM,
+                       NRO_PAGO_EXPRESS,
+                       IND_PARA_REPARTO,
+                       IND_PLANILLA_ASO,
+                       ID_PLANILLA_ASO,
+                       ID_HABILITACION,
+                
+                 TO_NUMBER(REPLACE(REPLACE(ASIENTOS,'*'),'cobros')) ASIENTOS,
+                       (SELECT D.ID
+                        FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(ASIENTOS,'*'),'cobros'))
+                          AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(FEC_RECIBO)--V.FEC_COMPROBANTE)
+                          AND D.ID_EMPRESA  = ID_EMPRESA) ASIENTO_ID
+                
+                  from CCW_RECIBOS
+                 where ID_EMPRESA=:P0_COD_EMPRESA
+                   AND (FEC_RECIBO BETWEEN :P162_FEC_INI AND :P162_FEC_FIN)
+                   AND (ID_SUCURSAL = :P162_SUCURSAL OR :P162_SUCURSAL IS NULL)
+                   AND (NRO_RECIBO = :P162_NRO_RECIBO OR :P162_NRO_RECIBO IS NULL)
+                
+                 ORDER BY NRO_RECIBO DESC
+                ```
+            pageItemsToSubmit: [
+                P162_FEC_INI
+                P162_FEC_FIN
+                P162_SUCURSAL
+                P162_NRO_RECIBO
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 170
+                items: {
+                    P170_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 24974758998743701
+        }
+
+        column ACTUALIZADO_POR (
+            type: hidden
+            heading {
+                heading: Actualizado Por
+            }
+            layout {
+                sequence: 213
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column ANULADO (
+            type: plainText
+            heading {
+                heading: Anulado
+                alignment: center
+            }
+            layout {
+                sequence: 133
+                columnAlignment: center
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ESTADO_ICON#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 563
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTO_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BG
+            }
+        )
+
+        column ASIENTO_ID (
+            type: hidden
+            heading {
+                heading: Asiento Id
+            }
+            layout {
+                sequence: 553
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BF
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 13
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column COMENTARIO (
+            type: plainText
+            heading {
+                heading: Comentario
+                alignment: center
+            }
+            layout {
+                sequence: 113
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column DIAS_AUTORIZADO (
+            type: hidden
+            heading {
+                heading: Dias Autorizado
+            }
+            layout {
+                sequence: 243
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 163
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column ESTADO_ICON (
+            type: plainText
+            heading {
+                heading: Estado Icon
+            }
+            layout {
+                sequence: 573
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BH
+            }
+        )
+
+        column FEC_ANULACION (
+            type: hidden
+            heading {
+                heading: Fec Anulacion
+            }
+            layout {
+                sequence: 143
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column FEC_ANULADO (
+            type: hidden
+            heading {
+                heading: Fec Anulado
+            }
+            layout {
+                sequence: 203
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column FEC_AUTORIZADO (
+            type: hidden
+            heading {
+                heading: Fec Autorizado
+            }
+            layout {
+                sequence: 233
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column FEC_COBRO (
+            type: hidden
+            heading {
+                heading: Fec Cobro
+            }
+            layout {
+                sequence: 183
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column FEC_ESTADO (
+            type: hidden
+            heading {
+                heading: Fec Estado
+            }
+            layout {
+                sequence: 173
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column FEC_RECIBO (
+            type: plainText
+            heading {
+                heading: Fecha Recibo
+                alignment: center
+            }
+            layout {
+                sequence: 43
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 423
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column ID_COBRADOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cobrador
+                alignment: center
+            }
+            lov {
+                lov: @ccw-cobradores-id-cobrador
+            }
+            layout {
+                sequence: 433
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column ID_COBRADOR_ORI (
+            type: hidden
+            heading {
+                heading: Id Cobrador Ori
+            }
+            layout {
+                sequence: 473
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        column ID_COMP_REF_MORA (
+            type: hidden
+            heading {
+                heading: Id Comp Ref Mora
+            }
+            layout {
+                sequence: 493
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AZ
+            }
+        )
+
+        column ID_CONCEPTO (
+            type: hidden
+            heading {
+                heading: Id Concepto
+            }
+            layout {
+                sequence: 503
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BA
+            }
+        )
+
+        column ID_CORPORACION (
+            type: hidden
+            heading {
+                heading: Id Corporacion
+            }
+            layout {
+                sequence: 483
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AY
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 403
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column ID_HABILITACION (
+            type: hidden
+            heading {
+                heading: Id Habilitacion
+            }
+            layout {
+                sequence: 543
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BE
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 443
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column ID_MOV_CAJ (
+            type: hidden
+            heading {
+                heading: Id Mov Caj
+            }
+            layout {
+                sequence: 463
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AW
+            }
+        )
+
+        column ID_PLANILLA_ASO (
+            type: hidden
+            heading {
+                heading: Id Planilla Aso
+            }
+            layout {
+                sequence: 533
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BD
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            heading {
+                heading: Id Sucursal
+            }
+            layout {
+                sequence: 413
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column ID_TALONARIO (
+            type: hidden
+            heading {
+                heading: Id Talonario
+            }
+            layout {
+                sequence: 523
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column ID_TRANSFERENCIA_CLIE (
+            type: hidden
+            heading {
+                heading: Id Transferencia Clie
+            }
+            layout {
+                sequence: 513
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: BB
+            }
+        )
+
+        column ID_USUARIO (
+            type: hidden
+            heading {
+                heading: Id Usuario
+            }
+            layout {
+                sequence: 453
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column IND_IMPRESO (
+            type: hidden
+            heading {
+                heading: Ind Impreso
+            }
+            layout {
+                sequence: 273
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column IND_PARA_REPARTO (
+            type: hidden
+            heading {
+                heading: Ind Para Reparto
+            }
+            layout {
+                sequence: 383
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column IND_PLANILLA_ASO (
+            type: hidden
+            heading {
+                heading: Ind Planilla Aso
+            }
+            layout {
+                sequence: 393
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column NRO_PAGO_EXPRESS (
+            type: hidden
+            heading {
+                heading: Nro Pago Express
+            }
+            layout {
+                sequence: 373
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column NRO_RECIBO (
+            type: plainText
+            heading {
+                heading: Número
+                alignment: center
+            }
+            layout {
+                sequence: 33
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_TRANS_PM (
+            type: hidden
+            heading {
+                heading: Nro Trans Pm
+            }
+            layout {
+                sequence: 363
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column SER_RECIBO (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 23
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Tipo Cambio
+                alignment: center
+            }
+            layout {
+                sequence: 73
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column TIP_RECIBO (
+            type: hidden
+            heading {
+                heading: Tip Recibo
+            }
+            layout {
+                sequence: 253
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column TOTAL_CARTA (
+            type: hidden
+            heading {
+                heading: Total Carta
+            }
+            layout {
+                sequence: 313
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column TOTAL_MORA (
+            type: hidden
+            heading {
+                heading: Total Mora
+            }
+            layout {
+                sequence: 303
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column TOT_RECIBO (
+            type: plainText
+            heading {
+                heading: Total Recibo
+                alignment: center
+            }
+            layout {
+                sequence: 103
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column TRANSAC_PRONET (
+            type: hidden
+            heading {
+                heading: Transac Pronet
+            }
+            layout {
+                sequence: 343
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Recibos
+        }
+
+        savedReport 249926 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ANULADO (
+                sequence: 11
+            )
+
+            displayColumn ASIENTOS (
+                sequence: 10
+            )
+
+            displayColumn COMENTARIO (
+                sequence: 9
+            )
+
+            displayColumn FEC_RECIBO (
+                sequence: 3
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 4
+            )
+
+            displayColumn ID_COBRADOR (
+                sequence: 5
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 6
+            )
+
+            displayColumn NRO_RECIBO (
+                sequence: 2
+            )
+
+            displayColumn SER_RECIBO (
+                sequence: 1
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 7
+            )
+
+            displayColumn TOT_RECIBO (
+                sequence: 8
+            )
+
+        )
+
+    )
+
+    pageItem P162_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P162_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Fecha desde: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/01/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P162_NRO_RECIBO (
+        type: textField
+        label {
+            label: Nro Recibo
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P162_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @recibos
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 170
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P162_NRO_RECIBO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @recibos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

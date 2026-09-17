@@ -1,0 +1,921 @@
+customAttribute attribute_01 (
+    apexlangName: displayMessage
+    attribute: 1
+    name: Display Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 10
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: Drop files here or click to upload.
+    }
+    help {
+        helpText: Message that is displayed inside of the Dropzone Region
+    }
+)
+
+customAttribute attribute_01 (
+    apexlangName: storageType
+    attribute: 1
+    name: Storage Type
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 10
+    }
+    default {
+        value: COLLECTION
+    }
+    help {
+        helpText:
+            ```
+            Choose where the uploaded files are saved.<br>
+            You can either save your files to a APEX Collection or to a Custom Table.<br><br>
+            <strong>APEX Collection</strong><br>
+            The APEX collection way should be the easiest. You only have to enter a Collection Name. After that you can Select the files from APEX_COLLECTIONS View.<br><br>
+            Default Collection "DROPZONE_UPLOAD".<br>
+            Column c001 => filename<br>
+            Column c002 => mime_type<br>
+            Column d001 => date created<br>
+            Column n001 => random file id<br>
+            Column blob001 => BLOB of file<br><br>
+            <strong>Custom Table</strong><br>
+            A Table must have Columns for Filename, Mime Type and the File Content (BLOB). The Primary Key (PK) must be processed with a Before Insert Trigger. Optionally the table can have a date column to save the upload date.<br>
+            If your table has other required columns you have to insert these values via Database Trigger or something like that.
+            ```
+    }
+    examples {
+        examples:
+            ```
+            <pre>
+            SELECT c001    AS filename,
+                   c002    AS mime_type,
+                   d001    AS date_created,
+                   n001    AS file_id,
+                   blob001 AS file_content
+              FROM apex_collections
+             WHERE collection_name = 'DROPZONE_UPLOAD';
+            </pre>
+            ```
+    }
+
+    entry apexCollection (
+        sequence: 10
+        display: APEX Collection
+        return: COLLECTION
+    )
+
+    entry customTable (
+        sequence: 20
+        display: Custom Table
+        return: TABLE
+    )
+
+)
+
+customAttribute attribute_02 (
+    apexlangName: fallbackMessage
+    attribute: 2
+    name: Fallback Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 20
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: Your browser does not support drag'n'drop file uploads.
+    }
+    help {
+        helpText: Message that is displayed when your Browser doesn´t support HTML5 Drag & Drop File Uploads
+    }
+)
+
+customAttribute attribute_02 (
+    apexlangName: collectionTableName
+    attribute: 2
+    name: Collection / Table Name
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 20
+    }
+    default {
+        value: DROPZONE_UPLOAD
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: inList
+        list: [
+            COLLECTION
+            TABLE
+        ]
+    }
+    help {
+        helpText: Name of the APEX Collection or of your Custom Table
+    }
+)
+
+customAttribute attribute_03 (
+    apexlangName: fileTooBigMessage
+    attribute: 3
+    name: File too Big Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 30
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: File is too big ({{filesize}}MiB). Max filesize: {{maxFilesize}}MiB.
+    }
+    help {
+        helpText:
+            ```
+            Message that is displayed per File, if the File is bigger than you allowed in the settings.<br>
+            You can use Placeholders like:<br>
+            {{filesize}} for the Filesize<br>
+            {{maxFilesize}} for the max. allowed Filesize
+            ```
+    }
+)
+
+customAttribute attribute_03 (
+    apexlangName: filenameColumn
+    attribute: 3
+    name: Filename Column
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 30
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: TABLE
+    }
+    help {
+        helpText: Column of your custom Table which holds the information for the Filename
+    }
+)
+
+customAttribute attribute_04 (
+    apexlangName: maxFilesMessage
+    attribute: 4
+    name: max. Files Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 40
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: You can not upload more than {{maxFiles}} files.
+    }
+    help {
+        helpText:
+            ```
+            Message that is displayed per File, if the uploaded Files exceed the max. Files settings.<br>
+            You can use Placeholders like:<br>
+            {{maxFiles}} for the max. allowed Files
+            ```
+    }
+)
+
+customAttribute attribute_04 (
+    apexlangName: mimeTypeColumn
+    attribute: 4
+    name: Mime Type Column
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 40
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: TABLE
+    }
+    help {
+        helpText: Column of your custom Table which holds the information for the File Mime-Type
+    }
+)
+
+customAttribute attribute_05 (
+    apexlangName: removeFileMessage
+    attribute: 5
+    name: Remove File Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 50
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: Remove file
+    }
+    help {
+        helpText:
+            ```
+            Message that is displayed below a single File to remove the File.<br>
+            Only possible if "Delete Files" is set.
+            ```
+    }
+)
+
+customAttribute attribute_05 (
+    apexlangName: blobColumn
+    attribute: 5
+    name: BLOB Column
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 50
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: TABLE
+    }
+    help {
+        helpText: Column of your custom Table which holds the information for the File Content (BLOB)
+    }
+)
+
+customAttribute attribute_06 (
+    apexlangName: cancelUploadMessage
+    attribute: 6
+    name: Cancel Upload Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 60
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: Cancel upload
+    }
+    help {
+        helpText:
+            ```
+            Message that is displayed below a single File to Cancel Uploading during the actual Upload Process.<br>
+            Only possible if "Delete Files" is set.
+            ```
+    }
+)
+
+customAttribute attribute_06 (
+    apexlangName: dateColumn
+    attribute: 6
+    name: Date Column
+    appearance {
+        sequence: 60
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: TABLE
+    }
+    help {
+        helpText: Column of your custom Table which holds the information for the File Upload Date
+    }
+)
+
+customAttribute attribute_07 (
+    apexlangName: cancelUploadConfirmMessage
+    attribute: 7
+    name: Cancel Upload Confirm Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 70
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: Are you sure you want to cancel this upload?
+    }
+    help {
+        helpText:
+            ```
+            Message that is displayed in the Confirm Dialog if you clicked the Upload Cancel Link.<br>
+            Only possible if "Delete Files" is set.
+            ```
+    }
+)
+
+customAttribute attribute_07 (
+    apexlangName: dropzoneStyle
+    attribute: 7
+    name: Dropzone Style
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 70
+    }
+    default {
+        value: STYLE1
+    }
+    help {
+        helpText:
+            ```
+            UI Style of your Dropzone Region<br>
+            - Grey Border<br>
+            - Blue Dashed Border<br>
+            - Red Dashed Border<br>
+            - Grey Dashed Border/Background
+            ```
+    }
+
+    entry blueDashedBorder (
+        sequence: 20
+        display: Blue Dashed Border
+        return: STYLE2
+    )
+
+    entry greyBorder (
+        sequence: 10
+        display: Grey Border
+        return: STYLE1
+    )
+
+    entry greyDashedBorderBackground (
+        sequence: 40
+        display: Grey Dashed Border/Background
+        return: STYLE4
+    )
+
+    entry redDashedBorder (
+        sequence: 30
+        display: Red Dashed Border
+        return: STYLE3
+    )
+
+)
+
+customAttribute attribute_08 (
+    apexlangName: invalidFileTypeMessage
+    attribute: 8
+    name: Invalid File Type Message
+    scope: app
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 80
+    }
+    builder {
+        translatable: true
+    }
+    default {
+        value: You can not upload files of this type.
+    }
+    help {
+        helpText: Message that is displayed per File, if the File´s Mime-Type is in the Exclude List.
+    }
+)
+
+customAttribute attribute_08 (
+    apexlangName: width
+    attribute: 8
+    name: Width
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 80
+    }
+    default {
+        value: 700px
+    }
+    help {
+        helpText: Enter the default width of your Dropzone Region. Valid values are px and % data.
+    }
+    examples {
+        examples:
+            ```
+            700px<br>
+            100%
+            ```
+    }
+)
+
+customAttribute attribute_09 (
+    apexlangName: chunkSizeInKb
+    attribute: 9
+    name: Chunk Size (in KB)
+    scope: app
+    type: number
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 90
+    }
+    default {
+        value: 1048576
+    }
+    help {
+        helpText:
+            ```
+            This is the default chunk size if you choose the Chunked upload mechanism. The file is split into pieces of that size. Each piece is sent to the server separately.<br>
+            Thus the files are base64 encoded, there is a little overhead in the file size, so please consider a plus of about 10-15% in file size.<br>
+            Default is 1MB = 1048576 KB.
+            ```
+    }
+)
+
+customAttribute attribute_09 (
+    apexlangName: height
+    attribute: 9
+    name: Height
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 90
+    }
+    default {
+        value: 400px
+    }
+    help {
+        helpText: Enter the default height of Dropzone Region. Valid values in px.
+    }
+    examples {
+        examples:
+            ```
+            400px<br>
+            500px
+            ```
+    }
+)
+
+customAttribute attribute_10 (
+    apexlangName: maxFilesizeInMb
+    attribute: 10
+    name: max. Filesize in MB
+    type: number
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 100
+    }
+    default {
+        value: 2
+    }
+    help {
+        helpText: max. File Size (Float Number) that is allowed per file. If a file is larger, it will be removed.
+    }
+    examples {
+        examples:
+            ```
+            1<br>
+            2<br>
+            3.5
+            ```
+    }
+)
+
+customAttribute attribute_11 (
+    apexlangName: maxFiles
+    attribute: 11
+    name: max. Files
+    type: number
+    appearance {
+        sequence: 110
+    }
+    help {
+        helpText: Maximum number of allowed files that can be uploaded at once.
+    }
+)
+
+customAttribute attribute_12 (
+    apexlangName: parallelUploadsNotUsed
+    attribute: 12
+    name: "Parallel Uploads [NOT USED]"
+    type: number
+    validation {
+        required: true
+        maxLength: 1
+    }
+    appearance {
+        sequence: 120
+    }
+    default {
+        value: 1
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: NEVER
+    }
+    help {
+        helpText:
+            ```
+            Number of parallel Upload Streams to the server.<br>
+            Choose a value between 1 and 2. 1 works most reliable!
+            ```
+    }
+)
+
+customAttribute attribute_13 (
+    apexlangName: acceptedFileTypes
+    attribute: 13
+    name: Accepted File Types
+    appearance {
+        sequence: 130
+    }
+    help {
+        helpText:
+            ```
+            If you only want that users can upload Files of declared types.<br>
+            Default: all file types are allowed<br>
+            Valid values: comma separated list of Mime-Types (with Wildcard support) or File endings: image/*,application/pdf,.psd
+            ```
+    }
+    examples {
+        examples: image/*,application/pdf,.psd
+    }
+)
+
+customAttribute attribute_14 (
+    apexlangName: waitTimeMsNotUsed
+    attribute: 14
+    name: "Wait Time (ms) [NOT USED]"
+    type: number
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 140
+    }
+    default {
+        value: 700
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: NEVER
+    }
+    help {
+        helpText:
+            ```
+            Wait time between several uploaded files in milliseconds.<br>
+            In some environments Dropzone is faster than storing files in Database.<br>
+            Default: 700ms
+            ```
+    }
+)
+
+customAttribute attribute_15 (
+    apexlangName: uploadMechanism
+    attribute: 15
+    name: Upload Mechanism
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 65
+    }
+    default {
+        value: NORMAL
+    }
+    help {
+        helpText:
+            ```
+            <p><strong>Normal:</strong> Files are directly uploaded to the DB using a multipart/form-data POST (FormData) request. This method needs no conversion (decode, encode) of strings, thus the final BLOB is already there and can be used.</p>
+            <p><strong>Chunked:</strong> Files are split into chunks (default: 1MB), then each chunk is encoded into base64. This encoded string is then uploaded to the DB, the DB decodes the encoded chunks and builds a final BLOB out of it.</p>
+            <p>Both methods should work with all web server combinations. Thus no conversion is needed for "normal" uploads, this method is 2x as fast as "chunked". If, somehow, your web server configuration allows no large multipart/form-data requests, go with the "chunked" method.<p>
+            ```
+    }
+
+    entry chunked (
+        sequence: 20
+        display: Chunked
+        return: CHUNKED
+    )
+
+    entry normal (
+        sequence: 10
+        display: Normal
+        return: NORMAL
+    )
+
+)
+
+customAttribute attribute_16 (
+    apexlangName: clickable
+    attribute: 16
+    name: Clickable
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 160
+    }
+    default {
+        value: true
+    }
+    help {
+        helpText: If true, the Dropzone Region will be clickable, if false nothing will be clickable and only Drag & Drop is possible.
+    }
+
+    entry false (
+        sequence: 20
+        display: False
+        return: false
+    )
+
+    entry true (
+        sequence: 10
+        display: True
+        return: true
+    )
+
+)
+
+customAttribute attribute_17 (
+    apexlangName: showFilePreviews
+    attribute: 17
+    name: Show File Previews
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 170
+    }
+    default {
+        value: true
+    }
+    help {
+        helpText:
+            ```
+            Show Preview Images for common File types when adding files.<br>
+            Images got displayed with real content.<br>
+            If you want to add more images or others just Copy/Upload the PNG Files to "img" directory. Naming: <file-extension>.png
+            ```
+    }
+
+    entry false (
+        sequence: 20
+        display: False
+        return: false
+    )
+
+    entry true (
+        sequence: 10
+        display: True
+        return: true
+    )
+
+)
+
+customAttribute attribute_18 (
+    apexlangName: copyPasteSupport
+    attribute: 18
+    name: Copy & Paste Support
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 180
+    }
+    default {
+        value: false
+    }
+    help {
+        helpText: Adds support for Copy & Paste of Images in modern Browsers (like Chrome or Firefox > 50).<br>
+    }
+    examples {
+        examples:
+            ```
+            1) Open Image File<br>
+            2) Copy File (Strg+C or Cmd+C)<br>
+            3) Paste it to the page which contains the Dropzone Region in your Browser (Strg+V or Cmd+V)
+            ```
+    }
+
+    entry false (
+        sequence: 20
+        display: False
+        return: false
+    )
+
+    entry true (
+        sequence: 10
+        display: True
+        return: true
+    )
+
+)
+
+customAttribute attribute_19 (
+    apexlangName: removeFilesAfterUpload
+    attribute: 19
+    name: Remove Files after Upload
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 190
+    }
+    default {
+        value: false
+    }
+    help {
+        helpText: If true, clears all Files from Dropzone Region after uploading has finished.
+    }
+
+    entry false (
+        sequence: 20
+        display: False
+        return: false
+    )
+
+    entry true (
+        sequence: 10
+        display: True
+        return: true
+    )
+
+)
+
+customAttribute attribute_20 (
+    apexlangName: deleteFiles
+    attribute: 20
+    name: Delete Files
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 67
+    }
+    default {
+        value: false
+    }
+    help {
+        helpText:
+            ```
+            Possibility for end users to delete each file that was uploaded to the server.<br>
+            Only if no Page Refresh has occurred.
+            ```
+    }
+
+    entry false (
+        sequence: 20
+        display: False
+        return: false
+    )
+
+    entry true (
+        sequence: 10
+        display: True
+        return: true
+    )
+
+)
+
+customAttribute attribute_21 (
+    apexlangName: pkColumn
+    attribute: 21
+    name: PK Column
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 55
+    }
+    dependingOn {
+        attribute: @attribute_01/component
+        conditionType: =
+        value: TABLE
+    }
+    help {
+        helpText: Primary Key (PK) Column of your custom file Table
+    }
+)
+
+customAttribute attribute_22 (
+    apexlangName: imageResizing
+    attribute: 22
+    name: Image Resizing
+    type: selectList
+    validation {
+        required: true
+    }
+    appearance {
+        sequence: 200
+    }
+    default {
+        value: false
+    }
+    help {
+        helpText:
+            ```
+            If true, images are resized to a specified size. This happens on client side before uploading the file to server. Saving upload bandwidth and reducing upload time.<br>
+            Please set at least one resize attribute, e.g. Resize Width or Resize Height.
+            ```
+    }
+
+    entry false (
+        sequence: 20
+        display: False
+        return: false
+    )
+
+    entry true (
+        sequence: 10
+        display: True
+        return: true
+    )
+
+)
+
+customAttribute attribute_23 (
+    apexlangName: resizeWidth
+    attribute: 23
+    name: Resize Width
+    type: number
+    appearance {
+        sequence: 230
+    }
+    dependingOn {
+        attribute: @attribute_22/component
+        conditionType: =
+        value: true
+    }
+    help {
+        helpText:
+            ```
+            If set, images will be resized to these dimensions before being uploaded. If only one, resize Width or resize Height is provided, the original aspect ratio of the file will be preserved.<br>
+            Please provide a width in pixels.
+            ```
+    }
+)
+
+customAttribute attribute_24 (
+    apexlangName: resizeHeight
+    attribute: 24
+    name: Resize Height
+    type: number
+    appearance {
+        sequence: 240
+    }
+    dependingOn {
+        attribute: @attribute_22/component
+        conditionType: =
+        value: true
+    }
+    help {
+        helpText:
+            ```
+            If set, images will be resized to these dimensions before being uploaded. If only one, resize Width or resize Height is provided, the original aspect ratio of the file will be preserved.<br>
+            Please provide a height in pixels.
+            ```
+    }
+)
+

@@ -1,0 +1,570 @@
+page 226 (
+    name: Carga de Motivos de Entrada y Salida
+    alias: CARGA-DE-MOTIVOS-DE-ENTRADA-Y-SALIDA
+    title: Carga de Motivos de Entrada y Salida
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .mostrar{
+                background-color:#eeeeee;
+                width: 171px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-motivos-de-entrada-y-salida (
+        name: Carga de Motivos de Entrada y Salida
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       COD_MOTIVO_ENT_SAL,
+                       IND_ENT_SAL,
+                       DESCRIPCION,
+                       ABREVIATURA,
+                       COD_USUARIO_AUD,
+                       ID_EMPRESA,
+                       ACTIVO,
+                       IND_COSTO,
+                       ID_CUENTA AS COD_CUENTA
+                  from STW_MOTIVO_ENT_SAL
+                  WHERE ID_EMPRESA=:P0_ID_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    pageItem P226_ABREVIATURA (
+        type: textField
+        label {
+            label: <p>Abreviatura:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 180
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 6
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: ABREVIATURA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P226_ACTIVO (
+        type: switch
+        label {
+            label: <p>Activo:</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            onLabel: ACTIVO
+            offValue: N
+            offLabel: INACTIVO
+        }
+        layout {
+            sequence: 170
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: ACTIVO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P226_COD_CUENTA (
+        type: popupLov
+        label {
+            label: <p>Cód. Cuenta:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+            popupWidth: 500
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas-contables-asentable
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: COD_CUENTA
+            dataType: number
+        }
+    )
+
+    pageItem P226_COD_MOTIVO_ENT_SAL (
+        type: displayOnly
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Motivo:</a>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: COD_MOTIVO_ENT_SAL
+            dataType: varchar2
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(A.COD_MOTIVO_ENT_SAL)), 0)+1
+                from STW_MOTIVO_ENT_SAL A
+                WHERE A.ID_EMPRESA = :P0_ID_EMPRESA;
+                ```
+        }
+    )
+
+    pageItem P226_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 230
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P226_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P226_ID (
+        type: hidden
+        layout {
+            sequence: 220
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: STW_MOT_ENT_SAL_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P226_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 240
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P226_IND_COSTO (
+        type: switch
+        label {
+            label: <p>Ind. Costo:</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: S
+            onLabel: SI
+            offValue: N
+            offLabel: NO
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: IND_COSTO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P226_IND_ENT_SAL (
+        type: switch
+        label {
+            label: <p>Indica Entrada o Salida</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            onValue: E
+            onLabel: Entrada
+            offValue: S
+            offLabel: Salida
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-motivos-de-entrada-y-salida
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-motivos-de-entrada-y-salida
+            column: IND_ENT_SAL
+            dataType: varchar2
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P226_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-borrar
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P226_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 33657763297785307
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-motivos-de-entrada-y-salida (
+        name: Initialize form Carga de Motivos de Entrada y Salida
+        type: formInitialization
+        formRegion: @carga-de-motivos-de-entrada-y-salida
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 33656994502785307
+        }
+    )
+
+    process process-form-carga-de-motivos-de-entrada-y-salida (
+        name: Process form Carga de Motivos de Entrada y Salida
+        type: formAutoRowProcessing
+        formRegion: @carga-de-motivos-de-entrada-y-salida
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 33657350985785307
+        }
+    )
+
+)
+

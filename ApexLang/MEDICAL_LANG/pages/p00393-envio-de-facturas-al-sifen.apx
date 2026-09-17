@@ -1,0 +1,1584 @@
+page 393 (
+    name: Envio de Facturas al SIFEN
+    alias: ENVIO-DE-FACTURAS-AL-SIFEN
+    title: Envio de Facturas al SIFEN
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function marcarTodos(){
+                try{
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_seleccionada = model.getFieldKey("IND_SELECCIONADO");
+                var v_total_cantidad     = 0;
+                var bandera ='N'
+                model.forEach(function(r, index, id) {
+                        
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                 
+                    if(r[v_seleccionada]=='N' || r[v_seleccionada]==null || r[v_seleccionada]==''){
+                        bandera='S'
+                       model.setValue(r,'IND_SELECCIONADO','S');
+                       
+                    }
+               if(r[v_seleccionada]=='S' && bandera=='N'){
+                 
+                       model.setValue(r,'IND_SELECCIONADO','N');
+                 
+                    }    
+                       
+                    }
+                    
+                });
+            }catch(e){
+                
+            }
+            
+            }
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region envío-de-facturas-al-sifen (
+        name: Envío de Facturas al SIFEN
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region filtros (
+        name: FILTROS
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region grilla-envío-de-facturas-al-sifen (
+        name: Grilla Envío de Facturas al SIFEN
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.ID,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       C.ID_SUCURSAL,
+                       C.FEC_COMPROBANTE,
+                       C.ID_VENDEDOR,
+                       C.TIP_COMPROBANTE_REF,
+                       C.SER_COMPROBANTE_REF,
+                       C.NRO_COMPROBANTE_REF,
+                       C.DESCUENTO,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.TOT_COMPROBANTE,
+                       C.ID_CLIENTE, 
+                       DECODE(C.ESTADO,'A', 'S', 'N') ANULADO,
+                       NVL(C.IND_ENVIADO_FE,'N') IND_ENVIADO,
+                       'N' IND_SELECCIONADO,
+                       NVL(C.IND_APROBADO_FE,'N') IND_APROBADO,
+                       NVL(C.IND_RECHAZADO_FE,'N') IND_RECHAZADO_FE
+                       FROM VTW_COMPROBANTES_CABECERA C,BSW_SERIES_COMPROB S
+                       WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                       AND C.TIP_COMPROBANTE in ('FVE') 
+                      -- and ( nvl( C.IND_ENVIADO_FE, 'N' ) = 'N' or nvl( C.ind_rechazado_fe, 'N' ) = 'S'  )
+                       and trunc( c.fec_comprobante ) between nvl( :P393_FEC_DESDE, trunc( c.fec_comprobante ) ) and nvl( :P393_FEC_HASTA, trunc( c.fec_comprobante ) ) 
+                       and c.nro_comprobante between nvl( :P393_NRO_DESDE, c.nro_comprobante ) and nvl( :P393_NRO_HASTA, c.nro_comprobante ) 
+                       and (c.id_serie_comp = :P393_SER_COMPROBANTE OR :P393_SER_COMPROBANTE IS NULL)
+                       AND c.id_serie_comp = s.id
+                       and NVL(s.ind_fact_electronica,'N') = 'S'
+                
+                ```
+            pageItemsToSubmit: [
+                P393_AMBIENTE_SIFEN
+                P393_SUCURSAL
+                P393_SER_COMPROBANTE
+                P393_FEC_DESDE
+                P393_FEC_HASTA
+                P393_NRO_DESDE
+                P393_NRO_HASTA
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @envío-de-facturas-al-sifen
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        performance {
+            lazyLoading: true
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 204157443353650164
+        }
+
+        savedReport 295093 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ANULADO
+                layout {
+                    width: 75
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @IND_RECHAZADO_FE
+                layout {
+                    width: 86
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    width: 190
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @IND_APROBADO
+                layout {
+                    width: 89
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 71
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    width: 73
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 97
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    width: 122
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 89
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_VENDEDOR
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE_REF
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE_REF
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE_REF
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 62
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE
+                layout {
+                    width: 128
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @IND_SELECCIONADO
+                layout {
+                    width: 72
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @IND_ENVIADO
+                layout {
+                    width: 72
+                    sequence: 19
+                }
+            )
+
+            sort (
+                column: @NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column ANULADO (
+            type: checkbox
+            heading {
+                heading: <p>Anulado</p>
+                alignment: center
+                alternativeLabel: Anulado
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 1310
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ANULADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <P>Fecha</P>
+                alternativeLabel: Fecha
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: displayOnly
+            heading {
+                heading: <p>Cliente</p>
+                alternativeLabel: Cliente
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 1360
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: displayOnly
+            heading {
+                heading: <P>Moneda</P>
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @siglas-monedas
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 1300
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_VENDEDOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_APROBADO (
+            type: checkbox
+            heading {
+                heading: <p>Aprobado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 1340
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_APROBADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column IND_ENVIADO (
+            type: checkbox
+            heading {
+                heading: <p>Enviado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 1330
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_ENVIADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column IND_RECHAZADO_FE (
+            type: checkbox
+            heading {
+                heading: <p>Rechazado</p>
+                alignment: center
+                alternativeLabel: Rechazado
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 1350
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_RECHAZADO_FE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column IND_SELECCIONADO (
+            type: checkbox
+            heading {
+                heading: <p>Procesar</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 1320
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_SELECCIONADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            advanced {
+                htmlDomId: Procesar
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <P>Número</P>
+                alternativeLabel: Número
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE_REF (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE_REF
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <P>Serie</P>
+                alternativeLabel: Serie
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column SER_COMPROBANTE_REF (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE_REF
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <P>Tipo</P>
+                alternativeLabel: Tipo
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column TIP_COMPROBANTE_REF (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE_REF
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <P>Total Comprobante</P>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Grilla Envío de Facturas al SIFEN
+        }
+    )
+
+    region new (
+        name: New
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P393_AMBIENTE_SIFEN (
+        type: popupLov
+        label {
+            label: <p>Ambiente Sifen: </p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Test;TEST,Producción;PROD
+            nullDisplayValue: ---Sin Seleccionar---
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: PKGFE.PARAMETRO(:P0_ID_EMPRESA,'AMBIENTE_SIFEN')
+        }
+    )
+
+    pageItem P393_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha Desde: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select '01/'||to_char(sysdate, 'MM/YYYY') from DUAL
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P393_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                select last_day(trunc(sysdate)) from dual
+                
+                ```
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P393_NRO_DESDE (
+        type: numberField
+        label {
+            label: <p>Nro Desde: </p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P393_NRO_HASTA (
+        type: numberField
+        label {
+            label: <p>Nro Hasta :</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P393_SER_COMPROBANTE (
+        type: popupLov
+        label {
+            label: <p>Serie Comprobante: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT SER_TIMBRADO,ID FROM BSW_SERIES_COMPROB S
+                WHERE ID_EMPRESA=:P0_ID_EMPRESA
+                  AND ID_SUCURSAL=:P0_ID_SUCURSAL
+                  AND NVL(IND_FACT_ELECTRONICA,'X')='S'
+                  AND ID_TIP_COMP = TRAE_ID_TIPO_COMPROBANTE(:P0_ID_EMPRESA,W_BUSCA_PARAMETRO('VT','TIPO_COMPROBANTE_VENTA'));
+                ```
+            nullDisplayValue: --SIN SELECCIONAR---
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P393_SUCURSAL (
+        type: popupLov
+        label {
+            label: <P>Sucursal</P>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 10
+            region: @new
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            type: databaseColumn
+            databaseColumn: ID_SUCURSAL
+            used: always
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P393_TIP_CAMBIOO (
+        type: textField
+        label {
+            label: <p>Tipo Cambio</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @new
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            type: databaseColumn
+            databaseColumn: TIP_CAMBIO
+            used: always
+        }
+        default {
+            type: expression
+            plsqlExpression: :TIP_CAMBIO
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button buscar-facturas (
+        buttonName: BUSCAR_FACTURAS
+        label: 1. Buscar Facturas
+        layout {
+            sequence: 100
+            region: @filtros
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button enviar-correo (
+        buttonName: ENVIAR_CORREO
+        label: Enviar al Correo
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-envelope-arrow-up
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button enviar-sifen (
+        buttonName: ENVIAR_SIFEN
+        label: Enviar al SIFEN
+        layout {
+            sequence: 120
+            region: @filtros
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button filtro (
+        buttonName: Filtro
+        label: Filtrar
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button marcar-todo (
+        buttonName: MARCAR_TODO
+        label: Marcar Todo
+        layout {
+            sequence: 10
+            region: @grilla-envío-de-facturas-al-sifen
+            slot: sortOrder
+            column: 11
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--success
+                t-Button--simple
+                t-Button--stretch
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P393_FEC_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P393_FEC_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P393_FEC_HASTA,'/','');
+                            conv_fecha := substr(:P393_FEC_HASTA,1,2)||'/'||
+                                                      substr(:P393_FEC_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P393_FEC_HASTA,5,4),4,'0');
+                    
+                        :P393_FEC_HASTA := conv_fecha;
+                            ELSIF (length(:P393_FEC_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P393_FEC_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P393_FEC_HASTA
+                itemsToReturn: P393_FEC_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grilla-envío-de-facturas-al-sifen
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P393_FEC_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P393_FEC_DESDE) = 8) then
+                    
+                            conv_fecha := replace(:P393_FEC_DESDE,'/','');
+                            conv_fecha := substr(:P393_FEC_DESDE,1,2)||'/'||
+                                                      substr(:P393_FEC_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P393_FEC_DESDE,5,4),4,'0');
+                    
+                        :P393_FEC_DESDE := conv_fecha;
+                            ELSIF (length(:P393_FEC_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P393_FEC_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P393_FEC_DESDE
+                itemsToReturn: P393_FEC_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grilla-envío-de-facturas-al-sifen
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todos (
+        name: Marcar Todos
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: marcarTodos();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-grilla (
+        name: Refrescar Grilla
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @filtro
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grilla-envío-de-facturas-al-sifen
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: [
+                P393_NRO_DESDE
+                P393_NRO_HASTA
+                P393_SER_COMPROBANTE
+                P393_AMBIENTE_SIFEN
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grilla-envío-de-facturas-al-sifen
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process enviar-al-sifen (
+        name: ENVIAR AL SIFEN
+        type: executeCode
+        editableRegion: @grilla-envío-de-facturas-al-sifen
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                VMENSAJE VARCHAR2(500);
+                
+                BEGIN
+                IF NVL(:IND_SELECCIONADO,'N')='S' AND NVL(:IND_APROBADO,'X')<>'S' THEN 
+                FEW_PROCESAR_UNICA_FACTURA(:ID_EMPRESA,:ID,:P393_AMBIENTE_SIFEN,VMENSAJE);
+                END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 63349252929089564
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: ENVIAR_SIFEN
+        }
+    )
+
+    process envio-de-correo (
+        name: Envio de Correo
+        type: executeCode
+        editableRegion: @grilla-envío-de-facturas-al-sifen
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VMENSAJE VARCHAR2(500);
+                
+                BEGIN
+                    IF NVL(:IND_SELECCIONADO,'N')='S' AND NVL(:IND_APROBADO,'X')='S' THEN 
+                        few_envia_correo(p_id_empresa => :ID_EMPRESA,
+                                         p_ambiente_sifen => :P393_AMBIENTE_SIFEN,
+                                         p_id_comprobante => :ID,
+                                         p_enviar_correo => 'S',
+                                         p_mensaje => VMENSAJE);
+                    ELSIF NVL(:IND_SELECCIONADO,'N')='S' AND NVL(:IND_APROBADO,'X') = 'N' THEN 
+                        RAISE_APPLICATION_ERROR(-20000,'La factura  '|| :SER_COMPROBANTE || '-' || LPAD(:NRO_COMPROBANTE, 7, 0) || 
+                                                       ' seleccionada no está aprobada, por ende no se podrá enviar el correo.');
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: Se ha enviado el correo.
+        }
+        advanced {
+            executionMappingIdentifier: 63349660334089564
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: ENVIAR_CORREO
+        }
+    )
+
+)
+

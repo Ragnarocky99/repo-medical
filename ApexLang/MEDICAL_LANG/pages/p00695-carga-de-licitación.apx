@@ -1,0 +1,5090 @@
+page 695 (
+    name: Carga de Licitación
+    alias: CARGA-DE-LICITACIÓN
+    title: Carga de Licitación
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Times", monospace;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            #verde{
+                color: green;
+            }
+            #amarillo{
+                color: yellow;
+            }
+            #rojo{
+                color: red;
+            }
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 85px;
+                height: 24px;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: bold;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .solo-mostrar{
+                   background-color:#eeeeee;
+                width: 171px;
+                height: 24.5px;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: center;
+              height: 26px;
+            }
+            
+            .borrar{
+                width: 93px;
+                background-color:#FF0000;
+            }
+            ```
+    }
+    readOnly {
+        type: item=value
+        item: P695_ESTADO_LLAMADO
+        value: NA
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region adjudicacion (
+        name: Adjudicacion
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @detalles-de-convocatoria
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--accent5
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region carga-de-convocatoria (
+        name: Carga de Convocatoria
+        type: form
+        source {
+            location: localDatabase
+            tableName: LCW_LICITACIONES_CAB
+            whereClause: ID_EMPRESA = :P0_ID_EMPRESA
+            pageItemsToSubmit: P695_ID
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    region detalles-de-convocatoria (
+        name: Detalles de Convocatoria
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select LD.ID,
+                       LD.ID_LICITACION_CAB,
+                       LD.NRO_ITEM,
+                       LD.COD_ARTICULO_CATALOGO,
+                       LD.DESC_ARTICULO_CATALOGO,
+                       LD.PRECIO_UNITARIO_ESTIMADO,
+                       LD.CANTIDAD,
+                       LD.MONTO_TOTAL,
+                       LD.ID_EMPRESA,     
+                       LD.ID_UNIDAD_MEDIDA_CATALOGO,
+                       LD.ID_PRESENTACION_CATALOGO,
+                       LD.NRO_LOTE,
+                       LD.CANT_MIN,
+                       LD.CANT_MAX,
+                       LD.ID_MONEDA,
+                       LD.ID_UNIDAD_MEDIDA,
+                       LD.MONTO_MINIMO,
+                       '' COTIZAR_OFERTA,
+                       (SELECT SUM(COTIZA_TOTAL)
+                          FROM LCWV_RESUMEN_OFERTAS
+                         WHERE ID_LICITACION_DET = LD.ID
+                           AND IND_ENVIO = 'S'
+                           AND IND_NO_APLICA_PRECIO = 'N') MONTO_TOTAL_COTIZADO,
+                       LCWF_TRAE_ESTADO_CONVOCATORIA_DET(LD.ID) ESTADO,
+                       (SELECT SUM(COTIZA_UNITARIO)
+                          FROM LCWV_RESUMEN_OFERTAS
+                         WHERE ID_LICITACION_DET = LD.ID
+                           AND IND_ENVIO = 'S'
+                           AND IND_NO_APLICA_PRECIO = 'N')  COTIZA_UNITARIO,
+                       LD.ESPECIFICACION_TECNICA,
+                       LD.IND_NO_PRESENTADO,
+                       LD.FEC_ADJUDICACION,
+                       LD.ID_TIPO_ENTREGA,
+                       'N' SELECCION_ADJUDICACION
+                  from LCW_LICITACIONES_DET LD
+                 where ID_LICITACION_CAB = :P695_ID
+                   and (NVL(LD.IND_NO_PRESENTADO, 'N') = :P695_IND_PRESENTADO OR :P695_IND_PRESENTADO IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P695_ID
+                P695_IND_PRESENTADO
+            ]
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P695_ID
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        performance {
+            lazyLoading: true
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    //calculaTotal();
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    //calculaTotal();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    //calculaTotal();
+                            };
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    //calculaTotal();
+                            };                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 432394210903730553
+        }
+
+        savedReport 385766 (
+            visibility: alternative
+            name: A definir
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+            security {
+                authorizationScheme: @derecho-pagina-3
+            }
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    width: 72
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    show: false
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    width: 85
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 77
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    width: 116
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    width: 121
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 89
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    show: false
+                    width: 191
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    width: 124
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 127
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    show: false
+                    width: 151
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 133
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    width: 125
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 320
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 166
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    show: false
+                    width: 97
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    width: 71
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    show: false
+                    width: 114
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 76
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        savedReport 612054 (
+            visibility: primary
+            name: Principal
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    width: 151
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 143
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    width: 125
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 257
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 177
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 137
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    width: 71
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    width: 114
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    width: 94
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 111
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        savedReport CON_ABIERTO (
+            visibility: alternative
+            name: Abierto
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+            security {
+                authorizationScheme: @derecho-pagina-3
+            }
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    width: 76
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    width: 91
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    show: false
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 86
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    width: 128
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    width: 116
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    width: 121
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 89
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 191
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    width: 124
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 127
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    show: false
+                    width: 151
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 133
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    width: 125
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 320
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 166
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 97
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    width: 86
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    width: 114
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 76
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        savedReport ITEM (
+            visibility: alternative
+            name: Por Item
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+            security {
+                authorizationScheme: @derechos-insertar-2
+            }
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    width: 75
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 124
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    show: false
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    width: 85
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    width: 116
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    width: 121
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 89
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 109
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    width: 124
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 127
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    show: false
+                    width: 151
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 133
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    width: 125
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 184
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 90
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 97
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    width: 71
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    show: false
+                    width: 114
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 76
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        savedReport LOTE (
+            visibility: alternative
+            name: Por Lote
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+            security {
+                authorizationScheme: @derecho-pagina-3
+            }
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    width: 85
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    width: 65
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    show: false
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 75
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    width: 116
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    width: 121
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 89
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 191
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    width: 124
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 127
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    show: false
+                    width: 151
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 133
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    width: 125
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 320
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 166
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 97
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    width: 86
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    show: false
+                    width: 114
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 76
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_LOTE
+                sort {
+                    nulls: last
+                    sequence: 2
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        savedReport MMM (
+            visibility: alternative
+            name: Monto Min Max
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+            security {
+                authorizationScheme: @derecho-pagina-3
+            }
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    width: 85
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    width: 75
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 69
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 143
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    width: 119
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 257
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 142
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 101
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    width: 71
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    width: 102
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 67
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 96
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    width: 93.3125
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    width: 99.3125
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    width: 106
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 68
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        savedReport PROYECTO (
+            visibility: alternative
+            name: Proyecto
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+            security {
+                authorizationScheme: @derecho-pagina-3
+            }
+
+            displayColumn (
+                column: @IND_NO_PRESENTADO
+                layout {
+                    width: 75
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @SELECCION_ADJUDICACION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ESPECIFICACION_TECNICA
+                layout {
+                    show: false
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ADJUDICACION
+                layout {
+                    width: 67
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_TIPO_ENTREGA
+                layout {
+                    width: 70
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_MINIMO
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @COTIZAR_OFERTA
+                layout {
+                    width: 116
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @COTIZA_UNITARIO
+                layout {
+                    width: 121
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 89
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    width: 191
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL_COTIZADO
+                layout {
+                    width: 124
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 127
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA_CATALOGO
+                layout {
+                    show: false
+                    width: 151
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ID_PRESENTACION_CATALOGO
+                layout {
+                    width: 133
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO_CATALOGO
+                layout {
+                    show: false
+                    width: 125
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO_CATALOGO
+                layout {
+                    width: 320
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO_ESTIMADO
+                layout {
+                    width: 166
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 97
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_LICITACION_CAB
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    width: 71
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    show: false
+                    width: 114
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    show: false
+                    width: 94
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    show: false
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 76
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 53
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 700
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_MAX (
+            type: numberField
+            heading {
+                heading: <p>Cant. Maximo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 800
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: CANT_MAX
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_MIN (
+            type: numberField
+            heading {
+                heading: <p>Cant. Minimo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 790
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: CANT_MIN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO_CATALOGO (
+            type: textField
+            heading {
+                heading: <p>Cod. Catalogo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 670
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            validation {
+                maxLength: 15
+            }
+            source {
+                databaseColumn: COD_ARTICULO_CATALOGO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COTIZAR_OFERTA (
+            type: link
+            heading {
+                heading: <p>Cotizar Oferta</p>
+                alignment: center
+            }
+            layout {
+                sequence: 840
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 763
+                    items: {
+                        P763_ID: &ID.
+                    }
+                }
+                linkText: <span aria-hidden="true" class="fa fa-plus-circle-o"></span>
+            }
+            source {
+                databaseColumn: COTIZAR_OFERTA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            serverSideCondition {
+                type: item!=value
+                item: P695_ESTADO_LLAMADO
+                value: NA
+            }
+        )
+
+        column COTIZA_UNITARIO (
+            type: numberField
+            heading {
+                heading: <p>Cotiza Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 880
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: COTIZA_UNITARIO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESC_ARTICULO_CATALOGO (
+            type: textField
+            heading {
+                heading: <p>Nombre Producto Catalogo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 680
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            validation {
+                maxLength: 150
+            }
+            source {
+                databaseColumn: DESC_ARTICULO_CATALOGO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ESPECIFICACION_TECNICA (
+            type: textarea
+            heading {
+                heading: <p>Especificacion Tec.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 900
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: ESPECIFICACION_TECNICA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ESTADO (
+            type: textField
+            heading {
+                heading: <p>Estado</p>
+                alignment: center
+            }
+            layout {
+                sequence: 870
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_ADJUDICACION (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Adjudicacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 920
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_ADJUDICACION
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            accessibility {
+                valueIdentifiesRow: true
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                queryOnly: true
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 470
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LICITACION_CAB (
+            type: hidden
+            layout {
+                sequence: 770
+            }
+            source {
+                databaseColumn: ID_LICITACION_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: selectList
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 820
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_PRESENTACION_CATALOGO (
+            type: selectList
+            heading {
+                heading: <p>Presentacion</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 760
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: ID_PRESENTACION_CATALOGO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_TIPO_ENTREGA (
+            type: selectList
+            heading {
+                heading: <p>Plazo Entrega</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-plazo-entrega
+            }
+            layout {
+                sequence: 930
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_TIPO_ENTREGA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: selectList
+            heading {
+                heading: <p>Unidad Medida</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 830
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA_CATALOGO (
+            type: selectList
+            heading {
+                heading: <p>U.M</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select descripcion, id
+                    from stw_unidades_medida
+                    ```
+            }
+            layout {
+                sequence: 750
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA_CATALOGO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column IND_NO_PRESENTADO (
+            type: checkbox
+            heading {
+                heading: <p>No Presentado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 910
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_NO_PRESENTADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column MONTO_MINIMO (
+            type: numberField
+            heading {
+                heading: <p>Monto Minimo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 890
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MONTO_MINIMO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_TOTAL (
+            type: numberField
+            heading {
+                heading: <p>Monto Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 850
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_TOTAL_COTIZADO (
+            type: numberField
+            heading {
+                heading: <p>Cotiza Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 860
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO_TOTAL_COTIZADO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_ITEM (
+            type: textField
+            heading {
+                heading: <p>Nro. Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+                maxLength: 8
+            }
+            source {
+                databaseColumn: NRO_ITEM
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Nro. Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 780
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+        )
+
+        column PRECIO_UNITARIO_ESTIMADO (
+            type: numberField
+            heading {
+                heading: <p>Precio Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 690
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: [
+                    [object
+                    "Object]"
+                ]
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO_ESTIMADO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SELECCION_ADJUDICACION (
+            type: checkbox
+            heading {
+                heading: <p>Adjudicar</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 940
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: SELECCION_ADJUDICACION
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: cotizacion de compras
+        }
+    )
+
+    region infromación (
+        name: Infromación
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @inline-dialog
+            templateOptions: [
+                #DEFAULT#
+                js-dialog-size600x400
+            ]
+        }
+        advanced {
+            htmlDomId: info
+        }
+    )
+
+    region presentacion-convocatoria (
+        name: Presentacion Convocatoria
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: LCWV_PRESENTACION_CONVOCATORIA
+            whereClause: ID_LICITACION_CAB = :P695_ID
+            orderByClause: NRO_ITEM
+            pageItemsToSubmit: P695_ID
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: item=value
+            item: P695_IND_APROBADO
+            value: S
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 35027521830148739
+        }
+
+        column ATRIBUTOS (
+            type: plainText
+            heading {
+                heading: Atributos
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_ARTICULO_CATALOGO (
+            type: plainText
+            heading {
+                heading: Cód. Catalogo
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column COTIZA_UNITARIO (
+            type: plainText
+            heading {
+                heading: Cotiza Unitario
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column DESC_ARTICULO_CATALOGO (
+            type: plainText
+            heading {
+                heading: Nombre Producto Catalogo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_LICITACION_CAB (
+            type: hidden
+            heading {
+                heading: Id Licitacion Cab
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column MARCA_FABRICANTE_PROCEDENCIA (
+            type: plainText
+            heading {
+                heading: Marca Fabricante Procedencia
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column NRO_ITEM (
+            type: plainText
+            heading {
+                heading: Nro. Item
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column NRO_LOTE (
+            type: plainText
+            heading {
+                heading: Nro. Lote
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column PRESENTACION (
+            type: plainText
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column PRESENTADO (
+            type: plainText
+            heading {
+                heading: Presentado
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column TOTAL_COTIZADO (
+            type: plainText
+            heading {
+                heading: Total Cotizado
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column UNIDAD_MEDIDA (
+            type: plainText
+            heading {
+                heading: Unidad Medida
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Presentacion Convocatoria
+        }
+
+        savedReport 351536 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ATRIBUTOS (
+                sequence: 5
+            )
+
+            displayColumn COD_ARTICULO_CATALOGO (
+                sequence: 3
+            )
+
+            displayColumn COTIZA_UNITARIO (
+                sequence: 6
+            )
+
+            displayColumn DESC_ARTICULO_CATALOGO (
+                sequence: 4
+            )
+
+            displayColumn MARCA_FABRICANTE_PROCEDENCIA (
+                sequence: 8
+            )
+
+            displayColumn NRO_ITEM (
+                sequence: 1
+            )
+
+            displayColumn NRO_LOTE (
+                sequence: 2
+            )
+
+            displayColumn PRESENTACION (
+                sequence: 9
+            )
+
+            displayColumn PRESENTADO (
+                sequence: 11
+            )
+
+            displayColumn TOTAL_COTIZADO (
+                sequence: 7
+            )
+
+            displayColumn UNIDAD_MEDIDA (
+                sequence: 10
+            )
+
+        )
+
+    )
+
+    region selector (
+        name: Selector
+        type: regionDisplaySelector
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        settings {
+            includeShowAll: false
+        }
+    )
+
+    pageItem P695_ANHO_DNCP (
+        type: textField
+        label {
+            label: <p>Año DNCP:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 180
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: 25
+        }
+        validation {
+            valueRequired: true
+            maxLength: 2
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ANHO_DNCP
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_ARCHIVO_EXCEL (
+        type: fileUpload
+        label {
+            label: <p>Elegir archvio DNCP:&ensp;</p>
+            alignment: left
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        serverSideCondition {
+            type: noRowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM LCW_OFERTAS_APROBACIONES
+                 WHERE ID_LICITACION_CAB = :P695_ID
+                ```
+        }
+    )
+
+    pageItem P695_COD_USUARIO_APRUEBA (
+        type: hidden
+        layout {
+            sequence: 330
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COD_USUARIO_APRUEBA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_COD_USUARIO_AUD (
+        type: displayOnly
+        label {
+            label: <p>Creado Por:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 230
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: totalesp
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P695_ID
+        }
+    )
+
+    pageItem P695_COD_USUARIO_AUT_CTACTE (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COD_USUARIO_AUT_CTACTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_COD_USUARIO_AUT_STOCK (
+        type: hidden
+        layout {
+            sequence: 270
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COD_USUARIO_AUT_STOCK
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_COD_USUARIO_DESPACHANDO (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COD_USUARIO_DESPACHANDO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_COD_USUARIO_NO_APRUEBA (
+        type: hidden
+        layout {
+            sequence: 340
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COD_USUARIO_NO_APRUEBA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_COMENTARIO (
+        type: textarea
+        label {
+            label: <p>Comentario:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            charCounter: true
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 1000
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: COMENTARIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_ESTADO_LLAMADO (
+        type: popupLov
+        label {
+            label: <p>Estado Llamado:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC2:Pendiente;PE,Evaluacion;EV,Adjudicado;AD,Cancelado;CA,Prorroga;PR,Perdido;PD,Protesta;PT,No Aprobado;NA
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 2
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ESTADO_LLAMADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: PE
+        }
+        readOnly {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :P695_ESTADO_LLAMADO = 'AD' OR
+                LCWF_TRAE_ESTADO_CONVOCATORIA(:P695_ID) = 'PE'
+                ```
+        }
+    )
+
+    pageItem P695_FEC_ADJUDICACION (
+        type: datePicker
+        label {
+            label: <p>Fecha Adjudicacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @adjudicacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P695_FEC_ALTA (
+        type: displayOnly
+        label {
+            label: <p>Fecha Alta:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 240
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_ALTA
+            dataType: date
+        }
+    )
+
+    pageItem P695_FEC_APROBACION (
+        type: hidden
+        layout {
+            sequence: 350
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_APROBACION
+            dataType: date
+        }
+    )
+
+    pageItem P695_FEC_AUTORIZA_CTACTE (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_AUTORIZA_CTACTE
+            dataType: date
+        }
+    )
+
+    pageItem P695_FEC_AUTORIZA_STOCK (
+        type: hidden
+        layout {
+            sequence: 290
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_AUTORIZA_STOCK
+            dataType: date
+        }
+    )
+
+    pageItem P695_FEC_FIN_CONTRATO (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Fin
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_FIN_CONTRATO
+            dataType: date
+        }
+    )
+
+    pageItem P695_FEC_INICIO_CONTRATO (
+        type: datePicker
+        label {
+            label: <p>Periodo Contrato:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Inicio
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_INICIO_CONTRATO
+            dataType: date
+        }
+    )
+
+    pageItem P695_FEC_LICITACION (
+        type: datePicker
+        label {
+            label: <p>Fecha Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_LICITACION
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P695_FEC_NO_APROBACION (
+        type: hidden
+        layout {
+            sequence: 360
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: FEC_NO_APROBACION
+            dataType: date
+        }
+    )
+
+    pageItem P695_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ID
+            dataType: number
+            queryOnly: true
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P695_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 600
+            popupHeight: 400
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ID_CLIENTE
+            dataType: number
+        }
+    )
+
+    pageItem P695_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P695_ID_FORMATO (
+        type: popupLov
+        label {
+            label: <p>Formato:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-formatos-licitacion
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ID_FORMATO
+            dataType: number
+        }
+    )
+
+    pageItem P695_ID_OFERTA_CAB_GENERADA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+    )
+
+    pageItem P695_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 90
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P695_ID_TIPO_ENTREGA (
+        type: popupLov
+        label {
+            label: <p>Plazo Entrega:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-plazo-entrega
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 20
+            region: @adjudicacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P695_IMAGEN (
+        type: displayImage
+        label {
+            label: Imagen
+            alignment: left
+        }
+        settings {
+            basedOn: url
+        }
+        layout {
+            sequence: 20
+            region: @infromación
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: #APP_FILES#control/EJEMPLO_OFERTA_EXCEL.png
+        }
+    )
+
+    pageItem P695_IND_APROBADO (
+        type: checkbox
+        label {
+            label: <p>Aprobado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: IND_APROBADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        readOnly {
+            type: always
+        }
+    )
+
+    pageItem P695_IND_AUTORIZA_CTACTE (
+        type: hidden
+        layout {
+            sequence: 260
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: IND_AUTORIZA_CTACTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_IND_AUTORIZA_STOCK (
+        type: hidden
+        layout {
+            sequence: 250
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: IND_AUTORIZA_STOCK
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_IND_NO_APROBADO (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @carga-de-convocatoria
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: IND_NO_APROBADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P695_IND_PRESENTADO (
+        type: radioGroup
+        label {
+            label: <p>Presentado:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            noOfCols: 3
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC2:Si;N,No;S
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 30
+            region: @adjudicacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P695_INFORMACION (
+        type: displayOnly
+        label {
+            alignment: left
+        }
+        settings {
+            format: html
+        }
+        layout {
+            sequence: 10
+            region: @infromación
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: <strong>El documento de Excel solo debe contener los datos y no incluya títulos o cabeceras en las columnas. Siguiendo el siguiente el mismo orden que en la pantalla:Nro Item, Cod Articulo,Descripcion articulo, Código de Unidad de Medida, Código Proveedor, Precion Unitario, Cantidad Mínima, Cantidad Máxima y Monto Total.</strong>
+        }
+    )
+
+    pageItem P695_LINK (
+        type: textField
+        label {
+            label: <p>Link Convocatoria:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 300
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: LINK
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_MENSAJE_ADJUDICACION (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            region: @adjudicacion
+            slot: regionBody
+        }
+    )
+
+    pageItem P695_MODALIDAD_DNCP (
+        type: textField
+        label {
+            label: <p>Modalidad DNCP:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: LD
+        }
+        validation {
+            valueRequired: true
+            maxLength: 2
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: MODALIDAD_DNCP
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_NRO_CONTRATO (
+        type: textField
+        label {
+            label: <p>Nro. Contrato:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: NRO_CONTRATO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_NRO_ID_LICITACION (
+        type: textField
+        label {
+            label: <p>Nro. ID:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 15
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: NRO_ID_LICITACION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_NRO_LICITACION (
+        type: numberField
+        label {
+            label: <p>Nro. Licitacion:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+            valuePlaceholder: Autonumerado
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: NRO_LICITACION
+            dataType: number
+        }
+        readOnly {
+            type: itemIsNotNull
+            item: P695_ID
+        }
+    )
+
+    pageItem P695_NRO_POLIZA (
+        type: textField
+        label {
+            label: <p>Nro. Poliza:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        source {
+            formRegion: @carga-de-convocatoria
+            column: NRO_POLIZA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P695_TOTAL_COTIZADO (
+        type: displayOnly
+        label {
+            label: <p>Cotiza Total:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 220
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P695_TOTAL_DNCP (
+        type: displayOnly
+        label {
+            label: <p>Total DNCP:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-convocatoria
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    button adjudicar (
+        buttonName: ADJUDICAR
+        label: Adjudicar
+        layout {
+            sequence: 10
+            region: @adjudicacion
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-check-square-o
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @carga-de-convocatoria
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 694
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button carga-formato (
+        buttonName: CARGA_FORMATO
+        label: Carga Formato
+        layout {
+            sequence: 110
+            region: @carga-de-convocatoria
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--tiny
+                t-Button--simple
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 760
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button cargar (
+        buttonName: CARGAR
+        label: Cargar
+        layout {
+            sequence: 20
+            region: @adjudicacion
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-upload
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 20
+            region: @carga-de-convocatoria
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @carga-de-convocatoria
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash-o
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Está seguro que quiere eliminar la licitación? Se borraran todas las ofertas creadas desde esta licitación.
+            style: danger
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button excel-create (
+        buttonName: EXCEL_CREATE
+        label: Cargar Excel
+        layout {
+            sequence: 30
+            region: @carga-de-convocatoria
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-upload
+        }
+        behavior {
+            action: definedByDynamicAction
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P695_ID
+        }
+    )
+
+    button excel-save (
+        buttonName: EXCEL_SAVE
+        label: Cargar Excel
+        layout {
+            sequence: 20
+            region: @carga-de-convocatoria
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-upload
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P695_ID
+        }
+    )
+
+    button marcar-todo-adjudicacion (
+        buttonName: MARCAR_TODO_ADJUDICACION
+        label: Marcar Todo - Adjudicacion
+        layout {
+            sequence: 10
+            region: @adjudicacion
+            slot: sortOrder
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--success
+                t-Button--simple
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button recalcula-precio (
+        buttonName: RECALCULA_PRECIO
+        label: Recalcular Precio
+        layout {
+            sequence: 10
+            region: @adjudicacion
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--warning
+                t-Button--iconLeft
+            ]
+            icon: fa-dynamic-content
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @carga-de-convocatoria
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P695_ID
+        }
+    )
+
+    dynamicAction cargar-grilla (
+        name: Cargar grilla
+        execution {
+            sequence: 100
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cargar
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                        var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                        var v_seleccionada = model.getFieldKey("SELECCION_ADJUDICACION");
+                        model.forEach(function(r, index, id) {
+                            var meta = model.getRecordMetadata(id);
+                    
+                            console.log(meta.fields); // meta.fields undifined validation   --deprecated By RP
+                            if ((meta != undefined) && (!meta.deleted)) {
+                    
+                                if (r[v_seleccionada] == 'S') {
+                                    model.setValue(r, 'FEC_ADJUDICACION', $v('P695_FEC_ADJUDICACION'));
+                                    model.setValue(r, 'ID_TIPO_ENTREGA', $v('P695_ID_TIPO_ENTREGA'));
+                    
+                                }
+                            }
+                        });
+                        
+                        // Llamar a la función de devolución de llamada cuando se complete la operación
+                        if (typeof callback === "function") {
+                            callback();
+                        }
+                    } catch (e) {
+                        console.error("Se produjo un error:", e);
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction change-filtros-adjudicacion (
+        name: Change Filtros Adjudicacion
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: items
+            items: P695_IND_PRESENTADO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalles-de-convocatoria
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction ocultar-boton-de-excel (
+        name: Ocultar Boton de Excel
+        execution {
+            sequence: 70
+        }
+        when {
+            event: ready
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: button
+                button: @excel-save
+            }
+            execution {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: rowsReturned
+                sqlQuery:
+                    ```sql
+                    SELECT 1
+                      FROM LCW_OFERTAS_APROBACIONES
+                     WHERE ID_LICITACION_CAB = :P695_ID
+                    ```
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 60
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: jsExpression
+            javaScriptExpression: window
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalles-de-convocatoria
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @presentacion-convocatoria
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action p695-id-formato (
+            name: P695_ID_FORMATO
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P695_ID_FORMATO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: itemIsNull
+                item: P695_ID
+            }
+        )
+
+    )
+
+    dynamicAction seleccionar-filtrado (
+        name: Seleccionar Filtrado
+        execution {
+            sequence: 90
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo-adjudicacion
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                        var model = apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                        var v_seleccionada = model.getFieldKey("SELECCION_ADJUDICACION");
+                        ///var v_total_cantidad = 0;
+                        var bandera = 'N';
+                        model.forEach(function(r, index, id) {
+                            var meta = model.getRecordMetadata(id);
+                    
+                            console.log(meta.fields); // meta.fields undifined validation   --deprecated By RP
+                            if ((meta != undefined) && (!meta.deleted)) {
+                    
+                                if (r[v_seleccionada] == 'N' || r[v_seleccionada] == null || r[v_seleccionada] == '') {
+                                    bandera = 'S';
+                                    model.setValue(r, 'SELECCION_ADJUDICACION', 'S');
+                    
+                                }
+                                if (r[v_seleccionada] == 'S' && bandera == 'N') {
+                                    model.setValue(r, 'SELECCION_ADJUDICACION', 'N');
+                                }
+                            }
+                        });
+                        
+                        // Llamar a la función de devolución de llamada cuando se complete la operación
+                        if (typeof callback === "function") {
+                            callback();
+                        }
+                    } catch (e) {
+                        console.error("Se produjo un error:", e);
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction submit (
+        name: Submit
+        execution {
+            sequence: 80
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @excel-create
+        }
+
+        action native-submit-page (
+            action: submitPage
+            settings {
+                requestButtonName: EXCEL_CREATE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation validar-que-no-sea-standar (
+        name: Validar que no sea Standar
+        execution {
+            sequence: 10
+        }
+        validation {
+            editableRegion: @detalles-de-convocatoria
+            type: column!=Value
+            column: ID_ARTICULO
+            value: 813
+            alwaysExecute: true
+        }
+        error {
+            errorMessage: No puede ofertar un artículo estandar.
+            associatedColumn: ID_ARTICULO
+        }
+    )
+
+    computation p695-nro-licitacion (
+        itemName: P695_NRO_LICITACION
+        execution {
+            sequence: 30
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(NRO_LICITACION), 0) + 1
+                  FROM LCW_LICITACIONES_CAB
+                 WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P695_ID
+        }
+    )
+
+    computation p695-total-cotizado (
+        itemName: P695_TOTAL_COTIZADO
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT TO_CHAR(SUM(PRECIO_TOTAL), '999G999G999G999G990D00')
+                  FROM LCW_OFERTAS
+                 WHERE ID_LICITACION_CAB = :P695_ID
+                   AND IND_ENVIO = 'S'
+                   AND IND_NO_APLICA_PRECIO = 'N'
+                ```
+        }
+    )
+
+    computation p695-total-dncp (
+        itemName: P695_TOTAL_DNCP
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT TO_CHAR(SUM(NVL(MONTO_TOTAL, 0)), '999G999G999G999G990D00')
+                  FROM LCW_LICITACIONES_DET
+                 WHERE ID_LICITACION_CAB = :P695_ID
+                ```
+        }
+    )
+
+    process adjudicar (
+        name: Adjudicar
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    CURSOR SELECCION IS
+                          SELECT COL.N001 ID_LICITACION_DET,
+                                 SYSDATE + TE.NRO_DIAS FEC_PLAZO,
+                                 N003 CANTIDAD,
+                                 D001 FEC_ADJUDICACION
+                            FROM APEX_COLLECTIONS COL
+                       LEFT JOIN CMW_TIPO_ENTREGA TE ON TE.ID = COL.N002
+                          WHERE COLLECTION_NAME = 'COL_LICITACIONES_DET';
+                BEGIN
+                    FOR S IN SELECCION
+                    LOOP
+                        IF S.FEC_PLAZO IS NULL THEN
+                            RAISE_APPLICATION_ERROR(-20000, 'El plazo de entrega no puede estar vacio');
+                        END IF;
+                
+                        IF S.FEC_ADJUDICACION IS NULL THEN
+                            RAISE_APPLICATION_ERROR(-20000, 'La fecha de Adjudicacion no puede estar vacio');
+                        END IF;
+                        
+                        INSERT INTO LCW_OFERTAS_APROBACIONES(ID_EMPRESA, TIPO, CANTIDAD, COD_USUARIO_AUD, FEC_ALTA,
+                                                             TIPO_ADJUDICACION, ID_LICITACION_DET, ID_LICITACION_CAB,
+                                                             NRO_OCC, FEC_PLAZO, FEC_OCC)
+                        VALUES(:P0_ID_EMPRESA, 'AP', S.CANTIDAD, :APP_USER, SYSDATE,
+                               'C', S.ID_LICITACION_DET, :P695_ID,
+                               :P695_NRO_ID_LICITACION, S.FEC_PLAZO, S.FEC_ADJUDICACION);
+                    END LOOP;
+                END;
+                ```
+        }
+        execution {
+            sequence: 80
+        }
+        successMessage {
+            successMessage: Adjudicación con Éxito
+        }
+        advanced {
+            executionMappingIdentifier: 56180805585460143
+        }
+        serverSideCondition {
+            whenButtonPressed: @adjudicar
+        }
+    )
+
+    process cargar-excel (
+        name: Cargar Excel
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VID_LICITACIONES_CAB       NUMBER(9) := :P695_ID;
+                    VID_EMPRESA                NUMBER(9) := :P0_ID_EMPRESA;    
+                    VNRO_ITEM                  NUMBER(9); 
+                    VCOD_ARTICULO_CATALOGO     LCW_LICITACIONES_DET.COD_ARTICULO_CATALOGO%TYPE;
+                    VDESC_ARTICULO_CATALOGO    LCW_LICITACIONES_DET.DESC_ARTICULO_CATALOGO%TYPE;
+                    VDESC_ARTICULO_CONVOCANTE  LCW_LICITACIONES_DET.DESC_ARTICULO_CONVOCANTE%TYPE;
+                    VPRECIO_UNITARIO_ESTIMADO  LCW_LICITACIONES_DET.PRECIO_UNITARIO_ESTIMADO%TYPE;
+                    VCANTIDAD                  LCW_LICITACIONES_DET.CANTIDAD%TYPE;
+                    VMONTO_TOTAL               LCW_LICITACIONES_DET.MONTO_TOTAL%TYPE;
+                    VVOLUMEN                   LCW_LICITACIONES_DET.VOLUMEN%TYPE;
+                    VID_EMPRESA                LCW_LICITACIONES_DET.ID_EMPRESA%TYPE;
+                    VNRO_LOTE                  LCW_LICITACIONES_DET.NRO_LOTE%TYPE;
+                    VID_UNIDAD_MEDIDA_CATALOGO LCW_LICITACIONES_DET.ID_UNIDAD_MEDIDA_CATALOGO%TYPE;
+                    VID_PRESENTACION_CATALOGO  LCW_LICITACIONES_DET.ID_PRESENTACION_CATALOGO%TYPE;
+                    VCANT_MIN                  LCW_LICITACIONES_DET.CANT_MIN%TYPE;
+                    VCANT_MAX                  LCW_LICITACIONES_DET.CANT_MAX%TYPE;
+                    VMONTO_MINIMO              LCW_LICITACIONES_DET.MONTO_MINIMO%TYPE;
+                    VID_MONEDA                 LCW_LICITACIONES_DET.ID_MONEDA%TYPE;
+                    VID_UNIDAD_MEDIDA          LCW_LICITACIONES_DET.ID_UNIDAD_MEDIDA%TYPE;
+                    VNOMBRE_ARCHIVO            VARCHAR(100);
+                    VBANDERA                   NUMBER(1);
+                    VDATOS                     VARCHAR(100);
+                    VCANT_APROBADA             LCW_OFERTAS_APROBACIONES.CANTIDAD%TYPE;
+                BEGIN  
+                    
+                    -- Eliminamos Ofertas y Detalles
+                    IF :P695_ARCHIVO_EXCEL IS NOT NULL THEN
+                        DELETE LCW_OFERTAS
+                         WHERE ID_LICITACION_CAB = :P695_ID;
+                        DELETE LCW_LICITACIONES_DET
+                         WHERE ID_LICITACION_CAB = :P695_ID;
+                    END IF;
+                     
+                    VNOMBRE_ARCHIVO := :P695_ARCHIVO_EXCEL;
+                
+                    FOR R1 IN (SELECT *  
+                                 FROM APEX_APPLICATION_TEMP_FILES F, 
+                                      TABLE( APEX_DATA_PARSER.PARSE(
+                                                P_CONTENT                     => F.BLOB_CONTENT,
+                                                P_ADD_HEADERS_ROW             => 'N',
+                                                P_FILE_NAME                   => F.FILENAME) 
+                                            ) P
+                                 WHERE F.NAME LIKE VNOMBRE_ARCHIVO AND P.LINE_NUMBER>1
+                              )
+                    LOOP 
+                       
+                
+                        --IF NVL(R1.COL002,'NO_DATA') <> 'NO_DATA' THEN
+                            BEGIN
+                                VNRO_ITEM             := NVL(TO_NUMBER(REPLACE(R1.COL002, '.', ',')), 0);
+                            EXCEPTION
+                                WHEN VALUE_ERROR THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Se esperaba un valor numerico para la columna de nro de item (Columna B). Linea '||R1.LINE_NUMBER);
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error inesperado al obtener el nro de item (Columna B). Linea '||R1.LINE_NUMBER|| ' Error '||sqlerrm);
+                            END;
+                            
+                            VCOD_ARTICULO_CATALOGO    := R1.COL003;
+                            VDESC_ARTICULO_CATALOGO   := R1.COL004;
+                            VDESC_ARTICULO_CONVOCANTE := R1.COL005;
+                            
+                            BEGIN
+                                VPRECIO_UNITARIO_ESTIMADO := NVL(TO_NUMBER(REPLACE(R1.COL006, '.', ',')), 0);
+                            EXCEPTION
+                                WHEN VALUE_ERROR THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Se esperaba un valor numerico para la columna de precio unitario (Columna F). Linea '||R1.LINE_NUMBER);
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error inesperado al obtener el precio unitario (Columna F). Linea '||R1.LINE_NUMBER|| ' Error '||sqlerrm);
+                            END;
+                            
+                            BEGIN
+                                VCANT_MIN             := NVL(TO_NUMBER(REPLACE(R1.COL007, '.', ',')), 0);
+                            EXCEPTION
+                                WHEN VALUE_ERROR THEN
+                                    VCANT_MIN := NULL;
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error leyendo la cantidad minima del archivo. Linea '||R1.LINE_NUMBER||' Err '||SQLERRM);
+                            END;
+                            BEGIN
+                                VCANTIDAD                 := ROUND(NVL(TO_NUMBER(REPLACE(R1.COL008, '.', ',')), 0));
+                            EXCEPTION
+                                WHEN VALUE_ERROR THEN
+                                    VCANTIDAD  := 0;
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error leyendo la columna cantidad del archivo. Linea '||R1.LINE_NUMBER||' Err '||SQLERRM);
+                            END;
+                            
+                            BEGIN
+                                VMONTO_MINIMO         := NVL(TO_NUMBER(REPLACE(R1.COL009, '.', ',')), 0);
+                            EXCEPTION
+                                WHEN VALUE_ERROR THEN
+                                    VMONTO_MINIMO := NULL;
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error leyendo el monto minimo del archivo. Linea '||R1.LINE_NUMBER);
+                            END;
+                            
+                            BEGIN
+                                VMONTO_TOTAL := NVL(TO_NUMBER(REPLACE(R1.COL010, '.', ',')), 0);
+                            EXCEPTION
+                                WHEN VALUE_ERROR THEN
+                                    VMONTO_TOTAL := 0;
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error leyendo el monto minimo del archivo. Linea '||R1.LINE_NUMBER);
+                            END;
+                            BEGIN
+                                SELECT ID
+                                  INTO VID_MONEDA
+                                  FROM BSW_MONEDAS
+                                 WHERE SIGLAS_DNCP = REPLACE(REPLACE(R1.COL011, ' ', ''), CHR(13), '');
+                            EXCEPTION
+                                WHEN NO_DATA_FOUND THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'No se encuentra la moneda en el sistema con sigla '||R1.COL011);
+                                WHEN TOO_MANY_ROWS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Se encontro monedas con la misma sigla '||R1.COL011);
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000, 'Error inesperado leyendo la moneda en la linea '||R1.LINE_NUMBER);
+                            END;
+                            --raise_application_error(-20000, 'hola');
+                            VID_UNIDAD_MEDIDA_CATALOGO := BUSCA_UNI_MED(R1.COL013);
+                            VID_UNIDAD_MEDIDA          := BUSCA_UNI_MED(R1.COL014);
+                            VID_PRESENTACION_CATALOGO  := BUSCA_PRESENTACION(R1.COL015);
+                            
+                            --raise_application_error(-20000, 'lote '||r1.col025);
+                            BEGIN
+                               INSERT INTO LCW_LICITACIONES_DET(                              
+                                  ID_LICITACION_CAB,
+                                  NRO_ITEM,
+                                  COD_ARTICULO_CATALOGO,
+                                  DESC_ARTICULO_CATALOGO,
+                                  DESC_ARTICULO_CONVOCANTE,
+                                  PRECIO_UNITARIO_ESTIMADO,
+                                  CANTIDAD,
+                                  MONTO_TOTAL,
+                                  ID_EMPRESA,
+                                  ID_UNIDAD_MEDIDA_CATALOGO,
+                                  ID_PRESENTACION_CATALOGO,
+                                  CANT_MIN,
+                                  ID_MONEDA,
+                                  ID_UNIDAD_MEDIDA,
+                                  ESPECIFICACION_TECNICA,
+                                  NRO_LOTE,
+                                  MONTO_MINIMO
+                               ) VALUES (                              
+                                  VID_LICITACIONES_CAB,
+                                  VNRO_ITEM,
+                                  VCOD_ARTICULO_CATALOGO,
+                                  VDESC_ARTICULO_CATALOGO,
+                                  VDESC_ARTICULO_CONVOCANTE,
+                                  VPRECIO_UNITARIO_ESTIMADO,
+                                  VCANTIDAD,
+                                  VMONTO_TOTAL,
+                                  :P0_ID_EMPRESA,
+                                  VID_UNIDAD_MEDIDA_CATALOGO,
+                                  VID_PRESENTACION_CATALOGO,
+                                  VCANT_MIN,
+                                  VID_MONEDA,
+                                  VID_UNIDAD_MEDIDA,
+                                  R1.COL024,
+                                  R1.COL025,
+                                  VMONTO_MINIMO
+                               );
+                            EXCEPTION
+                                WHEN NO_DATA_FOUND THEN
+                                    RAISE_APPLICATION_ERROR(-20999, 'ERROR: AL INSERTAR ' || SQLERRM);
+                                WHEN OTHERS THEN 
+                                    RAISE_APPLICATION_ERROR(-20994, 'Error al cargar el articulo: ' || R1.COL001 || 'Linea '||R1.LINE_NUMBER||' -.ERR: ' || SQLERRM);
+                            END;
+                
+                        --END IF; 
+                    END LOOP; 
+                    APEX_APPLICATION.G_PRINT_SUCCESS_MESSAGE := 'LICITACIÓN CARGADA CON ÉXITO';
+                END;
+                ```
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 12777933567711024
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: EXCEL_CREATE,EXCEL_SAVE
+        }
+    )
+
+    process crear-coleccion (
+        name: Crear Coleccion
+        type: executeCode
+        source {
+            plsqlCode: APEX_COLLECTION.create_or_truncate_collection('COL_LICITACIONES_DET');
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 56811399472543784
+        }
+        serverSideCondition {
+            whenButtonPressed: @adjudicar
+        }
+    )
+
+    process guardar-montos-adjudicados (
+        name: Guardar Montos Adjudicados
+        type: invokeApi
+        invoke {
+            package: PKGW_LICITACIONES
+            procedureOrFunction: LCW_RECALCULA_PRECIO_OFERTAS
+        }
+        execution {
+            sequence: 90
+        }
+        advanced {
+            executionMappingIdentifier: 56838963342858717
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :P695_ESTADO_LLAMADO = 'AD' OR
+                :REQUEST = 'RECALCULA_PRECIO'
+                ```
+        }
+
+        parameter p_id_empresa (
+            parameter {
+                dataType: number
+            }
+            value {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            advanced {
+                displaySequence: 10
+            }
+        )
+
+        parameter p_id_licitacion_cab (
+            parameter {
+                dataType: number
+            }
+            value {
+                type: item
+                item: P695_ID
+            }
+            advanced {
+                displaySequence: 20
+            }
+        )
+
+    )
+
+    process guardar-seleccion (
+        name: Guardar seleccion
+        type: executeCode
+        editableRegion: @detalles-de-convocatoria
+        source {
+            plsqlCode:
+                ```plsql
+                IF :SELECCION_ADJUDICACION = 'S' THEN
+                    APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'COL_LICITACIONES_DET',
+                                               P_N001            => :ID,
+                                               P_N002            => :ID_TIPO_ENTREGA,
+                                               P_N003            => :CANTIDAD,
+                                               P_D001            => :FEC_ADJUDICACION);
+                END IF;
+                ```
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 56811663049545612
+        }
+        serverSideCondition {
+            whenButtonPressed: @adjudicar
+        }
+    )
+
+    process initialize-form-carga-de-licitación (
+        name: Initialize form Carga de Licitación
+        type: formInitialization
+        formRegion: @carga-de-convocatoria
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 12693634779501160
+        }
+    )
+
+    process limpiar-todoo (
+        name: Limpiar todoo
+        type: clearSessionState
+        execution {
+            sequence: 110
+        }
+        advanced {
+            executionMappingIdentifier: 17338924009812631
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process process-form-carga-de-licitación (
+        name: Process form Carga de Licitación
+        type: formAutoRowProcessing
+        formRegion: @carga-de-convocatoria
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 12694064127501160
+        }
+    )
+
+    process process-form-detalles-oferta (
+        name: Process form Detalles Oferta
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles-de-convocatoria
+        target {
+            targetType: tableView
+            tableName: LCW_LICITACIONES_DET
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 12777472053711019
+        }
+    )
+
+    process quitar-montos-adjudicados (
+        name: Quitar Montos Adjudicados
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                UPDATE LCW_LICITACIONES_DET LD
+                   SET LD.COTIZA_UNITARIO = NULL,
+                       LD.MONTO_TOTAL_COTIZADO = NULL
+                 WHERE LD.ID_LICITACION_CAB = :P695_ID
+                   AND LD.IND_NO_PRESENTADO = 'N';
+                ```
+        }
+        execution {
+            sequence: 100
+        }
+        advanced {
+            executionMappingIdentifier: 56839049587858718
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    branch (
+        name: Go To Page 694
+        execution {
+            sequence: 1
+        }
+        behavior {
+            target: {
+                page: 694
+            }
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: EXCEL_CREATE,DELETE
+        }
+    )
+
+)
+

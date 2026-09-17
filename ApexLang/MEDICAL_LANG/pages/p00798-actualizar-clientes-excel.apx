@@ -1,0 +1,487 @@
+page 798 (
+    name: Actualizar Clientes - Excel
+    alias: ACTUALIZAR-CLIENTES-EXCEL
+    title: Actualizar Clientes - Excel
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region datos (
+        name: Datos
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region no-procesados (
+        name: No procesados
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C002 COD_ARTICULO,
+                       C003 DESC_ARTICULO,
+                       C001 MENSAJE,
+                       N001 FILA
+                  FROM APEX_COLLECTIONS
+                 WHERE COLLECTION_NAME = 'CLIENTES_ERR'
+                ```
+        }
+        layout {
+            sequence: 20
+            parentRegion: @datos
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM APEX_COLLECTIONS
+                 WHERE COLLECTION_NAME = 'CLIENTES_ERR'
+                ```
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 102041748796409160
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column FILA (
+            type: plainText
+            heading {
+                heading: Fila
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column MENSAJE (
+            type: plainText
+            heading {
+                heading: Mensaje
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: No procesados
+        }
+
+        savedReport 512998 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 1
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn FILA (
+                sequence: 4
+            )
+
+            displayColumn MENSAJE (
+                sequence: 3
+            )
+
+        )
+
+    )
+
+    pageItem P798_EXCEL (
+        type: fileUpload
+        label {
+            alignment: left
+        }
+        display {
+            displayAs: blockDropzone
+        }
+        storage {
+            type: appTempFiles
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        serverSideCondition {
+            type: noRowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM APEX_COLLECTIONS
+                 WHERE COLLECTION_NAME = 'CLIENTES_ERR'
+                ```
+        }
+        help {
+            inlineHelpText:
+                ```html
+                <strong>A continuación se presentará el formato aceptado para subir el Excel. No se validará otra plantilla. <br>
+                Presione <a href="#APP_FILES#Formato_Cliente.xlsx" title="Descargar" download> Aquí </a> para descargar</strong>
+                ```
+        }
+    )
+
+    pageItem P798_MENSAJE (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @datos
+            slot: regionBody
+        }
+    )
+
+    button clear (
+        buttonName: CLEAR
+        label: Limpiar
+        layout {
+            sequence: 10
+            region: @datos
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM APEX_COLLECTIONS
+                 WHERE COLLECTION_NAME = 'CLIENTES_ERR'
+                ```
+        }
+    )
+
+    button excel (
+        buttonName: EXCEL
+        label: Subir Excel
+        layout {
+            sequence: 10
+            region: @datos
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-upload-alt
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: noRowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM APEX_COLLECTIONS
+                 WHERE COLLECTION_NAME = 'CLIENTES_ERR'
+                ```
+        }
+    )
+
+    process actualizar-clientes (
+        name: Actualizar Clientes
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    CLIENTE   CCW_CLIENTES%ROWTYPE;
+                    VCANTIDAD   NUMBER := 0;
+                BEGIN
+                    APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION('CLIENTES_ERR');
+                    FOR R1 IN (SELECT *  
+                                 FROM APEX_APPLICATION_TEMP_FILES F, 
+                                      TABLE( APEX_DATA_PARSER.PARSE(
+                                                P_CONTENT                     => F.BLOB_CONTENT,
+                                                P_ADD_HEADERS_ROW             => 'N',
+                                                P_FILE_NAME                   => F.FILENAME) 
+                                            ) P
+                                 WHERE F.NAME = :P798_EXCEL AND
+                                       P.LINE_NUMBER > 1
+                              )
+                    LOOP
+                        -- Obtemos el ID del cliente
+                        BEGIN
+                            SELECT ID, ID_PERSONA
+                              INTO CLIENTE.ID, CLIENTE.ID_PERSONA
+                              FROM CCW_CLIENTES
+                             WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                               AND COD_CLIENTE = REPLACE(REPLACE(R1.COL001, ' ', ''), CHR(13), '');
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'CLIENTES_ERR',
+                                                           P_C001            => 'Cliente no encontrado',
+                                                           P_C002            => R1.COL001,
+                                                           P_C003            => R1.COL002,
+                                                           P_N001            => R1.LINE_NUMBER);
+                            WHEN OTHERS THEN
+                                APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'CLIENTES_ERR',
+                                                           P_C001            => 'Error inesperado. Error '||SQLERRM,
+                                                           P_C002            => R1.COL001,
+                                                           P_C003            => R1.COL002,
+                                                           P_N001            => R1.LINE_NUMBER);
+                        END;
+                
+                        -- Obtemos el ID del Soporte
+                        BEGIN
+                            SELECT ID
+                              INTO CLIENTE.ID_SOPORTE
+                              FROM BSW_PERSONAS
+                             WHERE COD_PERSONA = REPLACE(REPLACE(R1.COL005, ' ', ''), CHR(13), '');
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                IF R1.COL005 IS NOT NULL THEN
+                                    APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'CLIENTES_ERR',
+                                                               P_C001            => 'Soporte no encontrado',
+                                                               P_C002            => R1.COL001,
+                                                               P_C003            => R1.COL002,
+                                                               P_N001            => R1.LINE_NUMBER);
+                                END IF;
+                            WHEN OTHERS THEN
+                                IF R1.COL005 IS NOT NULL THEN
+                                    APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'CLIENTES_ERR',
+                                                               P_C001            => 'Error inesperado. Error '||SQLERRM,
+                                                               P_C002            => R1.COL001,
+                                                               P_C003            => R1.COL002,
+                                                               P_N001            => R1.LINE_NUMBER);
+                                END IF;
+                        END;
+                
+                        -- Obtemos el ID de la condicion de venta
+                        BEGIN
+                            SELECT ID
+                              INTO CLIENTE.ID_CONDICION_VENTA
+                              FROM CCW_CONDICIONES_VENTAS
+                             WHERE COD_CONDICION_VENTA = REPLACE(REPLACE(R1.COL009, ' ', ''), CHR(13), '')
+                               AND ID_EMPRESA = :P0_ID_EMPRESA;
+                        EXCEPTION
+                            WHEN NO_DATA_FOUND THEN
+                                IF R1.COL009 IS NOT NULL THEN
+                                    APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'CLIENTES_ERR',
+                                                               P_C001            => 'Condicion no encontrada',
+                                                               P_C002            => R1.COL001,
+                                                               P_C003            => R1.COL002,
+                                                               P_N001            => R1.LINE_NUMBER);
+                                END IF;
+                            WHEN OTHERS THEN
+                                IF R1.COL009 IS NOT NULL THEN
+                                    APEX_COLLECTION.ADD_MEMBER(P_COLLECTION_NAME => 'CLIENTES_ERR',
+                                                               P_C001            => 'Error inesperado. Error '||SQLERRM,
+                                                               P_C002            => R1.COL001,
+                                                               P_C003            => R1.COL002,
+                                                               P_N001            => R1.LINE_NUMBER);
+                                END IF;
+                        END;
+                
+                        IF CLIENTE.ID IS NOT NULL THEN
+                            UPDATE CCW_CLIENTES
+                               SET NIVEL              = NVL(R1.COL003, NIVEL),
+                                   POTENCIAL          = NVL(REPLACE(R1.COL004, '.', ','), POTENCIAL),
+                                   ID_SOPORTE         = NVL(CLIENTE.ID_SOPORTE, ID_SOPORTE),
+                                   ID_CONDICION_VENTA = NVL(CLIENTE.ID_CONDICION_VENTA, ID_CONDICION_VENTA)
+                                   
+                             WHERE ID = CLIENTE.ID;
+                            
+                            UPDATE BSW_PERSONAS
+                               SET DIRECCION = NVL(R1.COL006, DIRECCION),
+                                   TELEFONO  = NVL(R1.COL007, TELEFONO),
+                                   DIREC_ELECTRONICA = NVL(R1.COL008, DIREC_ELECTRONICA)
+                             WHERE ID = CLIENTE.ID_PERSONA;
+                            VCANTIDAD := VCANTIDAD + 1;
+                        END IF;
+                
+                        
+                    END LOOP;
+                
+                    IF VCANTIDAD > 0 THEN
+                        :P798_MENSAJE := 'Proceso concluido con Exito. Se procesaron '||VCANTIDAD||' registros';
+                    ELSE
+                        :P798_MENSAJE := 'No se realizó ninguna accion';
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: &P798_MENSAJE.
+        }
+        advanced {
+            executionMappingIdentifier: 51418013283189540
+        }
+        serverSideCondition {
+            whenButtonPressed: @excel
+            type: itemIsNotNull
+            item: P798_EXCEL
+        }
+    )
+
+    process eliminar-coleccion (
+        name: Eliminar Coleccion
+        type: executeCode
+        source {
+            plsqlCode: APEX_COLLECTION.DELETE_COLLECTION(P_COLLECTION_NAME => 'CLIENTES_ERR');
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 51418430654189540
+        }
+        serverSideCondition {
+            whenButtonPressed: @clear
+        }
+    )
+
+)
+

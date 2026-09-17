@@ -1,0 +1,167 @@
+page 670 (
+    name: Conciliacion Bancaria
+    alias: CONCILIACION-BANCARIA
+    title: Conciliacion Bancaria
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .img-clase {
+                width: 17%; /* Establece el ancho al 50% del contenedor padre */
+                height: auto; /* Mantén la proporción original */
+            }
+            
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .titulo-cards {
+              text-align: center;
+              font-size: 12px;
+              font-weight: bold;
+              color: black;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region conciliacion-bancaria (
+        name: Conciliacion Bancaria
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT upper(p.nombre) nombre_banco,
+                       p.imagen_cedula,
+                       p.id,
+                       CASE WHEN p.id = 2405 then 'u-color-8'  ---ITAU
+                            WHEN p.id = 2407 then 'u-color-29' ---  
+                            WHEN P.ID = 3204 THEN 'u-color-43' ---CONTINENTAL
+                            WHEN P.ID = 3529 THEN 'u-color-39' ---ATLAS   
+                            WHEN P.ID = 3825 THEN 'u-color-29' ---BASA
+                            WHEN P.ID = 4226 THEN 'u-color-43' ---PETROPAR
+                       end color_card
+                FROM bsw_personas p
+                JOIN (
+                    SELECT DISTINCT c.id_per_juridica
+                    FROM    ccw_cuentas_bancarias c
+                ) c_unique ON c_unique.id_per_juridica = p.id;
+                
+                
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: #DEFAULT#
+        }
+        card {
+            cssClasses: &COLOR_CARD!ATTR.
+            primaryKeyColumn1: ID
+        }
+        title {
+            column: NOMBRE_BANCO
+            cssClasses: titulo-cards
+        }
+        media {
+            source: blobColumn
+            blobColumn: IMAGEN_CEDULA
+        }
+
+        action action (
+            type: fullCard
+            layout {
+                sequence: 10
+            }
+            behavior {
+                target: {
+                    page: 673
+                    items: {
+                        P673_BANCO: &NOMBRE_BANCO.
+                        P673_BANCO_ID: &ID.
+                    }
+                }
+                linkAttributes: &ID.
+            }
+        )
+
+    )
+
+    pageItem P670_CARD_SIZE (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @conciliacion-bancaria
+            slot: regionBody
+        }
+    )
+
+    dynamicAction asignar-valor (
+        name: Asignar valor
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody: return '11rem';
+                itemsToSubmit: P670_CARD_SIZE
+            }
+            affectedElements {
+                selectionType: items
+                items: P670_CARD_SIZE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cambiar-tamanho (
+        name: Cambiar tamanho
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P670_CARD_SIZE
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $(':root').css('--a-cv-item-width',$v('P670_CARD_SIZE'));
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

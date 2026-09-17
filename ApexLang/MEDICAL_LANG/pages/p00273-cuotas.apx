@@ -1,0 +1,1464 @@
+page 273 (
+    name: Cuotas
+    alias: CUOTAS
+    title: Cuotas
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        width: 1000
+        height: 600
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var id_cuotas='';
+            function updateColorCheckbox(e) {
+            
+                e.stopPropagation();
+            
+                var region = apex.region('Detalles');      // Static ID of the Interactive Grid
+                var grid = region.call("getViews").grid;
+                var model = grid.model;
+                var totalRec = model.getTotalRecords();
+                var  selectedRec = 0;
+                var col_selected = model.getFieldKey("AUTORIZAR");      // Column Name
+                
+                model.forEach(function (record, index, id) {
+                   var n_sal = (record[col_selected]);
+                     if (!isNaN(n_sal) && n_sal == 1) {
+                        selectedRec += 1;
+                    }
+                    
+                });
+            
+            if (selectedRec == totalRec ){
+             model.forEach(function (record, index, id) {
+                        model.setValue(record, "AUTORIZAR", "S" + 1,true);
+                       id_cuotas=id_cuotas+model.getValue(record,'ID')+',';
+                    });
+                
+            }else{
+                 model.forEach(function (record, index, id) {
+                        model.setValue(record, "AUTORIZAR", "S",true);
+                                   console.log(model.getValue(record,'ID'));
+                                   id_cuotas=id_cuotas+model.getValue(record,'ID')+',';
+            
+                    });
+                
+            }
+               
+            }
+            
+            function marcarTodos(){
+                try{
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_seleccionada = model.getFieldKey("AUTORIZAR");
+                var v_total_cantidad     = 0;
+                var bandera ='N'
+                model.forEach(function(r, index, id) {
+                        
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                 
+                    if(r[v_seleccionada]=='N' || r[v_seleccionada]==null || r[v_seleccionada]==''){
+                        bandera='S'
+                       model.setValue(r,'AUTORIZAR','S');
+                       
+                    }
+               if(r[v_seleccionada]=='S' && bandera=='N'){
+                 
+                       model.setValue(r,'AUTORIZAR','N');
+                 
+                    }    
+                       
+                    }
+                    
+                });
+            }catch(e){
+                
+            }
+            
+            }
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region cuotas (
+        name: Cuotas
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.ID_COMPROBANTE,
+                       C.ID_PROVEEDOR,
+                       C.NUM_CUOTA,
+                       C.FEC_VENCIMIENTO,
+                       ---C.TOT_CUOTA,
+                       case c.tip_comprobante
+                        when 'NCP' then 0-NVL(C.TOT_CUOTA,0) + NVL( C.MONTO_EN_OP,0)
+                        else NVL(C.TOT_CUOTA,0) - NVL( C.MONTO_EN_OP,0)
+                       end as tot_cuota,
+                       --NVL(C.TOT_CUOTA,0) -NVL( C.MONTO_EN_OP,0) TOT_CUOTA,
+                       CASE C.TIP_cOMPROBANTE
+                        WHEN 'NCP' THEN (-1)*C.TOT_SALDO
+                        ELSE C.TOT_SALDO
+                       END AS TOT_SALDO,
+                       --C.TOT_SALDO,
+                       C.IMPRIMIR,
+                       C.ID_MONEDA,
+                       C.NUM_COMPROBANTE_REF,
+                       C.IMPRIME_REPORTE,
+                       C.COD_USUARIO_AUD,
+                       C.MONTO_EN_OP,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       C.ID_COMPROBANTE_CM,
+                       C.ID_EXTRACTO_INICIAL,
+                       C.TIP_CAMBIO,
+                       C.COD_USUARIO,
+                       C.FEC_ORIGEN,
+                       C.FEC_CARGA,
+                       C.ID_SUCURSAL,
+                       nvl(cp.referencia, cm.referencia) AS NRO_REFERENCIA,
+                       nvl(cp.nro_despacho, dc.nro_despacho) as NRO_DESPACHO
+                  from CPW_CUOTAS C
+                  join CMW_PROVEEDORES P on P.ID = C.ID_PROVEEDOR
+                  left join cpw_comprobantes_cabecera cp on cp.id = c.id_comprobante
+                  left join cmw_compras_cabecera      cm on cm.id = c.id_comprobante_cm
+                  left join cmw_despachos_detalle     dd on dd.id = cm.id_embarque
+                  left join cmw_despachos_cabecera    dc on dc.id = dd.id_despacho_cab
+                  WHERE C.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND C.TOT_SALDO <> 0
+                  AND C.ID_PROVEEDOR = NVL(:P273_PROV_PARAM,0)
+                  
+                  AND NVL(C.MONTO_EN_OP,0) <> NVL(C.TOT_CUOTA,0) 
+                  AND (C.TIP_COMPROBANTE IN ('SAP', 'DIV') AND :P273_PERMISO_CARGA_SALARIOS = 'S' OR C.TIP_COMPROBANTE  NOT IN ('SAP', 'DIV'))
+                  AND (P.IND_PERMITIR_VISUALIZAR = 'N' AND :P273_PERMISO_CARGA_SALARIOS = 'S' OR P.IND_PERMITIR_VISUALIZAR = 'S')
+                  AND C.ID NOT  IN (SELECT TO_NUMBER (column_value)
+                		              FROM XMLTABLE (:P273_ORDEN_SELECCIONADAS))
+                ```
+            pageItemsToSubmit: [
+                P273_ORDEN_SELECCIONADAS
+                P273_PROV_PARAM
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        heading {
+            fixedTo: region
+            fixedReportHeight: 450
+        }
+        advanced {
+            savedReportMappingIdentifier: 64569796412101460
+        }
+
+        savedReport primary (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @APEX$ROW_SELECTOR
+                layout {
+                    show: false
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @NRO_DESPACHO
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @NRO_REFERENCIA
+                layout {
+                    width: 118
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NUM_CUOTA
+                layout {
+                    width: 68
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 92
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @TOT_CUOTA
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @TOT_SALDO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @IMPRIMIR
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 76
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @NUM_COMPROBANTE_REF
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @IMPRIME_REPORTE
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_EN_OP
+                layout {
+                    width: 109
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    width: 58
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    show: false
+                    width: 46
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 59
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE_CM
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_EXTRACTO_INICIAL
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ORIGEN
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @FEC_CARGA
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZAR
+                layout {
+                    width: 43
+                    sequence: 29
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: hidden
+            layout {
+                sequence: 20
+            }
+            source {
+                type: none
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                type: none
+            }
+        )
+
+        column AUTORIZAR (
+            type: checkbox
+            heading {
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 270
+                columnAlignment: center
+            }
+            source {
+                type: none
+            }
+        )
+
+        column COD_USUARIO (
+            type: hidden
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: COD_USUARIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_CARGA (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: FEC_CARGA
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_ORIGEN (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: FEC_ORIGEN
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fec. Comp.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            columnFilter {
+                enabled: false
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                controlBreakAggregate: false
+                hide: false
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_COMPROBANTE_CM (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE_CM
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EXTRACTO_INICIAL (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: ID_EXTRACTO_INICIAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: selectList
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IMPRIME_REPORTE (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: IMPRIME_REPORTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IMPRIMIR (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: IMPRIMIR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_EN_OP (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: MONTO_EN_OP
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Número</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 190
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column NRO_DESPACHO (
+            type: numberField
+            heading {
+                heading: <p>Nro. Despacho</p>
+                alignment: center
+            }
+            layout {
+                sequence: 290
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NRO_DESPACHO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_REFERENCIA (
+            type: textarea
+            heading {
+                heading: <p>Referencia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 280
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: NRO_REFERENCIA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column NUM_COMPROBANTE_REF (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: NUM_COMPROBANTE_REF
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Nro. Cuota</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NUM_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Ser.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column TOT_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Total Cuota</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        column TOT_SALDO (
+            type: numberField
+            heading {
+                heading: <p>Total Saldo Comp.</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_SALDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Cuotas
+        }
+    )
+
+    pageItem P273_BANDERA (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @cuotas
+            slot: regionBody
+        }
+    )
+
+    pageItem P273_ID_CABECERA (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @cuotas
+            slot: regionBody
+        }
+    )
+
+    pageItem P273_ID_CUOTAS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @cuotas
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P273_ORDEN_SELECCIONADAS (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @cuotas
+            slot: regionBody
+        }
+    )
+
+    pageItem P273_PERMISO_CARGA_SALARIOS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            region: @cuotas
+            slot: regionBody
+        }
+    )
+
+    pageItem P273_PROV_PARAM (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @cuotas
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 30
+            region: @cuotas
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button cargar (
+        buttonName: CARGAR
+        label: Cargar
+        layout {
+            sequence: 10
+            region: @cuotas
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button marcar-todo (
+        buttonName: MARCAR_TODO
+        label: Marcar Todos
+        layout {
+            sequence: 50
+            region: @cuotas
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--success
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button refrescar (
+        buttonName: REFRESCAR
+        label: REFRESCAR
+        layout {
+            sequence: 60
+            region: @cuotas
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--success
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction cargar-id (
+        name: Cargar Id
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @cuotas
+            columns: AUTORIZAR
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      l_collection_name CONSTANT VARCHAR2(255) := WWV_FLOW.G_INSTANCE;     -- WWV_FLOW.G_INSTANCE is your user session number and will keep the collections per user session
+                    BEGIN
+                      IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => l_collection_name) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => l_collection_name);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => l_collection_name);
+                     
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => l_collection_name,
+                        p_c001 => :P273_ID_CUOTAS
+                         );
+                    END;
+                    ```
+                itemsToSubmit: P273_ID_CUOTAS
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if(id_cuotas.length>1){
+                        $s('P273_ID_CUOTAS',id_cuotas);
+                        id_cuotas='';
+                    }
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    IF :AUTORIZAR = 'S' THEN
+                    RETURN :P273_ID_CUOTAS||:ID||',';
+                    ELSE 
+                    RETURN REPLACE (:P273_ID_CUOTAS,:ID||',','');
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    ID
+                    P273_ID_CUOTAS
+                    AUTORIZAR
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P273_ID_CUOTAS
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cerrar (
+        name: Cerrar
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cargar
+        }
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction close (
+        name: Close
+        execution {
+            sequence: 50
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todo (
+        name: Marcar Todo
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: marcarTodos();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction reaccion-de-grilla (
+        name: Reaccion de Grilla
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: REFRESCAR
+        execution {
+            sequence: 60
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refrescar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @cuotas
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p273-orden-seleccionadas (
+        itemName: P273_ORDEN_SELECCIONADAS
+        execution {
+            sequence: 20
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                nombre varchar2(255):=WWV_FLOW.G_INSTANCE;
+                V_ORDEN_SELECCION varchar(500);
+                BEGIN
+                Select /* SUBSTR(c002, 0, LENGTH(c002) - 1) as */NVL(c002,0)
+                into V_ORDEN_SELECCION
+                From APEX_COLLECTIONS
+                Where COLLECTION_NAME = nombre
+                AND SEQ_ID = 1;
+                
+                APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => nombre);
+                return V_ORDEN_SELECCION;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20000,sqlerrm);
+                
+                RETURN 0;
+                WHEN OTHERS THEN
+                RETURN 0;
+                END;
+                ```
+        }
+    )
+
+    computation p273-permiso-carga-salarios (
+        itemName: P273_PERMISO_CARGA_SALARIOS
+        execution {
+            sequence: 30
+        }
+        computation {
+            type: expression
+            plsqlExpression: W_BUSCA_PERMISO(:P0_ID_EMPRESA, 392, TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER), 'CARGA_SALARIOS')
+        }
+    )
+
+    computation p273-prov-param (
+        itemName: P273_PROV_PARAM
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                nombre varchar2(255):=WWV_FLOW.G_INSTANCE;
+                v_id_proveedor varchar(500);
+                BEGIN
+                Select  NVL(c001,0)
+                into v_id_proveedor
+                From APEX_COLLECTIONS
+                Where COLLECTION_NAME = nombre
+                AND SEQ_ID = 1;
+                return v_id_proveedor;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                RETURN 0;
+                WHEN OTHERS THEN
+                RETURN 0;
+                END;
+                
+                ```
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 20
+        }
+        successMessage {
+            successMessage: Operación realizada exitosamente!
+        }
+        advanced {
+            executionMappingIdentifier: 64805768417945617
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CARGAR
+        }
+    )
+
+    process cuotas-save-interactive-grid-data (
+        name: Cuotas - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @cuotas
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 64272690528068937
+        }
+    )
+
+)
+

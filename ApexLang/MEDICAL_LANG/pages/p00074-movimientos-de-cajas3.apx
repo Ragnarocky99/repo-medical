@@ -1,0 +1,993 @@
+page 74 (
+    name: Movimientos de Cajas-Cobros
+    alias: MOVIMIENTOS-DE-CAJAS3
+    title: Movimientos de Cajas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @movimientos-de-cajas
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    region movimientos-de-cajas (
+        name: Movimientos de Cajas
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.NRO_MOV_CAJ,
+                       C.ID_SUCURSAL,
+                       C.FEC_MOV_CAJ,
+                       C.ID_CAJA,
+                       C.NRO_HABILITACION,
+                       C.NUM_ASIENTO,
+                       C.ANULADO,
+                       C.FEC_ANULACION,
+                       C.ID_USUARIO,
+                       C.NUM_ASIENTO_ANUL,
+                       C.TOT_NRO_MOV_CAJ,
+                       C.ID_MONEDA,
+                       C.TIPO_CAMBIO,
+                       C.TIP_CAMBIO,
+                       C.FEC_ALTA,
+                       C.VUELTO,
+                       C.ID_CORPORACION,
+                       C.COD_USUARIO_AUD,
+                       C.ID_CLIENTE,
+                       REPLACE(REPLACE(C.ASIENTOS,'*'),'cobros') ASIENTOS,
+                       (SELECT D.ID
+                       FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(C.ASIENTOS,'*'),'cobros'))
+                        AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(C.FEC_MOV_CAJ)
+                        AND D.ID_EMPRESA  = C.ID_EMPRESA) ASIENTOS_ID,
+                       C.TRANSAC_PRONET,
+                       C.ID_HABILITACION,
+                       C.NRO_TRANS_PM,
+                       C.NRO_PAGO_EXPRESS,
+                       C.IND_GEN_AUTO
+                  from CCW_MOVIMIENTOS_CAJAS C
+                 where C.ID_EMPRESA = :P0_ID_EMPRESA
+                   and C.ID_SUCURSAL = :P0_ID_SUCURSAL
+                   and C.FEC_MOV_CAJ between :P74_FEC_INI and :P74_FEC_FIN
+                   and (C.ID_CLIENTE = :P74_ID_CLIENTE OR :P74_ID_CLIENTE IS NULL)
+                   and (C.NRO_MOV_CAJ = :P74_NRO_MOV_CAJA OR :P74_NRO_MOV_CAJA IS NULL)
+                order by C.FEC_MOV_CAJ desc,
+                         C.NRO_MOV_CAJ desc
+                ```
+            pageItemsToSubmit: [
+                P74_FEC_INI
+                P74_FEC_FIN
+                P74_ID_CLIENTE
+                P74_NRO_MOV_CAJA
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 75
+                items: {
+                    P75_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 27912184446597964
+        }
+
+        column ANULADO (
+            type: plainText
+            heading {
+                heading: Anulado
+            }
+            layout {
+                sequence: 9
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTOS_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ASIENTOS_ID (
+            type: hidden
+            heading {
+                heading: Asientos Id
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Cód. Usuario Aud.
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Fecha Alta
+                alignment: center
+            }
+            layout {
+                sequence: 17
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column FEC_ANULACION (
+            type: plainText
+            heading {
+                heading: Fecha Anulación
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FEC_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Fecha Mov. Caja
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CAJA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Caja
+                alignment: end
+            }
+            lov {
+                lov: @lv-cajas
+            }
+            layout {
+                sequence: 6
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainText
+            heading {
+                heading: Id Cliente
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column ID_CORPORACION (
+            type: hidden
+            heading {
+                heading: Id Corporacion
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column ID_HABILITACION (
+            type: plainText
+            heading {
+                heading: Id Habilitacion
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainText
+            heading {
+                heading: Id Moneda
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Id Sucursal
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column ID_USUARIO (
+            type: plainText
+            heading {
+                heading: Id Usuario
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column IND_GEN_AUTO (
+            type: hidden
+            heading {
+                heading: Ind Gen Auto
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column NRO_HABILITACION (
+            type: plainText
+            heading {
+                heading: Nro. Habilitación
+                alignment: end
+            }
+            layout {
+                sequence: 7
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column NRO_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Número
+                alignment: end
+            }
+            layout {
+                sequence: 3
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column NRO_PAGO_EXPRESS (
+            type: hidden
+            heading {
+                heading: Nro Pago Express
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column NRO_TRANS_PM (
+            type: hidden
+            heading {
+                heading: Nro Trans Pm
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column NUM_ASIENTO (
+            type: hidden
+            heading {
+                heading: Num Asiento
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column NUM_ASIENTO_ANUL (
+            type: hidden
+            heading {
+                heading: Num Asiento Anul
+            }
+            layout {
+                sequence: 12
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column TIPO_CAMBIO (
+            type: plainText
+            heading {
+                heading: Tipo Cambio
+                alignment: end
+            }
+            layout {
+                sequence: 15
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            heading {
+                heading: Tip Cambio
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column TOT_NRO_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Total Caja
+                alignment: end
+            }
+            layout {
+                sequence: 13
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column TRANSAC_PRONET (
+            type: hidden
+            heading {
+                heading: Transac Pronet
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column VUELTO (
+            type: plainText
+            heading {
+                heading: Vuelto
+                alignment: end
+            }
+            layout {
+                sequence: 18
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Movimientos de Cajas
+        }
+
+        savedReport 279233 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ANULADO (
+                sequence: 7
+            )
+
+            displayColumn ASIENTOS (
+                sequence: 17
+            )
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 16
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 13
+            )
+
+            displayColumn FEC_ANULACION (
+                sequence: 8
+            )
+
+            displayColumn FEC_MOV_CAJ (
+                sequence: 3
+            )
+
+            displayColumn ID (
+                sequence: 1
+            )
+
+            displayColumn ID_CAJA (
+                sequence: 4
+            )
+
+            displayColumn ID_CORPORACION (
+                sequence: 15
+            )
+
+            displayColumn IND_GEN_AUTO (
+                sequence: 21
+            )
+
+            displayColumn NRO_HABILITACION (
+                sequence: 5
+            )
+
+            displayColumn NRO_MOV_CAJ (
+                sequence: 2
+            )
+
+            displayColumn NRO_PAGO_EXPRESS (
+                sequence: 20
+            )
+
+            displayColumn NRO_TRANS_PM (
+                sequence: 19
+            )
+
+            displayColumn NUM_ASIENTO (
+                sequence: 6
+            )
+
+            displayColumn NUM_ASIENTO_ANUL (
+                sequence: 9
+            )
+
+            displayColumn TIPO_CAMBIO (
+                sequence: 11
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 12
+            )
+
+            displayColumn TOT_NRO_MOV_CAJ (
+                sequence: 10
+            )
+
+            displayColumn TRANSAC_PRONET (
+                sequence: 18
+            )
+
+            displayColumn VUELTO (
+                sequence: 14
+            )
+
+        )
+
+    )
+
+    pageItem P74_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P74_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Mov. Caja:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P74_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P74_NRO_MOV_CAJA (
+        type: numberField
+        label {
+            label: <p>Nro. Mov. Caja:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P74_PAGE (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @movimientos-de-cajas
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 75
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button listado (
+        buttonName: Listado
+        label: Listado
+        layout {
+            sequence: 10
+            region: @breadcrumb
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 682
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button refrescar (
+        buttonName: REFRESCAR
+        label: Refrescar
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: triggerAction
+        }
+
+        triggerAction refrescar-reporte (
+            name: Refrescar Reporte
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @movimientos-de-cajas
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction acciones-al-cargar-pagina (
+        name: Acciones al Cargar Pagina
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action agregar-paginacion (
+            name: Agregar Paginacion
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @movimientos-de-cajas
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p74-page (
+        itemName: P74_PAGE
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: staticValue
+            staticValue: M
+        }
+    )
+
+)
+

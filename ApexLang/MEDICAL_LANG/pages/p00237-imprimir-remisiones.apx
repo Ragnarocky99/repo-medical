@@ -1,0 +1,98 @@
+page 237 (
+    name: Imprimir Remisiones
+    alias: IMPRIMIR-REMISIONES
+    title: Imprimir Remisiones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                DECLARE
+                vcName PK_JRXML2PDF_TYPES.tName;
+                
+                l_ReportList PK_JRXML2PDF_TYPES.tReportNameList;
+                
+                r_Params PK_JRXML2PDF_REPGEN.TPARAMETER;
+                l_Params PK_JRXML2PDF_REPGEN.TPARAMLIST;
+                
+                bl BLOB;
+                
+                BEGIN
+                
+                
+                vcName := 'Reporte_Remisiones';
+                
+                
+                r_Params.vcName := 'Empresa';
+                r_Params.vcValue := :P0_COD_EMPRESA;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'Usuario';
+                r_Params.vcValue := :app_user;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'Sucursal';
+                r_Params.vcValue := :P0_COD_SUCURSAL;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                
+                
+                l_ReportList(1) := vcName;
+                
+                
+                
+                bl := PK_JRXML2PDF_REPGEN.FK_RUN(i_lReports=>l_ReportList,
+                i_lParams=>l_Params,
+                i_bResetPageNumber=>false
+                );
+                
+                PK_JRXML2PDF_REPGEN.PR_SHOW_REPORT(bl);
+                APEX_APPLICATION.STOP_APEX_ENGINE;
+                
+                END;
+                ```
+        }
+    )
+
+)
+

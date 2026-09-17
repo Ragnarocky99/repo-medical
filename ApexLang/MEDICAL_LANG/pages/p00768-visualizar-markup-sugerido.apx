@@ -1,0 +1,260 @@
+page 768 (
+    name: Visualizar Markup Sugerido
+    alias: VISUALIZAR-MARKUP-SUGERIDO
+    title: Visualizar Markup Sugerido
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region markup (
+        name: Markup
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT MG.PORC_MARGEN_BASE * ( 1 + SUM(NVL(T.PORC_AJUSTE, 0))) PORC_AJUSTE,
+                       T.ID_ARTICULO,
+                       T.DESC_ARTICULO,
+                       T.COD_ARTICULO,
+                      'Markup Sugerido' TIPO,
+                       T.TIPO_AJUSTE
+                  FROM CMW_MATRIZ_MARGEN MG,
+                       (SELECT PA.PORC_AJUSTE,
+                               PA.ID_ARTICULO,
+                               PA.DESC_ARTICULO,
+                               PA.COD_ARTICULO,
+                               PA.ID_RUBRO,
+                               PA.TIPO TIPO_AJUSTE,
+                               PA.ID_MARCA,
+                               PA.ID_LINEA
+                          FROM CMWV_PORC_MARGEN_AJUSTES_REPORTE PA
+                         WHERE PA.IND_PRIORIDAD = 'N'
+                           AND NOT EXISTS (
+                               SELECT 1
+                                 FROM CMWV_PORC_MARGEN_AJUSTES AJS
+                                WHERE AJS.ID_ARTICULO = PA.ID_ARTICULO
+                                  AND AJS.IND_PRIORIDAD = 'S'
+                           )
+                        UNION ALL
+                        SELECT PA.PORC_AJUSTE,
+                               PA.ID_ARTICULO,
+                               PA.DESC_ARTICULO,
+                               PA.COD_ARTICULO,
+                               PA.ID_RUBRO,
+                               PA.TIPO,
+                               PA.ID_MARCA,
+                               PA.ID_LINEA
+                          FROM CMWV_PORC_MARGEN_AJUSTES_REPORTE PA
+                         WHERE PA.IND_PRIORIDAD = 'S'
+                           AND PA.ORDEN_PRIORIDAD = (SELECT MIN(PA1.ORDEN_PRIORIDAD)
+                                                       FROM CMWV_PORC_MARGEN_AJUSTES PA1
+                                                      WHERE PA1.IND_PRIORIDAD = 'S'
+                                                        AND PA1.ID_ARTICULO = PA.ID_ARTICULO)) T
+                 WHERE MG.ID_RUBRO = T.ID_RUBRO
+                   AND T.ID_ARTICULO = :P768_ID_ARTICULO
+                GROUP BY T.ID_ARTICULO,
+                         T.DESC_ARTICULO,
+                         T.COD_ARTICULO,
+                         T.TIPO_AJUSTE,
+                         T.ID_RUBRO,
+                         T.ID_MARCA,
+                         T.ID_LINEA,
+                         MG.PORC_MARGEN_BASE
+                ```
+            pageItemsToSubmit: P768_ID_ARTICULO
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            lazyLoading: true
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 34456749370288819
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            heading {
+                heading: Id Articulo
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column PORC_AJUSTE (
+            type: plainText
+            heading {
+                heading: % Ajuste
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TIPO (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column TIPO_AJUSTE (
+            type: plainText
+            heading {
+                heading: Tipo Ajuste
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Markup
+        }
+
+        savedReport 344945 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn ID_ARTICULO (
+                sequence: 2
+            )
+
+            displayColumn PORC_AJUSTE (
+                sequence: 1
+            )
+
+            displayColumn TIPO (
+                sequence: 5
+            )
+
+            displayColumn TIPO_AJUSTE (
+                sequence: 6
+            )
+
+        )
+
+    )
+
+    pageItem P768_ID_ARTICULO (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @markup
+            slot: regionBody
+        }
+    )
+
+)
+

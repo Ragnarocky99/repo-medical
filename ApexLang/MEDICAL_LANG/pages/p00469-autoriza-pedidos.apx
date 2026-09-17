@@ -1,0 +1,5278 @@
+page 469 (
+    name: Autoriza Pedidos
+    alias: AUTORIZA-PEDIDOS
+    title: "Autorizacion de OCC "
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P469_DESC_CLIENTE").readOnly = true;
+            //document.getElementById("P469_DESC_SUPERVISOR").readOnly = true;
+            document.getElementById("P469_DESC_VENDEDOR_DET").readOnly = true;
+            document.getElementById("P469_DESC_VENDEDOR_CAB").readOnly = true;
+            document.getElementById("P469_DESC_ZONA").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region autoriza-pedidos (
+        name: Autoriza Pedidos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT P.ID,
+                       P.ID_EMPRESA,
+                       P.ID_SUCURSAL,
+                       NVL(P.ESTADO, 'PE') ESTADO,
+                       P.TIP_COMPROBANTE,
+                       P.SER_COMPROBANTE,
+                       P.NRO_COMPROBANTE,
+                       P.FEC_ALTA,
+                       P.ID_CLIENTE,
+                       P.NOM_CLIENTE,
+                       P.FEC_COMPROBANTE,
+                       P.ID_VENDEDOR,
+                       P.ID_CONDICION_VENTA,
+                       P.ID_LISTA_PRECIO,
+                       P.TOT_COMPROBANTE,
+                       P.AUTORIZA_STOCK_USU,
+                       P.AUTORIZA_STOCK_FEC,
+                       P.AUTORIZA_STOCK,
+                       P.AUTORIZA_STOCK as AUTORIZA_STOCK_COPIA,
+                       P.AUTORIZA_CTACTE_USU,
+                       P.AUTORIZA_CTACTE_FEC,
+                       P.AUTORIZA_CTACTE,
+                       P.AUTORIZA_CTACTE as AUTORIZA_CTATE_COPIA,
+                       P.IND_PRIORIDAD,
+                       P.ID_ZONA,
+                       P.ESTADO_AUT_FAC,
+                       P.ind_sin_stock,
+                       P.ind_sin_occ,
+                       P.NUEVA_FECHA,
+                       p.OBSERVACION,
+                       P.ID_SOPORTE,
+                       P.AUTORIZA_FACTURA,
+                       P.AUTORIZA_FACTURA_USU,
+                       P.AUTORIZA_FACTURA_FEC,
+                       CASE
+                        WHEN EXISTS (SELECT 1
+                                       FROM CMW_RESUMEN_OCC_RENOVADO R
+                                      WHERE R.PED_ID = P.ID
+                                        AND R.OCC = 'Pendiente'
+                                        AND R.APROBADA - R.ENTREGADA != R.CANT_RESERVADA) THEN 'PARCIAL'
+                        ELSE 'TOTAL'
+                       END ESTADO_PENDIENTES
+                
+                       ---,
+                       ---P.COMENTARIO_OPERATIVO
+                  FROM
+                (SELECT PD.ID,
+                       PD.ID_EMPRESA,
+                       PD.ID_SUCURSAL,
+                       NVL(PD.ESTADO,'EP') ESTADO,
+                       PD.TIP_COMPROBANTE,
+                       PD.SER_COMPROBANTE,
+                       PD.NRO_COMPROBANTE,
+                       PD.FEC_ALTA,
+                       PD.ID_CLIENTE,
+                       PD.NOM_CLIENTE,
+                       PD.FEC_COMPROBANTE,
+                       PD.ID_VENDEDOR,
+                       PD.ID_CONDICION_VENTA,
+                       PD.ID_LISTA_PRECIO,
+                       PD.TOT_COMPROBANTE,
+                       PD.AUTORIZA_STOCK_USU,
+                       PD.AUTORIZA_STOCK_FEC,
+                       NVL(PD.AUTORIZA_STOCK,'N') AUTORIZA_STOCK,
+                       PD.AUTORIZA_CTACTE_USU,
+                       PD.AUTORIZA_CTACTE_FEC,
+                       NVL(PD.AUTORIZA_CTACTE,'N') AUTORIZA_CTACTE,
+                       PD.IND_PRIORIDAD,
+                       FV.ID_ZONA,
+                       PD.ESTADO_AUT_FAC,
+                       
+                       /*nvl((select 'S' 
+                        from vtw_pedidos_detalle pdd
+                        where pdd.id_pedido_cabecera = pd.id
+                          and obtener_cantidad_existente(pdd.id_articulo,pd.id_sucursal,'S') < 0 
+                        group by 'S'),'N') ind_sin_stock,*/
+                       
+                       nvl((select 'N' 
+                        --from vtw_pedidos_detalle pdd
+                        from cmw_cotiza_articulos pdd
+                        --where pdd.id_pedido_cabecera = pd.id
+                        where pdd.id_pedido = pd.id
+                          /*AND PDD.ID_ARTICULO IN( SELECT E.ID_ARTICULO
+                                                        FROM STW_EXISTENCIA_ART E
+                                                        WHERE E.CANT_DISPON > 0)*/
+                         and exists(select 1 
+                                    from stw_existencia_art e, stw_articulos ax
+                                    where e.id_articulo = pdd.id_articulo
+                                      and ax.id = e.id_articulo
+                                      and (e.cant_dispon > 0 or nvl(ax.ind_maneja_stock,'S') = 'N')
+                                      )
+                        group by 'S'),'S') ind_sin_stock,
+                        
+                        nvl((select 'S' 
+                        from cmw_cotiza_articulos cca
+                        where cca.id_pedido = pd.id
+                          and (cca.nro_occ = '0' OR cca.nro_occ IS NULL) 
+                        group by 'S'),'N')ind_sin_occ,
+                        
+                        (SELECT COUNT(*)
+                          FROM CMW_COTIZA_ARTICULOS Z
+                         WHERE Z.ID_PEDIDO = pd.id
+                           AND (Z.NRO_OCC <> '0' OR Z.NRO_OCC IS NULL)) CANT_PEND_OCC,
+                         
+                         (SELECT COUNT(*)
+                          FROM CMW_COTIZA_ARTICULOS Z1
+                         WHERE Z1.ID_PEDIDO = pd.id
+                           AND (Z1.NRO_OCC <> '0' OR Z1.NRO_OCC IS NOT NULL)) CANT_COT_OCC,
+                           
+                         (SELECT SUM(Z2.CANT_ANULADA)
+                            FROM CMW_COTIZA_ARTICULOS Z2
+                           WHERE Z2.ID_PEDIDO = PD.ID) CANT_ANULADA,
+                      PD.NUEVA_FECHA,/*,
+                
+                         (SELECT Z3.OBSERVACION
+                            FROM CMW_COTIZA_ARTICULOS Z3
+                           WHERE Z3.ID_PEDIDO = PD.ID) COMENTARIO_OPERATIVO*/
+                
+                           (select count(*)
+                           from cmw_Cotiza_articulos ca 
+                           where ca.id_pedido = PD.id
+                           AND nvl(CA.NRO_OCC,'0') <> '0') cantidad_en_pedido,
+                
+                           (select count(*)
+                           from cmw_Cotiza_articulos ca 
+                           where ca.id_pedido = PD.id
+                           --and nvl(ca.cantidad_aprobada,ca.cantidad)<=obtener_cantidad_existente(ca.id_articulo, ca.id_sucursal, 'S')
+                           and nvl(existencia_actual(ca.id_sucursal,ca.id_articulo,ca.id_empresa),0)>=0
+                           AND nvl(CA.NRO_OCC,'0') <> '0')
+                           cantidad_ok,
+                           pd.OBSERVACION,
+                           CL.ID_SOPORTE,
+                           PD.AUTORIZA_FACTURA,
+                           PD.AUTORIZA_FACTURA_USU,
+                           AUTORIZA_FACTURA_FEC
+                
+                
+                FROM VTW_PEDIDOS_CABECERA PD, FVW_VENDEDORES FV, CCW_CLIENTES CL
+                WHERE PD.ID_EMPRESA   = :P0_ID_EMPRESA
+                  AND PD.ID_VENDEDOR  = FV.ID
+                  AND CL.ID = PD.ID_CLIENTE
+                ) P
+                  
+                  WHERE (P.IND_SIN_STOCK ='N' or nvl(:P469_PERMISO_STOCK_NEGATIVO,'N') = 'S')
+                  ---AND   P.ind_sin_occ = 'N'
+                  AND   (P.ID_CLIENTE     = :P469_COD_CLIENTE OR :P469_COD_CLIENTE IS NULL)
+                  AND   (P.ID_VENDEDOR    = :P469_COD_VENDEDOR OR :P469_COD_VENDEDOR IS NULL)
+                  AND   (P.ID_ZONA        = :P469_COD_ZONA OR :P469_COD_ZONA IS NULL)
+                  AND   (P.ESTADO_AUT_FAC = :P469_ESTADO_FACTURA OR :P469_ESTADO_FACTURA IS NULL)
+                  AND   (:P469_NRO_OCC IN (SELECT NRO_OCC FROM CMW_COTIZA_ARTICULOS CA WHERE CA.ID_PEDIDO = P.ID) OR :P469_NRO_OCC IS NULL )
+                  AND   P.ID IN (SELECT C1.ID_PEDIDO
+                                    FROM CMW_COTIZA_ARTICULOS C1
+                                    JOIN STW_ARTICULOS        AR1 ON AR1.ID = C1.ID_ARTICULO
+                                   WHERE C1.ID_EMPRESA = :P0_ID_EMPRESA
+                                    and c1.id_pedido = p.id
+                                    AND NVL(C1.CANT_RESERVADA, 0) > 0
+                                     /*AND obtener_cantidad_pendiente(C1.ID_PEDIDO,C1.ID_ARTICULO,C1.ID_EMPRESA,C1.id) > 0)*/ -- comentado porque debe ser el stock > 0, no la disponibilidad
+                                    --and nvl(existencia_actual(c1.id_sucursal,c1.id_articulo,c1.id_empresa), 0) > 0) -- el stock mayor a cero, pero que si estoy en la sucursal oficina muestre todo excepto licitacion, comentado por eso
+                                    and (CASE :P0_ID_SUCURSAL
+                                        WHEN '1' THEN
+                                            (SELECT SUM(NVL(EA.CANT_DISPON, 0)) 
+                                               FROM STW_EXISTENCIA_ART EA
+                                              WHERE EA.ID_ARTICULO = C1.ID_ARTICULO
+                                                AND EA.ID_SUCURSAL != '690')
+                                        ELSE
+                                           nvl(existencia_actual(:P0_ID_SUCURSAL,C1.ID_ARTICULO,:P0_ID_EMPRESA), 0)
+                                       END > 0) OR NVL(AR1.IND_MANEJA_STOCK, 'N') = 'N' OR NVL(AR1.IND_MANEJA_STOCK, 'N') = 'N' OR nvl(:P469_PERMISO_STOCK_NEGATIVO,'N') = 'S') -- stock corregido aqui, si esta en oficina traera la cantidad disponible en todas las sucursales excepto licitacion, en caso contrario trae el de la sucursal posicionada
+                
+                                    ---PARA EL CONTROL DE QUE TENGA OCC LO HAGA POR ARTICULO Y NO POR PEDIDO 
+                  AND P.CANT_PEND_OCC <> 0  
+                  AND P.CANT_COT_OCC > 0
+                  --AND P.ESTADO <> 'A'  -- COMENTADO porque usamos la funcion que calcula el estado del pedido
+                  AND TRAE_ESTADO_PEDIDO_CABECERA3(P.ID) != 'AN'
+                  
+                   AND P.ID IN (select CA.ID_PEDIDO
+                                from CMW_COTIZA_ARTICULOS CA
+                                WHERE (exists ( SELECT 1 
+                                                                      FROM STW_EXISTENCIA_ART E, stw_articulos aj
+                                                                      WHERE e.id_articulo = ca.id_articulo
+                                                                       and aj.id = e.id_articulo
+                                                                       and (E.CANT_DISPON > 0 or nvl(aj.ind_maneja_stock,'S') = 'N')
+                                                                      ) or nvl(:P469_PERMISO_STOCK_NEGATIVO,'N') = 'S')
+                                  AND NVL(CA.NRO_OCC,0) <> '0'
+                                  AND NVL(CA.NRO_OCC,0) IS NOT NULL
+                                  AND NVL(CA.CANT_ANULADA,0) < obtener_cantidad_pendiente(id_pedido, id_articulo, :P0_ID_EMPRESA,ca.id))
+                
+                  ---AND NVL(P.CANT_ANULADA,0) < NVL(P.CANT_PEND_OCC,0) 
+                  AND(P.ID_SUCURSAL = :P469_SUCURSAL or :P469_SUCURSAL is null)
+                  AND(P.AUTORIZA_CTACTE =:P469_FUE_AUTORIZADO or :P469_FUE_AUTORIZADO is null)
+                  
+                  AND (NVL(P.NUEVA_FECHA,TO_CHAR(SYSDATE,'DD/MM/YYYY')) BETWEEN :P469_NUEVA_FEC_DESDE AND :P469_NUEVA_FEC_HASTA)
+                  AND (P.NRO_COMPROBANTE = :P469_NRO_PEDIDO OR :P469_NRO_PEDIDO IS NULL)
+                  AND (P.ID_SOPORTE = :P469_ID_SOPORTE OR :P469_ID_SOPORTE IS NULL)
+                      
+                
+                ```
+            pageItemsToSubmit: [
+                P0_ID_EMPRESA
+                P469_COD_ZONA
+                P469_COD_VENDEDOR
+                P469_COD_CLIENTE
+                P469_ESTADO_FACTURA
+                P469_NRO_OCC
+                P469_SUCURSAL
+                P469_FUE_AUTORIZADO
+                P469_NUEVA_FEC_DESDE
+                P469_NUEVA_FEC_HASTA
+                P469_NRO_PEDIDO
+                P469_ID_SOPORTE
+            ]
+        }
+        layout {
+            sequence: 30
+            parentRegion: @autorizacion-de-occ
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            htmlDomId: Autoriza
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        performance {
+            lazyLoading: true
+        }
+        pagination {
+            type: page
+            showTotalCount: false
+        }
+        toolbar {
+            controls: [
+                actionsMenu
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 57469456677104504
+        }
+
+        savedReport 575661 (
+            visibility: primary
+            view {
+                default: grid
+                rowsPerPage: 20
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @IND_PRIORIDAD
+                layout {
+                    show: false
+                    width: 62
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    width: 123
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @NUEVA_FECHA
+                layout {
+                    width: 88
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_SOPORTE
+                layout {
+                    sequence: 33
+                }
+            )
+
+            displayColumn (
+                column: @IND_SIN_STOCK
+                layout {
+                    show: false
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_FACTURA
+                layout {
+                    width: 88
+                    sequence: 34
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_FACTURA_USU
+                layout {
+                    width: 123
+                    sequence: 35
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_FACTURA_FEC
+                layout {
+                    width: 85
+                    sequence: 36
+                }
+            )
+
+            displayColumn (
+                column: @ID_ZONA
+                layout {
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_AUT_FAC
+                layout {
+                    width: 102
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @IND_SIN_OCC
+                layout {
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_PENDIENTES
+                layout {
+                    width: 89
+                    sequence: 37
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    width: 59
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_SELECTOR
+                layout {
+                    show: false
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK_USU
+                layout {
+                    width: 79
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK_FEC
+                layout {
+                    width: 87
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK
+                layout {
+                    width: 65
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE_USU
+                layout {
+                    width: 89
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE_FEC
+                layout {
+                    width: 82
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTACTE
+                layout {
+                    width: 83
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_STOCK_COPIA
+                layout {
+                    width: 101
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZA_CTATE_COPIA
+                layout {
+                    width: 92
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    show: false
+                    width: 56
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    show: false
+                    width: 61
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 53
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    width: 83
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    width: 142
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_VENDEDOR
+                layout {
+                    show: false
+                    width: 69
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONDICION_VENTA
+                layout {
+                    show: false
+                    width: 58
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @ID_LISTA_PRECIO
+                layout {
+                    show: false
+                    width: 57
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE
+                layout {
+                    show: false
+                    width: 84
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ALTA
+                layout {
+                    width: 82
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NOM_CLIENTE
+                layout {
+                    show: false
+                    width: 108
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: hidden
+            layout {
+                sequence: 20
+            }
+            source {
+                type: none
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                type: none
+            }
+        )
+
+        column AUTORIZA_CTACTE (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza CTE</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 420
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE
+                dataType: varchar2
+            }
+            columnFilter {
+                exactMatch: false
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+            serverSideCondition {
+                type: expression
+                plsqlExpression: :P469_CARGA_AUTORIZA_CTACTE = 'S'
+            }
+        )
+
+        column AUTORIZA_CTACTE_FEC (
+            type: datePicker
+            heading {
+                heading: <p>Fecha<br>Autoriza<br>Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 410
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE_FEC
+                dataType: timestamp
+            }
+        )
+
+        column AUTORIZA_CTACTE_USU (
+            type: textField
+            heading {
+                heading: <p>Usuario<br>Autoriza<br>Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: AUTORIZA_CTACTE_USU
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column AUTORIZA_CTATE_COPIA (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza CTE.</p>
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 530
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: AUTORIZA_CTATE_COPIA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            serverSideCondition {
+                type: expression
+                plsqlExpression: :P469_CARGA_AUTORIZA_CTACTE = 'N'
+            }
+        )
+
+        column AUTORIZA_FACTURA (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza Factura</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 570
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: AUTORIZA_FACTURA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column AUTORIZA_FACTURA_FEC (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Autoriza Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 590
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: AUTORIZA_FACTURA_FEC
+                dataType: date
+            }
+        )
+
+        column AUTORIZA_FACTURA_USU (
+            type: textField
+            heading {
+                heading: <p>Usuario Autoriza Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 580
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: AUTORIZA_FACTURA_USU
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column AUTORIZA_STOCK (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza<br>Stock</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 390
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK
+                dataType: varchar2
+            }
+            columnFilter {
+                exactMatch: false
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+            serverSideCondition {
+                type: expression
+                plsqlExpression: :P469_CARGA_AUTORIZA_STOCK = 'S'
+            }
+        )
+
+        column AUTORIZA_STOCK_COPIA (
+            type: checkbox
+            heading {
+                heading: <p>Autoriza stock</p>
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 520
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK_COPIA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            serverSideCondition {
+                type: expression
+                plsqlExpression: :P469_CARGA_AUTORIZA_STOCK = 'N'
+            }
+        )
+
+        column AUTORIZA_STOCK_FEC (
+            type: datePicker
+            heading {
+                heading: <p>Fecha<br>Autoriza<br>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 380
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK_FEC
+                dataType: timestamp
+            }
+        )
+
+        column AUTORIZA_STOCK_USU (
+            type: textField
+            heading {
+                heading: <p>Usuario<br>Autoriza<br>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 370
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: AUTORIZA_STOCK_USU
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ESTADO (
+            type: checkbox
+            heading {
+                heading: <p>Anulado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: AN
+                uncheckedValue: PE
+            }
+            layout {
+                sequence: 510
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: PE
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column ESTADO_AUT_FAC (
+            type: popupLov
+            heading {
+                heading: <p>Estado Factura</p>
+                alternativeLabel: Estado Factura
+            }
+            lov {
+                type: staticValues
+                staticValues: STATIC:PENDIENTE;PE,ESPERA;ES,LICITA;LI
+            }
+            layout {
+                sequence: 490
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: ESTADO_AUT_FAC
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: PE
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column ESTADO_PENDIENTES (
+            type: textField
+            heading {
+                heading: <p>Estado Pendientes</p>
+                alignment: center
+            }
+            layout {
+                sequence: 600
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: ESTADO_PENDIENTES
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_ALTA (
+            type: textField
+            heading {
+                heading: <p>Fec. Pedido</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_ALTA
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 440
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: VTW_PEDIDOS_CABECERA_ID_SEQ
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: selectList
+            heading {
+                heading: <p>Cód. Cliente</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 130
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_CONDICION_VENTA (
+            type: popupLov
+            heading {
+                heading: <p>Plazo</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                additionalOutputs: DESCRIPCION:P469_DESC_PLAZO
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-condiciones-venta-pg
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_CONDICION_VENTA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LISTA_PRECIO (
+            type: popupLov
+            heading {
+                heading: <p>Lista<br>Precio</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                additionalOutputs: DESCRIPCION:P469_DESC_LISTA_PRECIO
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-listas-precios-pg
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_LISTA_PRECIO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_SOPORTE (
+            type: hidden
+            layout {
+                sequence: 560
+            }
+            source {
+                databaseColumn: ID_SOPORTE
+                dataType: number
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: selectList
+            heading {
+                heading: <p>Sucursal</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: popupLov
+            heading {
+                heading: <p>Vendedor</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                additionalOutputs: NOMBRE:P469_DESC_VENDEDOR_DET
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-vendedores-pg
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_VENDEDOR
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_ZONA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 480
+            }
+            source {
+                databaseColumn: ID_ZONA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_PRIORIDAD (
+            type: checkbox
+            heading {
+                heading: <P>Prioridad</P>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 460
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_PRIORIDAD
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column IND_SIN_OCC (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 500
+            }
+            source {
+                databaseColumn: IND_SIN_OCC
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_SIN_STOCK (
+            type: textField
+            heading {
+                heading: Ind Sin Stock
+            }
+            layout {
+                sequence: 470
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_SIN_STOCK
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NOM_CLIENTE (
+            type: textField
+            heading {
+                heading: <p>Nom. Cliente</p>
+                alignment: center
+            }
+            layout {
+                sequence: 140
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: NOM_CLIENTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: link
+            heading {
+                heading: <p>Nro.</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            link {
+                target: {
+                    page: 735
+                    items: {
+                        P735_NRO_PEDIDO: &NRO_COMPROBANTE.
+                    }
+                }
+                linkText: &NRO_COMPROBANTE.
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NUEVA_FECHA (
+            type: datePicker
+            heading {
+                heading: <P>Nueva Fecha</P>
+                alignment: center
+            }
+            layout {
+                sequence: 540
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NUEVA_FECHA
+                dataType: date
+            }
+        )
+
+        column OBSERVACION (
+            type: textarea
+            heading {
+                heading: <p>Comentario</p>
+            }
+            layout {
+                sequence: 550
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: link
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            link {
+                target: {
+                    page: 453
+                    items: {
+                        P453_ID: &ID.
+                    }
+                }
+                linkText: &SER_COMPROBANTE.
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: link
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            link {
+                target: {
+                    page: 453
+                    items: {
+                        P453_ID: &ID.
+                    }
+                }
+                linkText: &TIP_COMPROBANTE.
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Autorización de OCC
+        }
+    )
+
+    region autorizacion-de-occ (
+        name: "Autorizacion de OCC "
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        security {
+            authorizationScheme: @derecho-pagina-3
+        }
+    )
+
+    region bloqueos (
+        name: Bloqueos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID_EMPRESA,
+                       ID_SUCURSAL,
+                       ID_ARTICULO,
+                       CANT_BLOQUEO,
+                       FEC_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       DESC_VENDEDOR,
+                       DESC_CLIENTE,
+                       Nro_Occ,
+                       Fec_Occ
+                  from STWV_ARTICULOS_BLOQUEO
+                  WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                   --- AND (ID_ARTICULO = :ID_ARTICULO)
+                    AND CANT_BLOQUEO > 0
+                ```
+            pageItemsToSubmit: P0_ID_EMPRESA
+        }
+        layout {
+            sequence: 30
+            parentRegion: @detalle-de-autoriza-pedido
+            slot: subRegions
+        }
+        appearance {
+            template: @content-block
+            templateOptions: [
+                #DEFAULT#
+                t-ContentBlock--h1
+                t-ContentBlock--shadowBG
+            ]
+        }
+        masterDetail {
+            masterRegion: @detalle-de-autoriza-pedido
+        }
+        serverSideCondition {
+            type: never
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        toolbar {
+            show: false
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 13472479335673516
+        }
+
+        savedReport 135181 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    show: false
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    width: 98.75
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CANT_BLOQUEO
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    show: false
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 75.75
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @DESC_VENDEDOR
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @DESC_CLIENTE
+                layout {
+                    width: 291.75
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FEC_OCC
+                layout {
+                    sequence: 7
+                }
+            )
+
+        )
+
+        column CANT_BLOQUEO (
+            type: numberField
+            heading {
+                heading: <p>Cant Bloqueo</p>
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANT_BLOQUEO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESC_CLIENTE (
+            type: textField
+            heading {
+                heading: <p>Cliente</p>
+            }
+            layout {
+                sequence: 80
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: DESC_CLIENTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESC_VENDEDOR (
+            type: textField
+            heading {
+                heading: <p>Vendedor</p>
+            }
+            layout {
+                sequence: 70
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: DESC_VENDEDOR
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fec Comprobante</p>
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+        )
+
+        column FEC_OCC (
+            type: datePicker
+            heading {
+                heading: <p>Fec Occ</p>
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: FEC_OCC
+                dataType: date
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: varchar2
+            }
+            masterDetail {
+                masterColumn: @ID_ARTICULO_2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: numberField
+            heading {
+                heading: Id Empresa
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: popupLov
+            heading {
+                heading: <p>Sucursal</p>
+            }
+            settings {
+                displayAs: modalDialog
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Nro Pedido</p>
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: <p>Nro Occ</p>
+            }
+            layout {
+                sequence: 90
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Bloqueos
+        }
+    )
+
+    region detallados (
+        name: Detallados
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @detalle-de-autoriza-pedido
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--hideHeader
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+    )
+
+    region detalle-de-autoriza-pedido (
+        name: Detalle de autoriza pedido
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT *
+                  FROM (    
+                    select CA.ID,
+                           CA.ID_EMPRESA,
+                           CA.ID_ARTICULO,
+                           NVL(CA.CANTIDAD_APROBADA,CA.CANTIDAD) AS CANTIDAD,
+                           CA.ID_PEDIDO,
+                           CA.PRECIO_UNITARIO,
+                           CA.NRO_OCC,
+                           CA.DESC_ARTICULO,
+                           DECODE(NVL(A.IND_MANEJA_STOCK, 'N'), 'N', 0, CASE :P0_ID_SUCURSAL
+                                                                          WHEN '1' THEN
+                                                                              (SELECT SUM(NVL(EA.CANT_DISPON, 0)) 
+                                                                                 FROM STW_EXISTENCIA_ART EA
+                                                                                WHERE EA.ID_ARTICULO = CA.ID_ARTICULO
+                                                                                  AND EA.ID_SUCURSAL != '690')
+                                                                          ELSE
+                                                                             nvl(existencia_actual(:P0_ID_SUCURSAL,ca.id_articulo,ca.id_empresa), 0)
+                                                                         END) EXISTENCIA, -- Este es el stock, pidieron que si estan en la sucursal OFICINA (1) muestre el stock de todas sucursales excepto licitaciones, si estan en licitacion, que muestre solo de esa sucursal
+                           --nvl(existencia_actual(ca.id_sucursal,ca.id_articulo,ca.id_empresa), 0) EXISTENCIA, --stock
+                           DECODE(NVL(A.IND_MANEJA_STOCK, 'N'), 'N', 0, obtener_cantidad_existente(ca.id_articulo, ca.id_sucursal, 'S')) STOCK,--disponibilidad
+                           /*obtener_cantidad(id_pedido, id_articulo, :P0_ID_EMPRESA)*/
+                           CA.CANTIDAD_ENTREGADA,
+                           (obtener_cantidad_pendiente(CA.id_pedido, CA.id_articulo, :P0_ID_EMPRESA,ca.id) -
+                            nvl(CA.CANT_ANULADA,0)                                                         -
+                            NVL((SELECT SUM(RP.CANTIDAD_PENDIENTE)
+                                 FROM VTWV_FACTURAR_REMISIONES RP
+                                WHERE RP.ID_COTIZA_ART = CA.ID), 0)) CANTIDAD_PENDIENTE,
+                           NVL(CA.CANTIDAD_A_ENTREGAR,0)CANTIDAD_A_ENTREGAR,
+                           ''FACTURAR,
+                           obtener_cantidad_pendiente(CA.id_pedido, CA.id_articulo, :P0_ID_EMPRESA,ca.id)-NVL(CA.CANTIDAD_A_ENTREGAR,0) as DIFERENCIA_ENTREGA,
+                           CA.ID_ARTICULO AS ID_ARTICULO_2,
+                           CA.OBSERVACION,
+                           (select num_orden from vtw_pedidos_Detalle dl where dl.id = ca.id_pedido_det) as nro_item,
+                           (SELECT NVL(A.IND_CONTROLADO, 'N') FROM STW_ARTICULOS A WHERE A.ID = CA.ID_ARTICULO) IND_CONTROLADO,
+                           CA.FEC_PLAZO FECHA_PLAZO,--CA.FEC_OCC + T.NRO_DIAS AS FECHA_PLAZO,
+                           A.COD_ARTICULO,
+                           NVL((SELECT SUM(RP.CANTIDAD_PENDIENTE)
+                                 FROM VTWV_FACTURAR_REMISIONES RP
+                                WHERE RP.ID_COTIZA_ART = CA.ID), 0) CANT_REMISION_SIN_FACTURA,
+                          '' VER_TAREA,
+                          CA.ID_PEDIDO_DET,
+                          CA.COMENTARIO_AUTORIZA,
+                          CA.OBSERVACION COMENTARIO_OPERATIVO,
+                          NVL(CA.CANT_RESERVADA, 0) CANT_RESERVADA
+                            
+                      from CMW_COTIZA_ARTICULOS CA, CMW_TIPO_ENTREGA T, STW_ARTICULOS A
+                    --   WHERE (
+                    --     CA.ID_ARTICULO IN (
+                    --         SELECT E.ID_ARTICULO
+                    --         FROM STW_EXISTENCIA_ART E
+                    --         WHERE E.CANT_DISPON > 0
+                    --         AND E.ID_ARTICULO = CA.ID_ARTICULO
+                    --     )
+                    --     OR NVL(:P469_PERMISO_STOCK_NEGATIVO, 'N') = 'S'
+                    --     OR EXISTS (
+                    --         SELECT 1
+                    --         FROM STW_ARTICULOS AR
+                    --         WHERE AR.ID = CA.ID_ARTICULO
+                    --         AND NVL(AR.IND_MANEJA_STOCK, 'S') = 'N'
+                    --     )
+                    -- )
+                    -- AND NVL(CA.CANT_ANULADA, 0) < obtener_cantidad_pendiente(id_pedido, id_articulo, :P0_ID_EMPRESA, CA.ID)
+                    -- /*WHERE obtener_cantidad_existente(CA.ID_ARTICULO, CA.ID_SUCURSAL, 'S') > 0 */
+                    -- AND NVL(CA.NRO_OCC, '0') <> '0'
+                    -- AND obtener_cantidad_pendiente(id_pedido, id_articulo, :P0_ID_EMPRESA, CA.ID) > 0
+                      WHERE (
+                                (CA.ID_ARTICULO IN (
+                                     SELECT E.ID_ARTICULO
+                                    FROM STW_EXISTENCIA_ART E
+                                    WHERE E.ID_ARTICULO = CA.ID_ARTICULO
+                                      AND (E.CANT_DISPON > 0 OR NVL(:P469_PERMISO_STOCK_NEGATIVO, 'N') = 'S')
+                                )
+                                OR EXISTS (
+                                    SELECT 1
+                                    FROM STW_ARTICULOS AR
+                                    WHERE AR.ID = CA.ID_ARTICULO
+                                    AND NVL(AR.IND_MANEJA_STOCK, 'S') = 'N'
+                                ))
+                                AND (
+                                    -- Verificar si stock pendiente es positivo o el usuario tiene permiso para stock negativo S.C 26/03/2025
+                                    (nvl(existencia_actual(ca.id_sucursal,ca.id_articulo,ca.id_empresa), 0) >= 0 or nvl(a.ind_maneja_stock, 'N') = 'N')
+                                    OR NVL(:P469_PERMISO_STOCK_NEGATIVO, 'N') = 'S'
+                                )
+                            )
+                            AND NVL(CA.CANT_ANULADA, 0) < obtener_cantidad_pendiente(id_pedido, id_articulo, :P0_ID_EMPRESA, ca.id)
+                            AND NVL(CA.NRO_OCC, '0') <> '0' 
+                            AND CA.ID_EMPRESA = T.ID_EMPRESA  
+                            AND NVL(CA.ID_TIPO_ENTREGA,40) = T.ID
+                            AND CA.ID_ARTICULO = A.ID
+                            AND obtener_cantidad_pendiente(id_pedido, id_articulo, :P0_ID_EMPRESA, ca.id) > 0
+                            AND NVL(CA.CANT_RESERVADA, 0) > 0)
+                  WHERE CANTIDAD_PENDIENTE > 0
+                ```
+            pageItemsToSubmit: P469_PERMISO_STOCK_NEGATIVO
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @autoriza-pedidos
+        }
+        advanced {
+            htmlDomId: Articulos
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 46201714384044803
+        }
+
+        savedReport 462179 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @CANT_REMISION_SIN_FACTURA
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @IND_CONTROLADO
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @FECHA_PLAZO
+                layout {
+                    width: 98
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 76
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @VER_TAREA
+                layout {
+                    width: 57
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_DET
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO_AUTORIZA
+                layout {
+                    width: 93
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 42
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @COMENTARIO_OPERATIVO
+                layout {
+                    width: 109.5
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    show: false
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 66
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO
+                layout {
+                    width: 102
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    width: 135
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 252
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @EXISTENCIA
+                layout {
+                    width: 63
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @STOCK
+                layout {
+                    width: 78
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_ENTREGADA
+                layout {
+                    width: 113
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_PENDIENTE
+                layout {
+                    width: 130
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_A_ENTREGAR
+                layout {
+                    width: 122
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @FACTURAR
+                layout {
+                    show: false
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @DIFERENCIA_ENTREGA
+                layout {
+                    show: false
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO_2
+                layout {
+                    show: false
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    show: false
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    width: 40
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CANT_RESERVADA
+                layout {
+                    sequence: 28
+                }
+            )
+
+            highlight controlado (
+                name: Controlado
+                condition {
+                    column: @IND_CONTROLADO
+                    value: S
+                }
+                colors {
+                    background: #fa90ad
+                }
+                execution {
+                    sequence: 5
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_A_ENTREGAR (
+            type: numberField
+            heading {
+                heading: <p>Cant. A Entregar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD_A_ENTREGAR
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_ENTREGADA (
+            type: numberField
+            heading {
+                heading: <p>Cant. Facturada</p>
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: CANTIDAD_ENTREGADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_PENDIENTE (
+            type: numberField
+            heading {
+                heading: <p>Cant. Pendiente a Entregar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANTIDAD_PENDIENTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_REMISION_SIN_FACTURA (
+            type: numberField
+            heading {
+                heading: <p>Cant. Rem. Sin Facturar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 240
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANT_REMISION_SIN_FACTURA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_RESERVADA (
+            type: numberField
+            heading {
+                heading: <p>Cant. Reservada</p>
+                alignment: center
+            }
+            layout {
+                sequence: 290
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: CANT_RESERVADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO (
+            type: link
+            heading {
+                heading: <p>Cod. Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 646
+                    items: {
+                        P646_ID: &ID_ARTICULO.
+                    }
+                }
+                linkText: &COD_ARTICULO.
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COMENTARIO_AUTORIZA (
+            type: textarea
+            heading {
+                heading: <p>Comentario Autoriza</p>
+                alignment: center
+            }
+            layout {
+                sequence: 270
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COMENTARIO_AUTORIZA
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column COMENTARIO_OPERATIVO (
+            type: textarea
+            heading {
+                heading: <p>Comentario Operativo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 280
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: COMENTARIO_OPERATIVO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+            }
+            validation {
+                maxLength: 800
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column DIFERENCIA_ENTREGA (
+            type: numberField
+            heading {
+                heading: <p>Diferencia Entrega</p>
+                alignment: end
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: DIFERENCIA_ENTREGA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column EXISTENCIA (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G990D00
+            }
+            link {
+                target: {
+                    page: 758
+                    items: {
+                        P758_ID_ARTICULO: &ID_ARTICULO.
+                    }
+                }
+                linkText: &EXISTENCIA.
+            }
+            source {
+                databaseColumn: EXISTENCIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column FACTURAR (
+            type: textField
+            heading {
+                heading: <p>Facturar</p>
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FACTURAR
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FECHA_PLAZO (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Plazo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FECHA_PLAZO
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column ID (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                queryOnly: true
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: selectList
+            heading {
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos-exis
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_ARTICULO_2 (
+            type: textField
+            heading {
+                heading: Id Articulo 2
+            }
+            layout {
+                sequence: 180
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: ID_ARTICULO_2
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: varchar2
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_PEDIDO
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: ID_PEDIDO_DET
+                dataType: number
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column IND_CONTROLADO (
+            type: textField
+            heading {
+                heading: Controlado
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: IND_CONTROLADO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_ITEM (
+            type: numberField
+            heading {
+                heading: <p>Nro. Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 200
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: NRO_ITEM
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: <p>Nro. OCC</p>
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column OBSERVACION (
+            type: textField
+            heading {
+                heading: <p>Observacion</p>
+                alignment: center
+            }
+            layout {
+                sequence: 190
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: numberField
+            heading {
+                heading: <p>Precio Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column STOCK (
+            type: numberField
+            heading {
+                heading: <p>Disponibilidad</p>
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: STOCK
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            comments {
+                comments: Me dijo Liz que esta columna es la disponibilidad y no el stock.
+            }
+        )
+
+        column VER_TAREA (
+            type: link
+            heading {
+                heading: <p>Tareas</p>
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 753
+                    items: {
+                        P753_ID_COTIZA_ART: &ID.
+                        P753_ID_APROBACION_LIC:
+                    }
+                }
+                linkText: <span aria-hidden="true" class="fa fa-clipboard-search"></span>
+            }
+            source {
+                databaseColumn: VER_TAREA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle de autoriza pedido
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 50
+            parentRegion: @autoriza-pedidos
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--hideHeader
+                t-Region--noBorder
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region lotes (
+        name: Lotes
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT LO.ID_EMPRESA,
+                       LO.ID_ARTICULO,
+                       E.ID_SUCURSAL,
+                       SU.DESCRIPCION,
+                       E.ID_LOTE,
+                       LO.NRO_LOTE,
+                       LO.FEC_VENCIMIENTO,
+                       E.CANT_DISPON
+                FROM STW_LOTES LO,
+                     BSW_SUCURSALES SU,
+                     STW_EXISTENCIA_ART E
+                WHERE E.ID_EMPRESA  = LO.ID_EMPRESA
+                  AND E.ID_ARTICULO = LO.ID_ARTICULO
+                  AND E.ID_LOTE     = LO.ID
+                  AND E.ID_SUCURSAL = SU.ID
+                ```
+        }
+        layout {
+            sequence: 20
+            parentRegion: @detalle-de-autoriza-pedido
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+            renderComponents: belowContent
+        }
+        masterDetail {
+            masterRegion: @detalle-de-autoriza-pedido
+        }
+        advanced {
+            htmlDomId: id_articulo
+        }
+        serverSideCondition {
+            type: never
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 71406985528997717
+        }
+
+        savedReport 730042 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_LOTE
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @CANT_DISPON
+                layout {
+                    sequence: 8
+                }
+            )
+
+        )
+
+        column CANT_DISPON (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANT_DISPON
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESCRIPCION (
+            type: textField
+            heading {
+                heading: <p>Sucursal</p>
+            }
+            layout {
+                sequence: 40
+            }
+            validation {
+                maxLength: 80
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fec Vencimiento</p>
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+                queryOnly: true
+            }
+            masterDetail {
+                masterColumn: @ID_ARTICULO
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LOTE (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_LOTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>NroLote</p>
+            }
+            layout {
+                sequence: 60
+            }
+            validation {
+                valueRequired: true
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lotes
+        }
+    )
+
+    pageItem P469_CARGA_AUTORIZA_CTACTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            region: @detallados
+            slot: regionBody
+        }
+    )
+
+    pageItem P469_CARGA_AUTORIZA_STOCK (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @detallados
+            slot: regionBody
+        }
+    )
+
+    pageItem P469_COD_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 130
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_COD_SUPERVISOR (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+        }
+    )
+
+    pageItem P469_COD_VENDEDOR (
+        type: popupLov
+        label {
+            label: <p>Vendedor:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            additionalOutputs: NOMBRE:P469_DESC_VENDEDOR_CAB
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vendedores-pg
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_COD_ZONA (
+        type: popupLov
+        label {
+            label: <p>Zona:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            additionalOutputs: DESCRIPCION:P469_DESC_ZONA
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-zonas-geo-pg
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_DESC_CLIENTE (
+        type: textField
+        label {
+            label: Desc cliente
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_DESC_LISTA_PRECIO (
+        type: textField
+        label {
+            label: <p>Lista Precio:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @detalle-de-autoriza-pedido
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P469_DESC_PLAZO (
+        type: textField
+        label {
+            label: <p>Desc. Plazo:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @detalle-de-autoriza-pedido
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P469_DESC_SUPERVISOR (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+        }
+    )
+
+    pageItem P469_DESC_VENDEDOR_CAB (
+        type: textField
+        label {
+            label: Desc Vendedor
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_DESC_VENDEDOR_DET (
+        type: textField
+        label {
+            label: <p>Vendedor:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @detalle-de-autoriza-pedido
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P469_DESC_ZONA (
+        type: textField
+        label {
+            label: Desc Zona
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_ESTADO_FACTURA (
+        type: popupLov
+        label {
+            label: <p>Estado Factura:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:PENDIENTE;PE,ESPERA;ES,LICITA;LI
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P469_FUE_AUTORIZADO (
+        type: checkbox
+        label {
+            label: <p>Fue Autorizado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 220
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P469_ID_SOPORTE (
+        type: popupLov
+        label {
+            label: <p>Soporte:</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT NVL(PS.NOMB_FANTASIA, PS.NOMBRE) SOPORTE,
+                       PS.ID
+                  FROM CCW_CLIENTES   CL
+                  JOIN FVW_VENDEDORES VE ON VE.ID = CL.ID_VENDEDOR
+                  JOIN BSW_PERSONAS   PS ON PS.ID = CL.ID_SOPORTE
+                 WHERE (VE.ID = :P469_COD_VENDEDOR OR :P469_COD_VENDEDOR IS NULL)
+                ```
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        cascadingLov {
+            parentItems: P469_COD_VENDEDOR
+            itemsToSubmit: P469_COD_VENDEDOR
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P469_NRO_OCC (
+        type: textField
+        label {
+            label: <p>Nro.OCC:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P469_NRO_PEDIDO (
+        type: numberField
+        label {
+            label: <p>Nro Pedido:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 240
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P469_NUEVA_FEC_DESDE (
+        type: datePicker
+        label {
+            label: <P>Nueva Fec Desde:</P>
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/01/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P469_NUEVA_FEC_HASTA (
+        type: datePicker
+        label {
+            label: <p>Nueva Fec Hasta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 180
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P469_PERMISO_ANULAR (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            region: @detallados
+            slot: regionBody
+        }
+    )
+
+    pageItem P469_PERMISO_STOCK_NEGATIVO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @autorizacion-de-occ
+            slot: regionBody
+        }
+    )
+
+    pageItem P469_SUCURSAL (
+        type: selectList
+        label {
+            label: <p>Sucursal</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 210
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: 1
+        }
+    )
+
+    button autoriza-occ (
+        buttonName: AUTORIZA_OCC
+        label: Autoriza OCC
+        layout {
+            sequence: 160
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            column: 11
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+            icon: fa-file-excel-o
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 665
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button imp-autoriza-occ (
+        buttonName: IMP_AUTORIZA_OCC
+        label: Imprimir
+        layout {
+            sequence: 230
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            column: 11
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        advanced {
+            htmlDomId: boton
+        }
+    )
+
+    button marcar-todo-ctacte (
+        buttonName: MARCAR_TODO_CTACTE
+        label: Marcar Todo Ctacte
+        layout {
+            sequence: 200
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--success
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button marcar-todo-stock (
+        buttonName: MARCAR_TODO_STOCK
+        label: Marcar Todo Stock
+        layout {
+            sequence: 190
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--success
+                t-Button--simple
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 150
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            column: 10
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapBottom
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction alerta (
+        name: Alerta
+        execution {
+            sequence: 150
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Aviso
+                message:
+                    ```html
+                    Se están generando cambios en la página, por lo que pueden haber errores de visualización.
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction autoriza-ctacte (
+        name: AUTORIZA_CTACTE
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @autoriza-pedidos
+            columns: AUTORIZA_CTACTE
+        }
+
+        action autoriza-ctacte-fec (
+            name: AUTORIZA_CTACTE_FEC
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vfec VARCHAR2(20);
+                    BEGIN
+                        IF :P469_CARGA_AUTORIZA_CTACTE = 'S' THEN 
+                            IF NVL(:AUTORIZA_CTACTE,'N') = 'S' AND :P469_CARGA_AUTORIZA_CTACTE = 'S' THEN
+                                vfec := SYSDATE/*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/;
+                            ELSE
+                                vfec := NULL;
+                            END IF;
+                        END IF;
+                        RETURN vfec;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    AUTORIZA_CTACTE
+                    P469_CARGA_AUTORIZA_CTACTE
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_CTACTE_FEC
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P469_CARGA_AUTORIZA_CTACTE
+                value: S
+            }
+        )
+
+        action autoriza-ctacte-usuario (
+            name: AUTORIZA_CTACTE_USUARIO
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vuser VARCHAR2(20);
+                    BEGIN
+                        IF :P469_CARGA_AUTORIZA_CTACTE = 'S' THEN 
+                            IF NVL(:AUTORIZA_CTACTE,'N') = 'S' THEN
+                                vuser := :APP_USER;
+                            ELSE
+                                vuser := NULL;
+                            END IF;
+                        END IF;
+                        RETURN vuser;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    AUTORIZA_CTACTE
+                    P469_CARGA_AUTORIZA_CTACTE
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_CTACTE_USU
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P469_CARGA_AUTORIZA_CTACTE
+                value: S
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select /*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/sysdate from dual;
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_CTACTE_FEC
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction autoriza-factura (
+        name: AUTORIZA_FACTURA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @autoriza-pedidos
+            columns: AUTORIZA_FACTURA
+        }
+
+        action autoriza-factura-fec (
+            name: AUTORIZA_FACTURA_FEC
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_FACTURA_FEC
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: AUTORIZA_FACTURA
+                value: S
+            }
+        )
+
+        action autoriza-factura-fec-2 (
+            name: AUTORIZA_FACTURA_FEC
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_FACTURA_FEC
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn!=value
+                column: AUTORIZA_FACTURA
+                value: S
+            }
+        )
+
+        action autoriza-factura-usu (
+            name: AUTORIZA_FACTURA_USU
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_FACTURA_USU
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: AUTORIZA_FACTURA
+                value: S
+            }
+        )
+
+        action autoriza-factura-usu-2 (
+            name: AUTORIZA_FACTURA_USU
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_FACTURA_USU
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn!=value
+                column: AUTORIZA_FACTURA
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction autoriza-stock (
+        name: AUTORIZA_STOCK
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @autoriza-pedidos
+            columns: AUTORIZA_STOCK
+        }
+
+        action autoriza-stock-fec (
+            name: AUTORIZA_STOCK_FEC
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vfec VARCHAR2(20);
+                    BEGIN
+                        IF NVL(:AUTORIZA_STOCK,'N') = 'S' AND :P469_CARGA_AUTORIZA_STOCK = 'S' THEN
+                            vfec := SYSDATE/*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/;
+                        ELSE
+                            vfec := NULL;
+                        END IF;
+                        RETURN vfec;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    AUTORIZA_STOCK
+                    P469_CARGA_AUTORIZA_STOCK
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_STOCK_FEC
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P469_CARGA_AUTORIZA_STOCK
+                value: S
+            }
+        )
+
+        action autoriza-stock-usuario (
+            name: AUTORIZA_STOCK_USUARIO
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vuser VARCHAR2(20);
+                    BEGIN
+                        IF NVL(:AUTORIZA_STOCK,'N') = 'S' AND :P469_CARGA_AUTORIZA_STOCK = 'S' THEN
+                            vuser := :APP_USER;
+                        ELSE
+                            vuser := NULL;
+                        END IF;
+                        RETURN vuser;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    AUTORIZA_STOCK
+                    P469_CARGA_AUTORIZA_STOCK
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_STOCK_USU
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P469_CARGA_AUTORIZA_STOCK
+                value: S
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select /*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/sysdate from dual;
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_STOCK_FEC
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction guardar-id-factura (
+        name: Guardar ID_FACTURA
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle-de-autoriza-pedido
+            columns: FACTURAR
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                    l_collection_name varchar2(100) := 'ARTICULOS_SELECCIONADOS';
+                    
+                    BEGIN
+                        IF NOT
+                          apex_collection.collection_exists(p_collection_name => l_collection_name) THEN
+                        apex_collection.create_collection(l_collection_name);
+                      END IF;
+                    
+                       apex_collection.add_member(p_collection_name => l_collection_name,
+                                                 p_c001 => :ID_ARTICULO);
+                    END;
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction imp (
+        name: imp
+        execution {
+            sequence: 160
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @imp-autoriza-occ
+        }
+
+        action plugin-com-fos-redirect (
+            action: plugin/fosRedirect
+            settings {
+                targetPageUrl: {
+                    page: 732
+                }
+                options: submitPageItemsBeforeRedirect
+                pageItemsToSubmit: [
+                    P0_COD_EMPRESA
+                    P469_SUCURSAL
+                    P469_NUEVA_FEC_DESDE
+                    P469_NUEVA_FEC_HASTA
+                    P469_COD_CLIENTE
+                    P469_COD_ZONA
+                    P469_NRO_OCC
+                    P469_ESTADO_FACTURA
+                    P469_COD_VENDEDOR
+                ]
+                openTargetInNewWindow: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: INICIALIZAR
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Autoriza").call("getViews").grid;
+                    //grid.view$.grid("option", "editable", true);
+                    //editable true
+                        grid.model.setOption("editable", true);
+                        //grid.setEditMode(true);
+                    //editable false
+                    //grid.model.setOption("editable", false);
+                        grid.setEditMode(true);
+                    
+                    var $widget = apex.region("Autoriza").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                        $grid.setEditMode(true);
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todos-c (
+        name: Marcar Todos_C
+        execution {
+            sequence: 80
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo-ctacte
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: DBMS_LOCK.SLEEP(0.2);
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                        var model = apex.region("Autoriza").widget().interactiveGrid("getCurrentView").model;
+                        var v_seleccionada = model.getFieldKey("AUTORIZA_CTACTE");
+                        ///var v_total_cantidad = 0;
+                        var bandera = 'N';
+                        model.forEach(function(r, index, id) {
+                            var meta = model.getRecordMetadata(id);
+                    
+                            console.log(meta.fields); // meta.fields undifined validation   --deprecated By RP
+                            if ((meta != undefined) && (!meta.deleted)) {
+                    
+                                if (r[v_seleccionada] == 'N' || r[v_seleccionada] == null || r[v_seleccionada] == '') {
+                                    bandera = 'S';
+                                    model.setValue(r, 'AUTORIZA_CTACTE', 'S');
+                    
+                                }
+                                if (r[v_seleccionada] == 'S' && bandera == 'N') {
+                                    model.setValue(r, 'AUTORIZA_CTACTE', 'N');
+                                }
+                            }
+                        });
+                        
+                        // Llamar a la función de devolución de llamada cuando se complete la operación
+                        if (typeof callback === "function") {
+                            callback();
+                        }
+                    } catch (e) {
+                        console.error("Se produjo un error:", e);
+                    }
+                    
+                    
+                    /*
+                    // Llamar a la función marcarTodos con una función de devolución de llamada
+                    marcarTodos(function() {
+                            console.log("La función de devolución de llamada se ha ejecutado.");
+                    
+                        // Realizar otras operaciones después de marcar
+                        // Esta función se ejecutará después de que los cambios se apliquen
+                    });
+                    */
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression: $( "Autoriza" ).grid( "focus" );
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todos-s (
+        name: Marcar Todos_S
+        execution {
+            sequence: 90
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo-stock
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: DBMS_LOCK.SLEEP(0.2);
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    try {
+                        var model = apex.region("Autoriza").widget().interactiveGrid("getCurrentView").model;
+                        var v_seleccionada = model.getFieldKey("AUTORIZA_STOCK");
+                        ///var v_total_cantidad = 0;
+                        var bandera = 'N';
+                        model.forEach(function(r, index, id) {
+                            var meta = model.getRecordMetadata(id);
+                    
+                            console.log(meta.fields); // meta.fields undifined validation   --deprecated By RP
+                            if ((meta != undefined) && (!meta.deleted)) {
+                    
+                                if (r[v_seleccionada] == 'N' || r[v_seleccionada] == null || r[v_seleccionada] == '') {
+                                    bandera = 'S';
+                                    model.setValue(r, 'AUTORIZA_STOCK', 'S');
+                    
+                                }
+                                if (r[v_seleccionada] == 'S' && bandera == 'N') {
+                                    model.setValue(r, 'AUTORIZA_STOCK', 'N');
+                                }
+                            }
+                        });
+                        
+                        // Llamar a la función de devolución de llamada cuando se complete la operación
+                        if (typeof callback === "function") {
+                            callback();
+                        }
+                    } catch (e) {
+                        console.error("Se produjo un error:", e);
+                    }
+                    
+                    
+                    /*
+                    // Llamar a la función marcarTodos con una función de devolución de llamada
+                    marcarTodos(function() {
+                            console.log("La función de devolución de llamada se ha ejecutado.");
+                    
+                        // Realizar otras operaciones después de marcar
+                        // Esta función se ejecutará después de que los cambios se apliquen
+                    });
+                    */
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-focus (
+            action: setFocus
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression: $( "Autoriza" ).grid( "focus" );
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 120
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle-de-autoriza-pedido
+            columns: CANTIDAD_A_ENTREGAR
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                       l_cantidad_a_entregar NUMBER := :CANTIDAD_A_ENTREGAR; 
+                       l_cantidad_pendiente NUMBER := :CANTIDAD_PENDIENTE; 
+                    BEGIN
+                       IF l_cantidad_a_entregar > l_cantidad_pendiente THEN
+                          raise_application_error(-20001, 'La cantidad a entregar no puede ser mayor que la cantidad pendiente.');
+                       ELSIF l_cantidad_a_entregar = 0 THEN
+                          raise_application_error(-20001, 'La cantidad a entregar no puede ser igual a 0.'); 
+                       END IF;
+                    END;
+                    
+                    ```
+                itemsToSubmit: [
+                    CANTIDAD_A_ENTREGAR
+                    CANTIDAD_PENDIENTE
+                    NRO_OCC
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new-2 (
+        name: New_1
+        execution {
+            sequence: 130
+        }
+        when {
+            event: region/interactiveGrid/interactivegridselectionchange
+            selectionType: region
+            region: @detalle-de-autoriza-pedido
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Articulos").call("getViews").grid; 
+                    grid.model.setOption("editable", true);
+                    grid.setEditMode(true);
+                    ////console.log("aaaaaaaaaa");
+                    console.log(grid);
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new-3 (
+        name: New_2
+        execution {
+            sequence: 140
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle-de-autoriza-pedido
+            columns: [
+                CANTIDAD_PENDIENTE
+                CANTIDAD_A_ENTREGAR
+            ]
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :CANTIDAD_PENDIENTE-:CANTIDAD_A_ENTREGAR
+                itemsToSubmit: [
+                    CANTIDAD_PENDIENTE
+                    CANTIDAD_A_ENTREGAR
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DIFERENCIA_ENTREGA
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction permisos (
+        name: PERMISOS
+        execution {
+            sequence: 60
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @autoriza-pedidos
+        }
+
+        action disable-autoriza-ctacte (
+            name: DISABLE_AUTORIZA_CTACTE
+            action: disable
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_CTACTE
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn!=value
+                componentType: item
+                item: P469_CARGA_AUTORIZA_CTACTE
+                value: S
+            }
+        )
+
+        action disable-autoriza-stock (
+            name: DISABLE_AUTORIZA_STOCK
+            action: disable
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_STOCK
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn!=value
+                componentType: item
+                item: P469_CARGA_AUTORIZA_STOCK
+                value: S
+            }
+        )
+
+    )
+
+    dynamicAction reaccion (
+        name: Reaccion
+        execution {
+            sequence: 100
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: columns
+            interactiveGrid: @autoriza-pedidos
+            columns: ESTADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: EP
+                suppressChangeEvent: true
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ESTADO
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: ESTADO
+            }
+        )
+
+    )
+
+    dynamicAction refresh-buttom (
+        name: REFRESH_BUTTOM
+        execution {
+            sequence: 70
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @autoriza-pedidos
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: [
+                    P469_COD_SUPERVISOR
+                    P469_COD_VENDEDOR
+                    P469_DESC_PLAZO
+                    P469_DESC_VENDEDOR_CAB
+                    P469_COD_ZONA
+                    P469_DESC_ZONA
+                    P469_COD_CLIENTE
+                    P469_DESC_CLIENTE
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action refresh-js (
+            name: REFRESH JS
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Autoriza").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $model.clearChanges();
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: [
+                P469_COD_CLIENTE
+                P469_COD_ZONA
+                P469_COD_VENDEDOR
+                P469_ESTADO_FACTURA
+                P469_NRO_OCC
+                P469_SUCURSAL
+                P469_FUE_AUTORIZADO
+                P469_ID_SOPORTE
+            ]
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Autoriza").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                    $model.clearChanges();
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @autoriza-pedidos
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation validar-cantidad-a-entregar (
+        name: Validar cantidad a entregar
+        execution {
+            sequence: 10
+        }
+        validation {
+            editableRegion: @detalle-de-autoriza-pedido
+            plsqlExpression: :DIFERENCIA_ENTREGA >=0
+            alwaysExecute: true
+        }
+        error {
+            errorMessage: Error, la cantidad a entregar no puede ser mayor que la pendiente.
+            associatedColumn: DIFERENCIA_ENTREGA
+        }
+    )
+
+    validation validar-reserva (
+        name: Validar reserva
+        execution {
+            sequence: 20
+        }
+        validation {
+            editableRegion: @detalle-de-autoriza-pedido
+            plsqlExpression: TO_NUMBER(REPLACE(:CANTIDAD_A_ENTREGAR, '.', '')) <= TO_NUMBER(REPLACE(:CANT_RESERVADA, '.', ''))
+            alwaysExecute: true
+        }
+        error {
+            errorMessage:
+                ```
+                La cantidad a entregar no puede ser mayor a la cantidad reservada
+                
+                ```
+            associatedColumn: CANTIDAD_A_ENTREGAR
+        }
+    )
+
+    computation p469-carga-autoriza-ctacte (
+        itemName: P469_CARGA_AUTORIZA_CTACTE
+        execution {
+            sequence: 20
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    V_PERMISO VARCHAR2(1);
+                BEGIN
+                    SELECT 'S'
+                      INTO V_PERMISO 
+                    FROM BSW_PERMISOS_FORMAS F,
+                         BSW_PERMISOS_OPCIONES O
+                    WHERE F.ID_PERMISO = O.ID
+                      AND F.ID_EMPRESA = O.ID_EMPRESA
+                      AND F.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND F.ID_USUARIO = TRAE_ID_USUARIO(F.ID_EMPRESA,UPPER(:APP_USER))
+                      AND O.PARAMETRO = 'AUTORIZA_CTACTE';
+                    RETURN V_PERMISO;
+                EXCEPTION WHEN OTHERS THEN
+                RETURN 'N';
+                END;
+                ```
+        }
+    )
+
+    computation p469-carga-autoriza-stock (
+        itemName: P469_CARGA_AUTORIZA_STOCK
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    V_PERMISO VARCHAR2(1);
+                BEGIN
+                    SELECT 'S'
+                      INTO V_PERMISO 
+                    FROM BSW_PERMISOS_FORMAS F,
+                         BSW_PERMISOS_OPCIONES O
+                    WHERE F.ID_PERMISO = O.ID
+                      AND F.ID_EMPRESA = O.ID_EMPRESA
+                      AND F.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND F.ID_USUARIO = TRAE_ID_USUARIO(F.ID_EMPRESA,UPPER(:APP_USER))
+                      AND O.PARAMETRO = 'AUTORIZA_STOCK';
+                    RETURN V_PERMISO;
+                EXCEPTION WHEN OTHERS THEN
+                RETURN 'N';
+                END;
+                ```
+        }
+    )
+
+    computation p469-permiso-anular (
+        itemName: P469_PERMISO_ANULAR
+        execution {
+            sequence: 30
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    V_PERMISO VARCHAR2(1);
+                BEGIN
+                    SELECT 'S'
+                      INTO V_PERMISO 
+                    FROM BSW_PERMISOS_FORMAS F,
+                         BSW_PERMISOS_OPCIONES O
+                    WHERE F.ID_PERMISO = O.ID
+                      AND F.ID_EMPRESA = O.ID_EMPRESA
+                      AND F.ID_EMPRESA = :P0_ID_EMPRESA
+                      AND F.ID_USUARIO = TRAE_ID_USUARIO(F.ID_EMPRESA,UPPER(:APP_USER))
+                      AND O.PARAMETRO = 'ANULA_PEDIDO_VT';
+                    RETURN V_PERMISO;
+                EXCEPTION WHEN OTHERS THEN
+                RETURN 'N';
+                END;
+                ```
+        }
+    )
+
+    computation p469-permiso-stock-negativo (
+        itemName: P469_PERMISO_STOCK_NEGATIVO
+        execution {
+            sequence: 40
+        }
+        computation {
+            sqlQuery: SELECT W_BUSCA_PERMISO(:P0_ID_EMPRESA, 135, TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER),'FACTURA_STOCK_NEGATIVO') FROM DUAL;
+        }
+        comments {
+            comments: 135 es la pagina donde esta el permiso
+        }
+    )
+
+    process autoriza-pedidos-save-interactive-grid-data (
+        name: Autoriza Pedidos - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @autoriza-pedidos
+        target {
+            targetType: tableView
+            tableName: VTW_PEDIDOS_CABECERA
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 57498824962175815
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR
+        }
+    )
+
+    process detalle-de-autoriza-pedido-save-interactive-grid-data (
+        name: Detalle de autoriza pedido - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle-de-autoriza-pedido
+        target {
+            targetType: tableView
+            tableName: CMW_COTIZA_ARTICULOS
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 46203310913044819
+        }
+    )
+
+    process initialize-form-autoriza-pedidos (
+        name: Initialize form Autoriza Pedidos
+        type: formInitialization
+        formRegion: @autoriza-pedidos
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 56408182109149446
+        }
+    )
+
+)
+

@@ -1,0 +1,315 @@
+page 247 (
+    name: Consulta Precio
+    alias: CONSULTA-PRECIO
+    title: Consulta Precio
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        warnOnUnsavedChanges: false
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region articulo (
+        name: Articulo
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region codigo (
+        name: CODIGO
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select T.ID, B.COD_BARRA, t.descripcion, p.precio_fijo, --t.imagen_articulo,
+                
+                sys.dbms_lob.getlength(t.imagen_articulo) AS IMAGEN
+                
+                 from STW_ARTICULOS t , vtw_precios_fijos p, STW_BARRAS B
+                 where t.id_empresa = :P0_COD_EMPRESA
+                 and p.id_empresa=t.id_empresa
+                 and t.id = p.id_articulo
+                 AND B.ID_EMPRESA=T.ID_EMPRESA
+                 AND T.ID=B.ID_ARTICULO
+                 AND b.cod_barra = :P247_COD_BARRA
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @articulo
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            customAttributes: .wrapper {   display: grid;   grid-template-columns: repeat(1, 1fr);   grid-gap: 10px; }
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            includeSearchBar: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 57546685843432045
+        }
+
+        column COD_BARRA (
+            type: hidden
+            heading {
+                heading: Cod Barra
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            columnFormatting {
+                htmlExpression: <p style="font-size: 20px">#DESCRIPCION#</p>
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column IMAGEN (
+            type: displayImage
+            heading {
+                heading: Imagen
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            blobAttributes {
+                tableName: STW_ARTICULOS
+                blobColumn: IMAGEN_ARTICULO
+                primaryKeyColumn1: ID
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column PRECIO_FIJO (
+            type: plainText
+            heading {
+                heading: Precio Fijo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            columnFormatting {
+                htmlExpression: <p style="font-size: 20px">#PRECIO_FIJO#</p>
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        savedReport 579067 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_BARRA (
+                sequence: 2
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 3
+            )
+
+            displayColumn ID (
+                sequence: 1
+            )
+
+            displayColumn IMAGEN (
+                sequence: 5
+            )
+
+            displayColumn PRECIO_FIJO (
+                sequence: 4
+            )
+
+        )
+
+    )
+
+    region codigo-de-barra (
+        name: Codigo de Barra
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+            column: 1
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P247_COD_BARRA (
+        type: textField
+        label {
+            label: <P>Codigo de Barras:</p>
+            alignment: left
+        }
+        settings {
+            submitWhenEnterPressed: true
+        }
+        layout {
+            sequence: 80
+            region: @codigo-de-barra
+            slot: regionBody
+            alignment: left
+            column: 4
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction accion (
+        name: ACCION
+        execution {
+            sequence: 10
+        }
+        when {
+            event: focusin
+            selectionType: items
+            items: P247_COD_BARRA
+        }
+
+        action native-clear (
+            action: clear
+            affectedElements {
+                selectionType: items
+                items: P247_COD_BARRA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction filtros-buscar (
+        name: FILTROS_BUSCAR
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: null
+            }
+            affectedElements {
+                selectionType: items
+                items: P247_COD_BARRA
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

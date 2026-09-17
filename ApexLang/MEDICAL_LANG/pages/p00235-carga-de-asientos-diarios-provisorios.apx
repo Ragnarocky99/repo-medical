@@ -1,0 +1,3053 @@
+page 235 (
+    name: Carga de Asientos Diarios Provisorios
+    alias: CARGA-DE-ASIENTOS-DIARIOS-PROVISORIOS
+    title: Carga de Asientos Diarios Provisorios
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var orden = 0;
+            // Monto debe, monto haber
+            
+            function totalDebe(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cant_debe  = model.getFieldKey("MON_DEBE_COPIA");
+                var v_mon_debe   = 0;
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                        let v_debe     = r[v_cant_debe].replace(/\./g,'');
+                          
+                        v_mon_debe     = v_mon_debe  + parseFloat(v_debe.replace(',','.')) || 0;
+            
+                       //console.log("DEBE NRO. " + index + ": " + v_debe);
+                    }
+                    
+                    
+                });
+            
+                 $s('P235_TOT_DEBE',v_mon_debe.toString().replace('.', ','));
+            
+                 //console.log("Total debe: " + v_mon_debe);
+            
+            }
+            
+            
+            function totalHaber(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cant_haber = model.getFieldKey("MON_HABER_COPIA");
+                var v_mon_haber  = 0;
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                        let v_haber    = r[v_cant_haber].replace(/\./g,'');
+                          
+                        v_mon_haber    = v_mon_haber + parseFloat(v_haber.replace(',','.')) || 0;
+            
+                        //console.log("HABER NRO. " + index + ": " + v_haber);
+                       
+                    }
+                    
+                    
+                });
+            
+                 $s('P235_TOT_HABER',v_mon_haber.toString().replace('.', ','));
+            
+                 //console.log("Total haber: " + v_mon_haber);
+            
+            }
+            
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            //Totales
+            document.getElementById("P235_TOT_DEBE").readOnly = true;
+            document.getElementById("P235_TOT_HABER").readOnly = true;
+            document.getElementById("P235_TIPO_CAMBIO").readOnly = true;
+            document.getElementById("P235_DIFERENCIA").readOnly = true;
+            
+            //Descripcion
+            document.getElementById("P235_DESCRIPCION_CUENTA").readOnly = true;
+            document.getElementById("P235_DESCRIPCION_DETALLADA").readOnly = true;
+            
+            //Cabecera
+            document.getElementById("P235_NUM_ASIENTO").readOnly = true;
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+                pointer-events: none;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                color: #365ee4;
+                background-color: #d7d7d7;
+                box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+                border-style:solid;
+                border-color: #585151;
+                text-align: right;
+                height: 26px;
+                pointer-events: none;
+            }
+            
+            .no-pointer{
+                pointer-events: none;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-asientos-diarios-provisorios (
+        name: Carga de Asientos Diarios Provisorios
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.ID,
+                       C.ID_EMPRESA,
+                       C.ID_EJERCICIO,
+                       C.NUM_ASIENTO,
+                       C.ID_SUCURSAL,
+                       C.ID_MODULO,
+                       C.FEC_ASIENTO,
+                       C.DESCRIPCION,
+                       C.EJERCICIO_CERRADO,
+                       C.IND_MAYORIZADO,
+                       C.ID_MONEDA,
+                       C.TIPO_CAMBIO,
+                       C.ASIENTO_AUTOMATICO,
+                       C.IND_ASIENTO_CIERRE,
+                       C.IND_ASIENTO_APERTURA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       C.IND_ASIENTO_MANUAL,
+                       C.FEC_ALTA,
+                       C.COD_USUARIO_AUD,
+                       C.ID_USUARIO,
+                       C.ID_USUARIO_MOD,
+                       C.FEC_MODIFICACION,
+                       C.FEC_CARGA
+                FROM COW_DIARIO_CABECERAS_PROV C
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region detalles (
+        name: Detalles
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT D.ID,
+                       D.ID_EMPRESA,
+                       D.ID_SUCURSAL,
+                       D.ID_EJERCICIO,
+                       D.NUM_ASIENTO,
+                       D.NUM_LINEA,
+                       D.ID_DIARIO_CAB,
+                       D.ID_PLAN_CUENTA,
+                       D.ID_CENTRO,
+                       D.DESCRIPCION,
+                       D.DESCRIPCION AS DESCRIPCION_COPIA,
+                       D.MON_DEBE,
+                       D.MON_HABER,
+                       D.MON_DEBE AS MON_DEBE_COPIA,
+                       D.MON_HABER AS MON_HABER_COPIA,
+                       D.MON_ORI,
+                       D.FEC_ASIENTO,
+                       D.TIPO_CAMBIO,
+                       D.ID_MONEDA,
+                       D.ID_SUBGRUPO_CUENTA,
+                       D.ID_COMPROBANTE,
+                       D.TIP_COMPROBANTE,
+                       D.SER_COMPROBANTE,
+                       D.NRO_COMPROBANTE,
+                       D.NRO_COMPROBANTE_REAL,
+                       D.ID_USUARIO_MOD,
+                       D.ID_USUARIO,
+                       D.FEC_MODIFICACION,
+                       D.FEC_CARGA,
+                       D.ID_SUBCUENTA,
+                       D.ID_CONCEPTO_COMP,
+                       D.COD_USUARIO_AUD
+                FROM COW_DIARIO_DETALLES_PROV D
+                WHERE D.ID_DIARIO_CAB = :P235_ID
+                ```
+            pageItemsToSubmit: P235_ID
+        }
+        layout {
+            sequence: 210
+            parentRegion: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-lg
+                margin-bottom-lg
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        componentAppearance {
+            fixedRowHeight: false
+        }
+        toolbar {
+            controls: actionsMenu
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        heading {
+            fixedTo: region
+            fixedReportHeight: 280
+        }
+        advanced {
+            savedReportMappingIdentifier: 63433132665354466
+        }
+
+        savedReport 292751 (
+            visibility: primary
+            view {
+                default: grid
+                stretchColumns: false
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    frozen: true
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_EJERCICIO
+                layout {
+                    frozen: true
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NUM_ASIENTO
+                layout {
+                    frozen: true
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NUM_LINEA
+                layout {
+                    show: false
+                    frozen: true
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_DIARIO_CAB
+                layout {
+                    frozen: true
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    frozen: true
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_CENTRO
+                layout {
+                    width: 118
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @MON_DEBE
+                layout {
+                    width: 157
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @MON_HABER
+                layout {
+                    width: 164
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    width: 179
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ASIENTO
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_CAMBIO
+                layout {
+                    width: 103
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 144
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUBGRUPO_CUENTA
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_PLAN_CUENTA
+                layout {
+                    frozen: true
+                    width: 316
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE_REAL
+                layout {
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_USUARIO_MOD
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @ID_USUARIO
+                layout {
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @FEC_MODIFICACION
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @FEC_CARGA
+                layout {
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUBCUENTA
+                layout {
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO_COMP
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @MON_ORI
+                layout {
+                    width: 145
+                    sequence: 29
+                }
+            )
+
+            displayColumn (
+                column: @MON_DEBE_COPIA
+                layout {
+                    show: false
+                    sequence: 30
+                }
+            )
+
+            displayColumn (
+                column: @MON_HABER_COPIA
+                layout {
+                    show: false
+                    sequence: 31
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_COMPROBANTE
+                layout {
+                    sequence: 32
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION_COPIA
+                layout {
+                    show: false
+                    sequence: 33
+                }
+            )
+
+            sort (
+                column: @NUM_LINEA
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            settings {
+                enableMultiSelect: false
+            }
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCRIPCION (
+            type: textField
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+                alternativeLabel: Descripción
+            }
+            layout {
+                sequence: 120
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column DESCRIPCION_COPIA (
+            type: textField
+            heading {
+                alignment: center
+            }
+            layout {
+                sequence: 190
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: DESCRIPCION_COPIA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+        )
+
+        column FEC_ASIENTO (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: FEC_ASIENTO
+                dataType: date
+            }
+            default {
+                type: expression
+                plsqlExpression: SYSDATE
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_CARGA (
+            type: hidden
+            layout {
+                sequence: 350
+            }
+            source {
+                databaseColumn: FEC_CARGA
+                dataType: date
+            }
+            default {
+                type: expression
+                plsqlExpression: SYSDATE
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_MODIFICACION (
+            type: hidden
+            layout {
+                sequence: 340
+            }
+            source {
+                databaseColumn: FEC_MODIFICACION
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CENTRO (
+            type: popupLov
+            heading {
+                heading: <p>Centro de Costo</p>
+                alignment: center
+                alternativeLabel: Centro de Costo
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                popupWidth: 700
+                popupHeight: 500
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 110
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_CENTRO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: ID_COMPROBANTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CONCEPTO_COMP (
+            type: hidden
+            layout {
+                sequence: 360
+            }
+            source {
+                databaseColumn: ID_CONCEPTO_COMP
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_DIARIO_CAB (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID_DIARIO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EJERCICIO (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_EJERCICIO
+                dataType: number
+            }
+            default {
+                type: sqlQuerySingleValue
+                sqlQuerySingleValue:
+                    ```sql
+                    SELECT EJ.ID FROM COW_EJERCICIOS EJ
+                    WHERE EJ.COD_EJERCICIO = :P0_COD_EJERCICIO
+                    ```
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: selectList
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+                alternativeLabel: Moneda
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_PLAN_CUENTA (
+            type: popupLov
+            heading {
+                heading: <p>Cuenta Contable</p>
+                alignment: center
+                alternativeLabel: Cuenta Contable
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                popupWidth: 700
+                popupHeight: 500
+                additionalOutputs: NOMBRE_CUENTA:P235_DESCRIPCION_CUENTA
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-cuentas-contables-monedas
+                nullDisplayValue: --SIN SELECCIONAR--
+            }
+            layout {
+                sequence: 100
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_PLAN_CUENTA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_SUBCUENTA (
+            type: hidden
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: ID_SUBCUENTA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUBGRUPO_CUENTA (
+            type: hidden
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: ID_SUBGRUPO_CUENTA
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P235_ID_SUCURSAL
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_USUARIO (
+            type: hidden
+            layout {
+                sequence: 330
+            }
+            source {
+                databaseColumn: ID_USUARIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_USUARIO_MOD (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: ID_USUARIO_MOD
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MON_DEBE (
+            type: numberField
+            heading {
+                heading: <p>Debe</p>
+                alignment: center
+                alternativeLabel: Debe
+            }
+            settings {
+                numberAlignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MON_DEBE
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MON_DEBE_COPIA (
+            type: numberField
+            heading {
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MON_DEBE_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+        )
+
+        column MON_HABER (
+            type: numberField
+            heading {
+                heading: <p>Haber</p>
+                alignment: center
+                alternativeLabel: Haber
+            }
+            settings {
+                numberAlignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MON_HABER
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MON_HABER_COPIA (
+            type: numberField
+            heading {
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MON_HABER_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+        )
+
+        column MON_ORI (
+            type: numberField
+            heading {
+                heading: <p>Monto Orig.</p>
+                alignment: center
+                alternativeLabel: Monto Orig.
+            }
+            settings {
+                numberAlignment: end
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: MON_ORI
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 0
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE_REAL (
+            type: hidden
+            layout {
+                sequence: 300
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE_REAL
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_ASIENTO (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: NUM_ASIENTO
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P235_NUM_ASIENTO
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_LINEA (
+            type: numberField
+            heading {
+                heading: <p>Orden</p>
+                alignment: center
+                alternativeLabel: Orden
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NUM_LINEA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO_CAMBIO (
+            type: numberField
+            heading {
+                heading: <p>Tipo de cambio</p>
+                alignment: center
+                alternativeLabel: Tipo de cambio
+            }
+            layout {
+                sequence: 210
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: TIPO_CAMBIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: hidden
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles
+        }
+    )
+
+    pageItem P235_ASIENTO_AUTOMATICO (
+        type: hidden
+        layout {
+            sequence: 310
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ASIENTO_AUTOMATICO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+    )
+
+    pageItem P235_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 340
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 8
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 240
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_DESCRIPCION_CUENTA (
+        type: textField
+        label {
+            label: <p>Descripción cuenta:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P235_DESCRIPCION_DETALLADA (
+        type: textField
+        label {
+            label: <p>Descripción detallada:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P235_DIFERENCIA (
+        type: numberField
+        label {
+            label: <p class="totales">Diferencia:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 250
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            customAttributes: tabindex="-1"
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT ABS(NVL(SUM(D.MON_DEBE) - SUM(D.MON_HABER),0))
+                FROM COW_DIARIO_DETALLES_PROV D
+                WHERE D.ID_DIARIO_CAB = :P235_ID
+                ```
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P235_EJERCICIO_CERRADO (
+        type: hidden
+        layout {
+            sequence: 300
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: EJERCICIO_CERRADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_FEC_ALTA (
+        type: hidden
+        layout {
+            sequence: 330
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: FEC_ALTA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P235_FEC_ASIENTO (
+        type: datePicker
+        label {
+            label: <p>Fecha:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: FEC_ASIENTO
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P235_FEC_CARGA (
+        type: hidden
+        layout {
+            sequence: 360
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: FEC_CARGA
+            dataType: date
+        }
+    )
+
+    pageItem P235_FEC_MODIFICACION (
+        type: hidden
+        layout {
+            sequence: 380
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: FEC_MODIFICACION
+            dataType: date
+        }
+    )
+
+    pageItem P235_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: COW_DIARIO_CAB_PROV_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P235_ID_EJERCICIO (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_EJERCICIO
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: TRAE_ID_EJERCICIO(:P0_FEC_INICIAL_EJERCICIO)
+        }
+    )
+
+    pageItem P235_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P235_ID_MODULO (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_MODULO
+            dataType: number
+        }
+    )
+
+    pageItem P235_ID_MONEDA (
+        type: selectList
+        label {
+            label: <p>Moneda:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 270
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_MONEDA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: TRAE_ID_MONEDA(W_BUSCA_PARAMETRO('BS','COD_MONEDA_GS_DEF'))
+        }
+    )
+
+    pageItem P235_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: TRAE_ID_SUCURSAL(W_BUSCA_PARAMETRO('BS','COD_SUCURSAL_DEF'),:P0_ID_EMPRESA)
+        }
+    )
+
+    pageItem P235_ID_USUARIO (
+        type: hidden
+        layout {
+            sequence: 350
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_USUARIO
+            dataType: number
+        }
+    )
+
+    pageItem P235_ID_USUARIO_MOD (
+        type: hidden
+        layout {
+            sequence: 370
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: ID_USUARIO_MOD
+            dataType: number
+        }
+    )
+
+    pageItem P235_IND_ASIENTO_APERTURA (
+        type: checkbox
+        label {
+            label: <p>Apertura</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 130
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: IND_ASIENTO_APERTURA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_IND_ASIENTO_CIERRE (
+        type: checkbox
+        label {
+            label: <p>Cierre</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: IND_ASIENTO_CIERRE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_IND_ASIENTO_MANUAL (
+        type: hidden
+        layout {
+            sequence: 320
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: IND_ASIENTO_MANUAL
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P235_IND_MAYORIZADO (
+        type: checkbox
+        label {
+            label: <p>Mayorizado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: is-readonly
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: IND_MAYORIZADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_NRO_COMPROBANTE (
+        type: textField
+        label {
+            label: Nro Comprobante
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Número
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: NRO_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_NUM_ASIENTO (
+        type: numberField
+        label {
+            label: <p>Nro. Asiento: </p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: NUM_ASIENTO
+            dataType: number
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                --Autogenera el número de asiento
+                DECLARE
+                    vNumAsiento COW_DIARIO_CABECERAS_PROV.NUM_ASIENTO%TYPE;
+                    
+                BEGIN
+                
+                        BEGIN
+                            SELECT NVL(MAX(NUM_ASIENTO),0)+1
+                                INTO vNumAsiento
+                            FROM COW_DIARIO_CABECERAS_PROV DC, 
+                                 COW_EJERCICIOS EJ
+                            WHERE DC.ID_EMPRESA      = :P0_COD_EMPRESA
+                                AND EJ.COD_EJERCICIO = :P0_COD_EJERCICIO
+                                AND DC.ID_EJERCICIO  = EJ.ID;
+                            EXCEPTION
+                                WHEN NO_DATA_FOUND THEN
+                                    vNumAsiento := 1;
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000,'Error al cargar el número de asiento'||sqlerrm);
+                        END;
+                
+                    RETURN vNumAsiento;
+                
+                END;
+                
+                ```
+        }
+    )
+
+    pageItem P235_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: Ser Comprobante
+            alignment: left
+        }
+        layout {
+            sequence: 110
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: Serie
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_TIPO_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Tipo cambio:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 280
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            cssClasses: no-pointer
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            customAttributes: tabindex="-1"
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: TIPO_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P235_TIP_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Tip. Comp.: </p>
+            alignment: left
+        }
+        settings {
+            textCase: upper
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 3
+        }
+        source {
+            formRegion: @carga-de-asientos-diarios-provisorios
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P235_TOT_DEBE (
+        type: numberField
+        label {
+            label: <p class="totales">Total Debe:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 230
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            customAttributes: tabindex="-1"
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P235_TOT_HABER (
+        type: numberField
+        label {
+            label: <p class="totales">Total Haber:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+        }
+        layout {
+            sequence: 240
+            region: @carga-de-asientos-diarios-provisorios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+            customAttributes: tabindex="-1"
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button aplicar (
+        buttonName: APLICAR
+        label: Aplicar
+        layout {
+            sequence: 40
+            region: @carga-de-asientos-diarios-provisorios
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    button eliminar (
+        buttonName: ELIMINAR
+        label: Eliminar
+        layout {
+            sequence: 30
+            region: @carga-de-asientos-diarios-provisorios
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--danger
+                t-Button--iconLeft
+            ]
+            icon: fa-trash-o
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Seguro que desea borrar el registro?
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    button guardar (
+        buttonName: GUARDAR
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @carga-de-asientos-diarios-provisorios
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P235_ID
+        }
+    )
+
+    button print (
+        buttonName: PRINT
+        label: Imprimir
+        layout {
+            sequence: 20
+            region: @carga-de-asientos-diarios-provisorios
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @carga-de-asientos-diarios-provisorios
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button volver-listado (
+        buttonName: VOLVER_LISTADO
+        label: Listado
+        layout {
+            sequence: 20
+            region: @carga-de-asientos-diarios-provisorios
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-list
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 239
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction calcula-diferencia-debe (
+        name: CALCULA DIFERENCIA DEBE
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: P235_TOT_DEBE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        vTotDebe    NUMBER(20,2);
+                        vTotHaber   NUMBER(20,2);
+                        vDiferencia NUMBER(20,2);
+                    
+                    BEGIN
+                        DBMS_LOCK.SLEEP(0.3);
+                        /*Inicializa variables*/
+                        vTotDebe         := REPLACE(NVL(:P235_TOT_DEBE, 0),'.','');
+                        vTotHaber        := REPLACE(NVL(:P235_TOT_HABER,0),'.','');
+                    
+                        vDiferencia      := ABS(vTotDebe - vTotHaber);
+                    
+                        :P235_DIFERENCIA := vDiferencia;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P235_TOT_HABER
+                    P235_TOT_DEBE
+                ]
+                itemsToReturn: P235_DIFERENCIA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calcula-diferencia-haber (
+        name: CALCULA DIFERENCIA HABER
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P235_TOT_HABER
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        vTotDebe    NUMBER(20,2);
+                        vTotHaber   NUMBER(20,2);
+                        vDiferencia NUMBER(20,2);
+                    
+                    BEGIN
+                        DBMS_LOCK.SLEEP(0.3);
+                        /*Inicializa variables*/
+                        vTotDebe         := REPLACE(NVL(:P235_TOT_DEBE, 0),'.','');
+                        vTotHaber        := REPLACE(NVL(:P235_TOT_HABER,0),'.','');
+                    
+                        vDiferencia      := ABS(vTotDebe - vTotHaber);
+                    
+                        :P235_DIFERENCIA := vDiferencia;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P235_TOT_HABER
+                    P235_TOT_DEBE
+                ]
+                itemsToReturn: P235_DIFERENCIA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction descripcion-detallada (
+        name: DESCRIPCION DETALLADA
+        execution {
+            sequence: 100
+        }
+        when {
+            event: region/interactiveGrid/interactivegridselectionchange
+            selectionType: region
+            region: @detalles
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var full_desc;
+                    model = this.data.model;
+                    if(this.data != null){
+                        if(this.data.selectedRecords[0] != null){
+                                        //obtiene el valor del campo de la fila seleccionada
+                            full_desc = model.getValue(this.data.selectedRecords[0],"DESCRIPCION");
+                        }
+                    }
+                    
+                    //Coloca el valor de la columna DESCRIPCION de fila seleccionada
+                    
+                    apex.item("P235_DESCRIPCION_DETALLADA").setValue(full_desc);
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction history-back (
+        name: HISTORY-BACK
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @volver
+        }
+
+        action js-go-back (
+            name: js go back
+            action: executeJsCode
+            settings {
+                jsCode: history.back(-1)
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: INICIALIZAR
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    
+                        grid.model.setOption("editable", true);
+                        
+                        grid.setEditMode(true);
+                    
+                    let actions = apex.region("Detalles").call("getActions");
+                        //actions.hide("selection-duplicate");
+                        //actions.hide("selection-delete");
+                        //actions.hide("selection-copy-down");
+                        //actions.hide("selection-copy");
+                        //actions.hide("selection-refresh"); 
+                        //actions.hide("selection-revert"); 
+                        actions.hide("selection-add-row");
+                        actions.hide("selection-fill"); 
+                        //actions.hide("selection-clear"); 
+                        actions.hide("single-row-view");
+                        //actions.hide("row-add-row");
+                        actions.hide("row-duplicate");
+                        //actions.hide("row-delete"); 
+                        actions.hide("row-refresh");  
+                        actions.hide("row-revert");
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction orden-detalle (
+        name: ORDEN DETALLE
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: NUM_LINEA
+        }
+
+        action js-suma-orden (
+            name: JS - Suma orden
+            action: executeJsCode
+            settings {
+                jsCode: orden += 1;
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action orden (
+            name: ORDEN
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: orden
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NUM_LINEA
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-debe-copia (
+        name: SET DEBE COPIA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: MON_DEBE
+        }
+
+        action js-debe (
+            name: JS - DEBE
+            action: executeJsCode
+            settings {
+                jsCode: totalDebe()
+            }
+            execution {
+                sequence: 40
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: DBMS_LOCK.SLEEP(0.3);
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: NVL(:MON_DEBE, 0)
+                itemsToSubmit: MON_DEBE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MON_DEBE_COPIA
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-descripcion-copia (
+        name: SET DESCRIPCION COPIA
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: DESCRIPCION
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :DESCRIPCION
+                itemsToSubmit: DESCRIPCION
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DESCRIPCION_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-haber-copia (
+        name: SET HABER COPIA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: MON_HABER
+        }
+
+        action js-haber (
+            name: JS - HABER
+            action: executeJsCode
+            settings {
+                jsCode: totalHaber()
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: DBMS_LOCK.SLEEP(0.3);
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: NVL(:MON_HABER, 0)
+                itemsToSubmit: MON_HABER
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MON_HABER_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-moneda-cuenta (
+        name: SET MONEDA CUENTA
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles
+            columns: ID_PLAN_CUENTA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT PC.ID_MONEDA FROM COW_PLAN_CUENTAS PC
+                    WHERE PC.ID = :ID_PLAN_CUENTA
+                    ```
+                itemsToSubmit: ID_PLAN_CUENTA
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_MONEDA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-tipo-cambio (
+        name: SET TIPO CAMBIO
+        execution {
+            sequence: 80
+        }
+        when {
+            selectionType: items
+            items: P235_ID_MONEDA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                        RETURN FTIPOS_CAMBIO(:P235_ID_MONEDA,SYSDATE,'C','V');
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            RETURN NULL;
+                    END;
+                    ```
+                itemsToSubmit: P235_ID_MONEDA
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P235_TIPO_CAMBIO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation validar-descripcion (
+        name: VALIDAR_DESCRIPCION
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: itemIsNotNull
+            item: P235_DESCRIPCION
+        }
+        error {
+            errorMessage: Favor de cargar una descripción.
+            associatedItem: @P235_DESCRIPCION
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR,APLICAR
+        }
+    )
+
+    validation validar-diferencia (
+        name: VALIDAR_DIFERENCIA
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                BEGIN
+                    IF REPLACE(:P235_DIFERENCIA,'.','') = 0 THEN
+                        RETURN true;
+                    ELSE
+                        return false;
+                    END IF; 
+                END;
+                ```
+        }
+        error {
+            errorMessage: El monto debe y haber deben tener una diferencia igual a 0.
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR,APLICAR
+        }
+    )
+
+    validation validar-totales-cero (
+        name: VALIDAR_TOTALES_CERO
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                    vMensajeError VARCHAR2(200);
+                    vTotalDebe    NUMBER(20,2);
+                    vTotalHaber   NUMBER(20,2);
+                
+                BEGIN
+                    /*Inicialización de variables*/
+                    vTotalDebe := NVL(REPLACE(:P235_TOT_DEBE,'.',''), 0);
+                    vTotalHaber := NVL(REPLACE(:P235_TOT_HABER,'.',''), 0);
+                
+                    IF vTotalDebe = 0 AND vTotalHaber = 0 THEN
+                        RETURN 'Los totales no pueden quedar en 0.';
+                    ELSE
+                        RETURN NULL;
+                    END IF;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR,APLICAR
+        }
+    )
+
+    computation p235-cod-usuario-aud (
+        itemName: P235_COD_USUARIO_AUD
+        execution {
+            sequence: 20
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-diferencia (
+        itemName: P235_DIFERENCIA
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT ABS(NVL(SUM(D.MON_DEBE) - SUM(D.MON_HABER),0))
+                FROM COW_DIARIO_DETALLES_PROV D
+                WHERE D.ID_DIARIO_CAB = :P235_ID
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-fec-alta (
+        itemName: P235_FEC_ALTA
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-fec-carga (
+        itemName: P235_FEC_CARGA
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-fec-modificacion (
+        itemName: P235_FEC_MODIFICACION
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-id-usuario (
+        itemName: P235_ID_USUARIO
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER)
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-id-usuario-mod (
+        itemName: P235_ID_USUARIO_MOD
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER)
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-num-asiento (
+        itemName: P235_NUM_ASIENTO
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                --Autogenera el número de asiento
+                DECLARE
+                    vNumAsiento COW_DIARIO_CABECERAS_PROV.NUM_ASIENTO%TYPE;
+                BEGIN
+                        BEGIN
+                            SELECT NVL(MAX(NUM_ASIENTO),0)+1
+                                INTO vNumAsiento
+                            FROM COW_DIARIO_CABECERAS_PROV DC, 
+                                 COW_EJERCICIOS EJ
+                            WHERE DC.ID_EMPRESA      = :P0_COD_EMPRESA
+                                AND EJ.COD_EJERCICIO = :P0_COD_EJERCICIO
+                                AND DC.ID_EJERCICIO  = EJ.ID;
+                            EXCEPTION
+                                WHEN NO_DATA_FOUND THEN
+                                    vNumAsiento := 1;
+                                WHEN OTHERS THEN
+                                    RAISE_APPLICATION_ERROR(-20000,'Error al cargar el número de asiento'||sqlerrm);
+                        END;
+                
+                    RETURN vNumAsiento;
+                
+                END;
+                
+                ```
+        }
+        error {
+            errorMessage: No se pudo auto-generar el Nro. de Asiento.
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-tot-debe (
+        itemName: P235_TOT_DEBE
+        execution {
+            sequence: 30
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE 
+                VTOT NUMBER :=0;
+                BEGIN
+                SELECT NVL(SUM(D.MON_DEBE),0)
+                INTO VTOT
+                FROM COW_DIARIO_DETALLES_PROV D
+                WHERE D.ID_DIARIO_CAB = :P235_ID;
+                RETURN VTOT;
+                END;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    computation p235-tot-haber (
+        itemName: P235_TOT_HABER
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT SUM(D.MON_HABER)
+                FROM COW_DIARIO_DETALLES_PROV D
+                WHERE D.ID_DIARIO_CAB = :P235_ID
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P235_ID
+        }
+    )
+
+    process cab-det (
+        name: CAB_DET
+        type: executeCode
+        editableRegion: @detalles
+        source {
+            plsqlCode:
+                ```plsql
+                :ID_DIARIO_CAB   := :P235_ID;
+                :TIP_COMPROBANTE := :P235_TIP_COMPROBANTE;
+                :SER_COMPROBANTE := :P235_SER_COMPROBANTE;
+                :NRO_COMPROBANTE := :P235_NRO_COMPROBANTE;
+                :NUM_ASIENTO     := :P235_NUM_ASIENTO;
+                :FEC_ASIENTO     := :P235_FEC_ASIENTO;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 17530895208419609
+        }
+    )
+
+    process guarda-cabecera (
+        name: GUARDA CABECERA
+        type: formAutoRowProcessing
+        formRegion: @carga-de-asientos-diarios-provisorios
+        target {
+            targetType: tableView
+            tableName: COW_DIARIO_CABECERAS_PROV
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 17515312469419596
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR,APLICAR,ELIMINAR
+        }
+    )
+
+    process guarda-detalle (
+        name: GUARDA DETALLE
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles
+        target {
+            targetType: tableView
+            tableName: COW_DIARIO_DETALLES_PROV
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 17530497336419609
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR,APLICAR
+        }
+    )
+
+    process initialize-form-carga-de-asientos-diarios-provisorios (
+        name: Initialize form Carga de Asientos Diarios Provisorios
+        type: formInitialization
+        formRegion: @carga-de-asientos-diarios-provisorios
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 17514905570419596
+        }
+    )
+
+    process limpiar-pantalla (
+        name: LIMPIAR PANTALLA
+        type: clearSessionState
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 17536564539419618
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: ELIMINAR,GUARDAR
+        }
+    )
+
+    branch (
+        name: Go To Page 252
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 252
+                items: {
+                    P235_ID: &P235_ID.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @print
+        }
+    )
+
+)
+

@@ -1,0 +1,707 @@
+page 19 (
+    name: Carga de Barrios
+    alias: CARGA-DE-BARRIOS
+    title: Carga de Barrios
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        chained: false
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                background-color:#eeeeee;
+                width: 225px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-barrios (
+        name: Carga de Barrios
+        type: form
+        source {
+            location: localDatabase
+            tableName: BSW_BARRIOS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P19_ABREVIATURA (
+        type: textField
+        label {
+            label: <p>Abreviatura:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-barrios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 5
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: ABREVIATURA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P19_COD_BARRIO (
+        type: textField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Barrio:</a>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-barrios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 5
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 5
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: COD_BARRIO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P19_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 140
+            region: @carga-de-barrios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P19_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción:</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-barrios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P19_ID (
+        type: hidden
+        layout {
+            sequence: 130
+            region: @carga-de-barrios
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P19_ID_CIUDAD (
+        type: selectList
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Ciudad:</a>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION||'('||COD_CIUDAD||')',ID FROM BSW_CIUDADES 
+                WHERE ID_PAIS=:P19_ID_PAIS AND ID_PROVINCIA=:P19_ID_PROVINCIA
+                ```
+        }
+        cascadingLov {
+            parentItems: P19_ID_PROVINCIA
+            itemsToSubmit: [
+                P19_ID_PAIS
+                P19_ID_PROVINCIA
+            ]
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-barrios
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @required
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: ID_CIUDAD
+            dataType: number
+        }
+    )
+
+    pageItem P19_ID_PAIS (
+        type: selectList
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">País:</a>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-paises
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-barrios
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @required
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: ID_PAIS
+            dataType: number
+        }
+    )
+
+    pageItem P19_ID_PROVINCIA (
+        type: selectList
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Provincia:</a>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION||'('||COD_PROVINCIA||')',ID FROM BSW_PROVINCIAS WHERE
+                ID_PAIS=:P19_ID_PAIS
+                ```
+        }
+        cascadingLov {
+            parentItems: P19_ID_PAIS
+            itemsToSubmit: P19_ID_PAIS
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-barrios
+            slot: regionBody
+            alignment: left
+            columnSpan: 5
+        }
+        appearance {
+            template: @required
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-barrios
+            column: ID_PROVINCIA
+            dataType: number
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button ciudad (
+        buttonName: CIUDAD
+        label: Ciudad
+        layout {
+            sequence: 110
+            region: @carga-de-barrios
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 21
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P19_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P19_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button pais (
+        buttonName: PAIS
+        label: Pais
+        layout {
+            sequence: 30
+            region: @carga-de-barrios
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 13
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button provincia (
+        buttonName: PROVINCIA
+        label: Provincia
+        layout {
+            sequence: 70
+            region: @carga-de-barrios
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--simple
+                t-Button--padLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 15
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P19_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 20
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @pais
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P19_ID_PAIS
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-lista (
+        name: Refrescar Lista
+        execution {
+            sequence: 40
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @ciudad
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P19_ID_CIUDAD
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-lv (
+        name: Refrescar LV
+        execution {
+            sequence: 30
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: button
+            button: @provincia
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: P19_ID_PROVINCIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p19-cod-barrio (
+        itemName: P19_COD_BARRIO
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT NVL(MAX(TO_NUMBER(A.COD_BARRIO)),0)+1
+                from BSW_BARRIOS A
+                ```
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 9397220492875201
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-barrios (
+        name: Initialize form Carga de Barrios
+        type: formInitialization
+        formRegion: @carga-de-barrios
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 9396432876875201
+        }
+    )
+
+    process process-form-carga-de-barrios (
+        name: Process form Carga de Barrios
+        type: formAutoRowProcessing
+        formRegion: @carga-de-barrios
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 9396869568875201
+        }
+    )
+
+)
+

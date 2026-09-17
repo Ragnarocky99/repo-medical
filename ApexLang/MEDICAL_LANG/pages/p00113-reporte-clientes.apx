@@ -1,0 +1,89 @@
+page 113 (
+    name: Reporte clientes
+    alias: REPORTE-CLIENTES
+    title: Reporte clientes
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P113_NEW (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: :P114_ZONA
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                DECLARE
+                vcName PK_JRXML2PDF_TYPES.tName;
+                
+                l_ReportList PK_JRXML2PDF_TYPES.tReportNameList;
+                
+                r_Params PK_JRXML2PDF_REPGEN.TPARAMETER;
+                l_Params PK_JRXML2PDF_REPGEN.TPARAMLIST;
+                
+                bl BLOB;
+                
+                BEGIN
+                
+                vcName := 'reporte test';
+                
+                r_Params.vcName := 'P_ID_EMPRESA';
+                r_Params.vcValue := :P0_COD_EMPRESA;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                r_Params.vcName := 'P_ID_ZONA';
+                r_Params.vcValue := :P114_ZONA;
+                l_Params(l_Params.COUNT+1) := r_Params;
+                
+                l_ReportList(1) := vcName;
+                
+                
+                
+                bl := PK_JRXML2PDF_REPGEN.FK_RUN(i_lReports=>l_ReportList,
+                i_lParams=>l_Params,
+                i_bResetPageNumber=>false
+                );
+                
+                PK_JRXML2PDF_REPGEN.PR_SHOW_REPORT(bl);
+                APEX_APPLICATION.STOP_APEX_ENGINE;
+                
+                END;
+                ```
+        }
+    )
+
+)
+

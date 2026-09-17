@@ -1,0 +1,590 @@
+page 23 (
+    name: Carga de Modulos
+    alias: MODULOS
+    title: Carga de Modulos - Sistema Inventiva
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region modulos (
+        name: Modulos
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       COD_MODULO,
+                       DESCRIPCION,
+                       MANEJA_CALENDARIO,
+                       COD_USUARIO_AUD,
+                       ACTIVO
+                  from BSW_MODULOS
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+            column: 3
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P23_ACTIVO (
+        type: checkbox
+        label {
+            label: Activo
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 70
+            region: @modulos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @modulos
+            column: ACTIVO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P23_COD_MODULO (
+        type: textField
+        label {
+            label: <p>Cód. Módulo: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 30
+            region: @modulos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 2
+        }
+        source {
+            formRegion: @modulos
+            column: COD_MODULO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P23_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @modulos
+            slot: regionBody
+        }
+        source {
+            formRegion: @modulos
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+    )
+
+    pageItem P23_DESCRIPCION (
+        type: textField
+        label {
+            label: <p>Descripción: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+        }
+        layout {
+            sequence: 40
+            region: @modulos
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            maxLength: 80
+        }
+        source {
+            formRegion: @modulos
+            column: DESCRIPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P23_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @modulos
+            slot: regionBody
+        }
+        source {
+            formRegion: @modulos
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: BSW_MODULOS_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P23_MANEJA_CALENDARIO (
+        type: checkbox
+        label {
+            label: Maneja Calendario
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 50
+            region: @modulos
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 5
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @modulos
+            column: MANEJA_CALENDARIO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P23_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P23_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P23_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 5556597772792192
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process crear-entradas (
+        name: Crear Entradas
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                --Crea entradas en el menu para el modulo creado
+                
+                  declare
+                  vID  varchar2(10);
+                  vID_PAGINA_PADRE varchar2(10);
+                  begin
+                
+                   --Trae el ID del   modulo creado 
+                   SELECT ID INTO vID FROM BSW_MODULOS WHERE COD_MODULO=:P23_COD_MODULO;
+                
+                
+                
+                  --Inserta la entrada del modulo en el menu
+                   INSERT INTO INV.BSW_FORMAS_PAGINAS 
+                  VALUES (1,:P23_DESCRIPCION,NULL,NULL,NULL,'fa-badge-check',vID,NULL,NULL,'S',null);
+                
+                  COMMIT;
+                
+                  --Trae el ID del la entrada del menu del modulo para poder insertar los tipos de formularios(Definiciones,Movimientos,Reportes,Consultas)
+                
+                   SELECT NAV_ID INTO vID_PAGINA_PADRE FROM BSW_FORMAS_PAGINAS WHERE ID_MODULO=vID AND 
+                   LEVEL=1 START WITH PARENT_ID IS NULL
+                CONNECT BY PRIOR  NAV_ID=PARENT_ID; 
+                  
+                  --Se inserta la entrada en el menu del tipo de formulario de Definiciones 
+                  INSERT INTO INV.BSW_FORMAS_PAGINAS VALUES(2,W_BUSCA_PARAMETRO('BS','DE'),NULL,vID_PAGINA_PADRE,NULL,W_BUSCA_PARAMETRO('BS','ICONO_DEFINICIONES'),vID,1,NULL,'S',null);
+                    --Se inserta la entrada en el menu del tipo de formulario de movimientos
+                  INSERT INTO INV.BSW_FORMAS_PAGINAS VALUES(2,W_BUSCA_PARAMETRO('BS','MOV'),NULL,vID_PAGINA_PADRE,NULL,W_BUSCA_PARAMETRO('BS','ICONO_MOVIMIENTOS'),vID,2,NULL,'S',null);
+                    --Se inserta la entrada en el menu del tipo de formulario de reportes
+                  INSERT INTO INV.BSW_FORMAS_PAGINAS VALUES(2,W_BUSCA_PARAMETRO('BS','RE'),NULL,vID_PAGINA_PADRE,NULL,W_BUSCA_PARAMETRO('BS','ICONO_REPORTES'),vID,3,NULL,'S',null);
+                      --Se inserta la entrada en el menu del tipo de formulario de consultas
+                  INSERT INTO INV.BSW_FORMAS_PAGINAS VALUES(2,W_BUSCA_PARAMETRO('BS','CON'),NULL,vID_PAGINA_PADRE,NULL,W_BUSCA_PARAMETRO('BS','ICONO_CONSULTAS'),vID,4,NULL,'S',null);
+                  end;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 5454407011814647
+        }
+        serverSideCondition {
+            whenButtonPressed: @create
+        }
+    )
+
+    process eliminar-entradas (
+        name: Eliminar Entradas
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                --Script para borrar las entradas del menu del modulo al ser este borrado
+                
+                dECLARE
+                vID varchar2(10);
+                li_count integer:=0;
+                li_count_2 integer:=0;
+                BEGIN
+                
+                
+                --Se valida que el modulo tenga las entradas de Definiciones,Movimientos,Reportes,Consultas
+                SELECT COUNT(1) 
+                into li_count 
+                FROM BSW_FORMAS_PAGINAS 
+                WHERE TIPO IS NOT NULL AND
+                ID_MODULO=:P23_ID;
+                
+                --Se valida que el modulo tenga una entrada en el menu
+                SELECT COUNT(1) 
+                INTO li_count_2
+                FROM BSW_FORMAS_PAGINAS
+                WHERE ID_MODULO=:P23_ID AND
+                TIPO IS NULL AND LEVEL=1
+                START WITH PARENT_ID IS NULL
+                CONNECT BY PRIOR  NAV_ID=PARENT_ID; 
+                
+                --Si el modulo cuenta con entradas en el menu entonces se procede a borrarlos
+                if li_count>1 and li_count_2=1
+                then
+                --Se trae el ID padre  para borrar las subentradas que tiene el modulo
+                SELECT NAV_ID INTO vID FROM BSW_FORMAS_PAGINAS WHERE LEVEL=1 AND
+                  ID_MODULO=:P23_ID 
+                  START WITH PARENT_ID IS NULL
+                CONNECT BY PRIOR  NAV_ID=PARENT_ID;
+                  
+                  DELETE FROM  BSW_FORMAS_PAGINAS WHERE  ID_MODULO=:P23_ID AND
+                  NAV_NAME=:P23_DESCRIPCION;
+                   
+                
+                  --Se borran las subentradas del menu que corresponde al modulo borrado
+                   DELETE FROM  BSW_FORMAS_PAGINAS WHERE  ID_MODULO=:P23_ID AND
+                  NAV_NAME=W_BUSCA_PARAMETRO(NULL,'DE') AND PARENT_ID=vID;
+                  
+                  DELETE FROM  BSW_FORMAS_PAGINAS WHERE  ID_MODULO=:P23_ID AND
+                  NAV_NAME=W_BUSCA_PARAMETRO(NULL,'MOV') AND PARENT_ID=vID;
+                  
+                  DELETE FROM  BSW_FORMAS_PAGINAS WHERE  ID_MODULO=:P23_ID AND
+                  NAV_NAME=W_BUSCA_PARAMETRO(NULL,'RE') AND PARENT_ID=vID;
+                  
+                  DELETE FROM  BSW_FORMAS_PAGINAS WHERE  ID_MODULO=:P23_ID AND
+                  NAV_NAME=W_BUSCA_PARAMETRO(NULL,'CON') AND PARENT_ID=vID;
+                
+                  COMMIT;
+                
+                  ELSE
+                NULL;
+                  END IF;
+                  
+                  END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 5454663438814649
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process inicializar-pantalla-carga-de-modulos (
+        name: Inicializar pantalla Carga de Modulos
+        type: formInitialization
+        formRegion: @modulos
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 16188469359877722
+        }
+    )
+
+    process modificar-entrada (
+        name: Modificar Entrada
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                --Si se cambia el nombre del modulo entonces se cambia el nombre automaticamente en la
+                --del menu
+                
+                
+                DECLARE
+                V_ID VARCHAR2(10);
+                BEGIN
+                SELECT NAV_ID INTO v_id  from bsw_formas_paginas WHERE ID_MODULO=:P23_ID AND 
+                LEVEL=1 START WITH PARENT_ID IS NULL
+                CONNECT BY PRIOR  NAV_ID=PARENT_ID;
+                
+                UPDATE BSW_FORMAS_PAGINAS SET NAV_NAME=:P23_DESCRIPCION WHERE NAV_ID=v_id  AND ID_MODULO=:P23_ID; 
+                END;
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 6766191177161203
+        }
+        serverSideCondition {
+            whenButtonPressed: @save
+        }
+    )
+
+    process process-form-modulos (
+        name: Process form Modulos
+        type: formAutoRowProcessing
+        formRegion: @modulos
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 5556194769792192
+        }
+    )
+
+)
+

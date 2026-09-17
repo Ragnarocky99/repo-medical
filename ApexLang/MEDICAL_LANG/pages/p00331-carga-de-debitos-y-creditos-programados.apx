@@ -1,0 +1,2970 @@
+page 331 (
+    name: Carga de Debitos y Creditos Programados
+    alias: CARGA-DE-DEBITOS-Y-CREDITOS-PROGRAMADOS
+    title: Carga de Debitos y Creditos Programados
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var orden = 0;
+            
+            function calculaTotales(){
+                //var model= apex.region("Totales").element().;
+            var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cantidad1 = model.getFieldKey("MONTO_CUOTA");
+              var v_cantidad2 = model.getFieldKey("SALDO_CUOTA");
+            
+            
+            
+            
+                var v_TOTAL_DETALLE = model.getFieldKey(":P331_TOTAL_DETALLE");
+                var v_TOTAL_SALDO = model.getFieldKey(":P331_TOTAL_SALDO");
+                var v_total_det  = 0;
+                var v_TOTAL_DETALLE  = 0;
+                var v_TOTAL_SALDO = 0;
+                var v_total_sal = 0;
+                
+                model.forEach(function(r, index, id) {
+            
+                var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                       // v_total_det= SumBy(v_TOTAL_DETALLE + parseFloat(r[v_cantidad1].replace(/\./g,'')));
+                      //  v_total_sal= SumBy(v_TOTAL_SALDO + parseFloat(r[v_cantidad2].replace(/\./g,'')));
+            
+                        v_total_det     = v_total_det    + parseFloat(r[v_cantidad1].replace(/\./g,''));
+                        v_total_sal      = v_total_sal     + parseFloat(r[v_cantidad2].replace(/\./g,''));
+            
+                       
+                    }
+                            
+                });
+            
+                if(isNaN(v_total_sal)){
+                     v_total_sal=1;
+                 }
+                 if(isNaN(v_total_det)){
+                     v_total_det=1;
+                 }
+                $s('P331_TOTAL_DETALLE',v_total_det);
+                $s('P331_TOTAL_SALDO',v_total_sal);
+            
+                 
+                //console.log('cambio es '+ v_cambio_debe + " | " + v_cambio_haber);
+            
+            }
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P331_NRO_PROGRAMA").readOnly = true;
+            document.getElementById("P331_FECHA_ALTA").readOnly = true;
+            document.getElementById("P331_COD_USUARIO_ALTA").readOnly = true;
+            
+            
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .readOnly{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 120
+            slot: body
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region cabecera-de-débitos-y-créditos-programados (
+        name: "Cabecera de débitos y créditos Programados "
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       NRO_PROGRAMA,
+                       ID_EMPLEADO,
+                       ID_CONCEPTO,
+                       FEC_INICIO,
+                       FEC_FINAL,
+                       MONTO_TOTAL,
+                       TIP_DEBCRED,
+                       MONTO_CUOTA,
+                       OBSERVACION,
+                       ACTIVO,
+                       ORI_DEBCRED,
+                       TIP_LIQUID,
+                       ID_MONEDA,
+                       TIP_COMPROBANTE,
+                       SER_COMPROBANTE,
+                       NRO_COMPROBANTE,
+                       ID_SUCURSAL,
+                       SALDO,
+                       NRO_CHEQUE,
+                       COD_USUARIO_AUD,
+                       COD_USUARIO_ALTA,
+                       FECHA_ALTA,
+                       ID_EMPLEADO AS ID_EMPLEADO_1
+                  from RHW_DEBCRED_PROG_CAB
+                
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                i-h240
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-top-none
+                margin-bottom-none
+                margin-left-none
+                margin-right-none
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region detalle-cabecera (
+        name: Detalle Cabecera 2
+        type: staticContent
+        layout {
+            sequence: 60
+            slot: body
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+                margin-top-none
+                margin-bottom-none
+                margin-left-none
+                margin-right-none
+            ]
+        }
+    )
+
+    region detalle-de-cabecera (
+        name: Detalle de Cabecera
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+                margin-bottom-none
+                margin-left-none
+                margin-right-none
+            ]
+        }
+    )
+
+    region detalle-de-débitos-y-créditos-programados (
+        name: Detalle de Débitos y Créditos programados
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_CABECERA,
+                       NRO_PROGRAMA,
+                       NRO_CUOTA,
+                       FEC_VENCIMIENTO,
+                       MONTO_CUOTA,
+                       MONTO_CUOTA as MONTO_COPIA,
+                       SALDO_CUOTA,
+                       SALDO_CUOTA AS SALDO_COPIA,
+                       ID_SUCURSAL,
+                       COD_USUARIO_AUD
+                  from RHW_DEBCRED_PROG_DET
+                 where id_empresa = :P0_ID_EMPRESA
+                 AND ID_CABECERA = :P331_ID
+                 --AND NRO_CUOTA = :NRO_CUOTAS
+                 --AND NRO_PROGRAMA = :NRO_PROGRAMA
+                
+                ```
+            pageItemsToSubmit: P331_ID
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+            ]
+            addButtonLabel: Añadir
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 17444944870119613
+        }
+
+        savedReport 174576 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_CABECERA
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NRO_PROGRAMA
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_CUOTA
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_COPIA
+                layout {
+                    show: false
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @SALDO_COPIA
+                layout {
+                    show: false
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_CUOTA
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @SALDO_CUOTA
+                layout {
+                    sequence: 13
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CABECERA (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_CABECERA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P331_ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_SUCURSAL
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_COPIA (
+            type: numberField
+            heading {
+                heading: Monto Copia
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MONTO_COPIA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Monto Cuota</p>
+                alignment: end
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column NRO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Nro Cuota</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column NRO_PROGRAMA (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: NRO_PROGRAMA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column SALDO_COPIA (
+            type: numberField
+            heading {
+                heading: Saldo Copia
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: SALDO_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        column SALDO_CUOTA (
+            type: numberField
+            heading {
+                heading: <p>Saldo Cuota</p>
+                alignment: end
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                databaseColumn: SALDO_CUOTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            readOnly {
+                type: always
+                execute: forEachRow
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle de Débitos y Créditos programados
+        }
+    )
+
+    region new (
+        name: New
+        type: staticContent
+        layout {
+            sequence: 30
+            parentRegion: @buttons
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region new-2 (
+        name: New
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noPadding
+                t-ButtonRegion--noUI
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region totales (
+        name: TOTALES
+        type: staticContent
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region usuario-y-fecha-de-alta (
+        name: Usuario y fecha de alta
+        type: staticContent
+        layout {
+            sequence: 170
+            slot: body
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P331_ACTIVO (
+        type: checkbox
+        label {
+            label: <p>Activo</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 130
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-left-lg
+            ]
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ACTIVO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: S
+        }
+    )
+
+    pageItem P331_COD_USUARIO_ALTA (
+        type: textField
+        label {
+            label: <P>Usuario Alta: </P>
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @usuario-y-fecha-de-alta
+            slot: regionBody
+            alignment: left
+            column: 5
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 10
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: COD_USUARIO_ALTA
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P331_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P331_DECIMAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 140
+            slot: body
+        }
+    )
+
+    pageItem P331_FECHA_ALTA (
+        type: textField
+        label {
+            label: <P>Fecha Alta: </P>
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @usuario-y-fecha-de-alta
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: FECHA_ALTA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P331_FEC_FINAL (
+        type: datePicker
+        label {
+            label: <p>Fecha Final: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @detalle-de-cabecera
+            slot: regionBody
+            alignment: left
+            columnSpan: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-bottom-sm
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: FEC_FINAL
+            dataType: date
+        }
+    )
+
+    pageItem P331_FEC_INICIO (
+        type: datePicker
+        label {
+            label: <p>Fecha Inicio: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @detalle-de-cabecera
+            slot: regionBody
+            alignment: left
+            columnSpan: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: FEC_INICIO
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P331_FEC_INI_CUO (
+        type: datePicker
+        label {
+            label: <p>Fecha calc.cuota:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @detalle-cabecera
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+            ]
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P331_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P331_ID_CONCEPTO (
+        type: popupLov
+        label {
+            label: <p>Concepto: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @rhw-conceptos
+        }
+        layout {
+            sequence: 70
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID_CONCEPTO
+            dataType: number
+        }
+    )
+
+    pageItem P331_ID_EMPLEADO (
+        type: popupLov
+        label {
+            label: <p> Empleado: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados-activos
+        }
+        layout {
+            sequence: 40
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID_EMPLEADO
+            dataType: number
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P331_ID
+        }
+    )
+
+    pageItem P331_ID_EMPLEADO_1 (
+        type: popupLov
+        label {
+            label: <p> Empleado: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados
+        }
+        layout {
+            sequence: 50
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID_EMPLEADO_1
+            dataType: number
+            queryOnly: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    pageItem P331_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 20
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P331_ID_MONEDA (
+        type: popupLov
+        label {
+            label: <p>Moneda: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 110
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID_MONEDA
+            dataType: number
+        }
+    )
+
+    pageItem P331_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ID_SUCURSAL
+            dataType: varchar2
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P331_JSON_DETALLES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 160
+            slot: body
+        }
+    )
+
+    pageItem P331_MONTO_CUOTA (
+        type: textField
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @detalle-de-cabecera
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 4
+            columnSpan: 4
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-right-none
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: MONTO_CUOTA
+            dataType: number
+        }
+    )
+
+    pageItem P331_MONTO_TOTAL (
+        type: numberField
+        label {
+            label: <p>Monto Total: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @detalle-de-cabecera
+            slot: regionBody
+            alignment: left
+            columnSpan: 7
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-sm
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: MONTO_TOTAL
+            dataType: number
+        }
+    )
+
+    pageItem P331_NRO_CHEQUE (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: NRO_CHEQUE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_NRO_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: NRO_COMPROBANTE
+            dataType: number
+        }
+    )
+
+    pageItem P331_NRO_CUOTAS (
+        type: textField
+        label {
+            label: <p>Monto Cuota: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @detalle-de-cabecera
+            slot: regionBody
+            alignment: left
+            column: 1
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P331_NRO_PROGRAMA (
+        type: numberField
+        label {
+            label: <p>Nro Programa: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-sm
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: NRO_PROGRAMA
+            dataType: number
+        }
+    )
+
+    pageItem P331_OBSERVACION (
+        type: textField
+        label {
+            label: <p>Observación: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 120
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: OBSERVACION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_ORI_DEBCRED (
+        type: popupLov
+        label {
+            label: <p>Origen: </p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:JUDICIAL;1,EMPRESA;2,ASOCIACION;3
+        }
+        layout {
+            sequence: 90
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 1
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: ORI_DEBCRED
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_POR_CUOTA (
+        type: checkbox
+        label {
+            label: Por Cuota
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 20
+            region: @new
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    pageItem P331_POR_TOTAL (
+        type: checkbox
+        label {
+            label: Por Total
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 10
+            region: @new
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    pageItem P331_PRUEBA (
+        type: hidden
+        layout {
+            sequence: 150
+            slot: body
+        }
+    )
+
+    pageItem P331_SALDO (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: SALDO
+            dataType: number
+        }
+    )
+
+    pageItem P331_SER_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 150
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: SER_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_TIPO_CUOTA (
+        type: popupLov
+        label {
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Quincenal;Q,Mensual;M
+        }
+        layout {
+            sequence: 20
+            region: @detalle-cabecera
+            slot: regionBody
+            alignment: left
+            column: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P331_TIP_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 140
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: TIP_COMPROBANTE
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_TIP_DEBCRED (
+        type: popupLov
+        label {
+            label: <p>Tipo Debito crédito:  </p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:PERMANENTE;P,CUOTAS;C
+        }
+        layout {
+            sequence: 80
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 1
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: TIP_DEBCRED
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_TIP_LIQUID (
+        type: popupLov
+        label {
+            label: <p>Tipo Liquidación: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @rhw-tip-liquid
+        }
+        layout {
+            sequence: 100
+            region: @cabecera-de-débitos-y-créditos-programados
+            slot: regionBody
+            alignment: left
+            columnSpan: 8
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 100
+        }
+        source {
+            formRegion: @cabecera-de-débitos-y-créditos-programados
+            column: TIP_LIQUID
+            dataType: varchar2
+        }
+    )
+
+    pageItem P331_TOTAL_CUOTAS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P331_TOTAL_DETALLE (
+        type: numberField
+        label {
+            label: <p class="totales">TOTALES:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+            column: 7
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P331_TOTAL_SALDO (
+        type: numberField
+        label {
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 30
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalesp
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: "Crear "
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P331_ID
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+            cssClasses: [
+                t-Button--danger
+                borrar
+            ]
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    button generar-cuota (
+        buttonName: Generar_Cuota
+        label: Generar Cuota
+        layout {
+            sequence: 30
+            region: @detalle-cabecera
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--gapLeft
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button print (
+        buttonName: PRINT2
+        label: "Imprimir Pagarés "
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    button prit (
+        buttonName: PRIT
+        label: "Imprimir Recibo "
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @new-2
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 352
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction calcular-cuotas (
+        name: Calcular Cuotas
+        execution {
+            sequence: 80
+        }
+        when {
+            selectionType: items
+            items: P331_NRO_CUOTAS
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                     if :P331_MONTO_TOTAL is not null then
+                      if nvl(:P331_NRO_CUOTAS,0) > 0 then
+                      :P331_MONTO_CUOTA := round( :P331_MONTO_TOTAL / :P331_NRO_CUOTAS, :P331_DECIMAL);
+                      -- :P331_MONTO_CUOTA := round(REPLACE(:P331_MONTO_TOTAL,'.','') / REPLACE(:P331_NRO_CUOTAS,'.',''), :P331_DECIMAL);
+                    
+                      end if ;
+                     end if ;
+                    -- Calcular Cuotas 
+                    
+                    
+                    --REPLACE(:P331_MONTO_TOTAL,'.','')
+                    --REPLACE(:P331_NRO_CUOTAS,'.','')
+                    ```
+                itemsToSubmit: [
+                    P331_MONTO_TOTAL
+                    P331_NRO_CUOTAS
+                    P331_DECIMAL
+                ]
+                itemsToReturn: P331_MONTO_CUOTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction chckbox-por-cuota (
+        name: CHCKBOX_POR_CUOTA
+        execution {
+            sequence: 100
+        }
+        when {
+            event: click
+            selectionType: items
+            items: P331_POR_CUOTA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: N
+            }
+            affectedElements {
+                selectionType: items
+                items: P331_POR_TOTAL
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction chckbox-por-total (
+        name: CHCKBOX_POR_TOTAL
+        execution {
+            sequence: 110
+        }
+        when {
+            event: click
+            selectionType: items
+            items: P331_POR_TOTAL
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: N
+            }
+            affectedElements {
+                selectionType: items
+                items: P331_POR_CUOTA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction decimal-moneda (
+        name: DECIMAL MONEDA
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: P331_ID_MONEDA
+        }
+
+        action decimal (
+            name: DECIMAL
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM 
+                    BSW_MONEDAS WHERE
+                    ID=:P331_ID_MONEDA
+                    ```
+                itemsToSubmit: P331_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P331_DECIMAL
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction insertar-cuotas (
+        name: Insertar Cuotas
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @generar-cuota
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    --NO TOCAR
+                    IF :P331_TIP_DEBCRED = 'C' THEN
+                      IF nvl( :P331_MONTO_TOTAL, 0 ) > 0 AND
+                         nvl( :P331_MONTO_CUOTA, 0 ) > 0 AND
+                         :P331_FEC_INICIO IS NOT NULL THEN
+                        DECLARE
+                          TMP_CUOTAS CONSTANT VARCHAR2(255) :='CUOTAS';    
+                    
+                          vcuota       NUMBER(5);
+                          vvencimiento DATE;
+                          vmonto       NUMBER(18,3);
+                          vimporte     NUMBER(18,3);
+                          vmonto_ant NUMBER(18,3);
+                          vprocesar varchar(1);
+                          vloop number(18);
+                        BEGIN
+                          IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_CUOTAS) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_CUOTAS);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_CUOTAS);
+                          vcuota := 0 ;
+                          :P331_TOTAL_DETALLE := 0;  
+                          :P331_TOTAL_CUOTAS  := 0;  
+                          :P331_TOTAL_SALDO := 0;  
+                          vprocesar := 'S' ;
+                    
+                    		 LOOP
+                    
+                            IF TO_NUMBER(:P331_MONTO_TOTAL) > TO_NUMBER(:P331_TOTAL_DETALLE) THEN
+                              IF :P331_TIPO_CUOTA = 'M' THEN
+                                vvencimiento := add_months(:P331_FEC_INI_CUO,vcuota); 
+                              ELSIF :P331_TIPO_CUOTA = 'Q' THEN
+                                if vvencimiento is null then
+                              	  vvencimiento := :P331_FEC_INI_CUO;
+                                else
+                              	  if to_char(vvencimiento,'dd') = '15' then
+                              	    vvencimiento := last_day(vvencimiento);
+                              	  else
+                              		  vvencimiento := to_date('15'||to_char(add_months(vvencimiento,1),'mm/yyyy'),'dd/mm/yyyy');
+                              	  end if;
+                                end if;
+                              END IF;
+                    
+                              vcuota := nvl( vcuota, 0 ) + 1;
+                    
+                              IF vcuota = :P331_NRO_CUOTAS THEN
+                                vimporte := round( :P331_MONTO_TOTAL / :P331_NRO_CUOTAS, :P331_DECIMAL );
+                                vmonto := :P331_MONTO_TOTAL - ( vimporte * ( :P331_NRO_CUOTAS - 1 ) );
+                              ELSE
+                                IF TO_NUMBER(:P331_MONTO_TOTAL) > ( TO_NUMBER(:P331_MONTO_CUOTA) * ( TO_NUMBER(:P331_TOTAL_CUOTAS) + 1 ) ) THEN
+                                  vmonto := :P331_MONTO_CUOTA;
+                                ELSE
+                                  vmonto := :P331_MONTO_TOTAL - (:P331_MONTO_CUOTA * (:P331_TOTAL_CUOTAS));
+                                END IF;
+                              END IF;
+                                 
+                                -- RAISE_APPLICATION_ERROR(-20000,VMONTO);
+                     
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => TMP_CUOTAS,
+                        p_c001 => vcuota,
+                        p_c002 => vvencimiento,
+                        p_c003 => vmonto,
+                        p_c004 => vmonto
+                        
+                         );
+                         :P331_TOTAL_DETALLE := nvl(:P331_TOTAL_DETALLE,0) + vmonto;
+                        -- :vamonto_ant      := nvl(:P331_MONTO_CUOTA,0);
+                         :P331_TOTAL_SALDO := nvl(:P331_TOTAL_SALDO,0) + vmonto;
+                         :P331_TOTAL_CUOTAS := nvl(:P331_TOTAL_CUOTAS,0) + 1;
+                    
+                    
+                             
+                            ELSE
+                              EXIT;
+                            END IF;
+                          END LOOP;
+                          
+                          vprocesar := 'N';
+                        END;
+                      ELSE
+                        --mensaje_ex('Para ejecutar el proceso debe cargar los datos de Montos y Fechas.',2);
+                    
+                        RAISE_APPLICATION_ERROR(-20999,'ERROR: Para ejecutar el proceso debe cargar los datos de Montos y Fechas'||:P331_MONTO_CUOTA||'-'||:P331_MONTO_TOTAL||'-'||:P331_FEC_INICIO);
+                    
+                      END IF;
+                    END IF;
+                    
+                    
+                    DECLARE
+                      l_cursor SYS_REFCURSOR;
+                      json_detalle CLOB;
+                    BEGIN
+                    
+                    
+                      
+                      OPEN l_cursor FOR
+                      Select  C001 AS NRO_CUOTA,
+                    --REPLACE(c002,'\','A') AS VENCIMIENTO,
+                      C002 AS VENCIMIENTO,
+                      c003 AS MONTO_CUOTA,
+                      C004 AS SALDO_CUOTA
+                    From APEX_COLLECTIONS
+                    Where COLLECTION_NAME = 'CUOTAS'
+                    --ORDER BY TO_NUMBER(NRO_CUOTA) ASC
+                    order by 1 desc
+                      ;
+                    
+                      APEX_JSON.initialize_clob_output;
+                    
+                      APEX_JSON.open_object;
+                      APEX_JSON.write('DETALLE', l_cursor);
+                      APEX_JSON.close_object;
+                    
+                      JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                    
+                      :P331_JSON_DETALLES:=JSON_DETALLE;
+                    
+                    END;
+                    
+                    
+                    ```
+                itemsToSubmit: [
+                    P331_TIP_DEBCRED
+                    P331_MONTO_TOTAL
+                    P331_NRO_CUOTAS
+                    P331_FEC_INICIO
+                    P331_TOTAL_DETALLE
+                    P331_TOTAL_SALDO
+                    P331_FEC_INI_CUO
+                    P331_TIPO_CUOTA
+                    P331_DECIMAL
+                    P331_MONTO_CUOTA
+                ]
+                itemsToReturn: [
+                    P331_PRUEBA
+                    P331_TOTAL_DETALLE
+                    P331_TOTAL_SALDO
+                    P331_JSON_DETALLES
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var vcuota =0;     
+                    var vvencimiento =0;
+                    var vmonto = 0;      
+                    var vimporte = 0;
+                    var procesar = 'S'; 
+                    
+                    
+                    // Calcular Monto total y Monto cuota
+                    function calculaTotales(){
+                        var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                        var v_total_monto    = model.getFieldKey(":P331_TOTAL_MONTO");
+                        var v_total_saldo   = model.getFieldKey(":P331_TOTAL_SALDO");
+                        var v_monto_total    = 0;
+                        var v_nro_cuota    = model.getFieldKey(":P331_NRO_CUOTAS");
+                        var v_tip_cuota = model.getFieldKey(":P331_TIPO_CUOTA")
+                        var fec_ini_cuo = 0;
+                        var monto_cuota = 0;
+                        var total_cuotas = model.getFieldKey(":P331_TOTAL_CUOTAS");
+                        
+                      
+                    
+                        model.forEach(function(r, index, id) {
+                            var meta = model.getRecordMetadata(id);
+                            if ((meta.field !=undefined) && (!meta.deleted)){
+                               for (1 in v_nro_cuota){
+                                  if (v_tip_cuota == 'M'){
+                                 vvencimiento = Date.getMonth(fec_ini_cuo,vcuota);
+                                  }
+                               } 
+                            }else if (v_tip_cuota =='Q'){
+                                vvencimiento = null;
+                                vvencimiento = fec_ini_cuo;
+                            }else if (String.fromCharCode(vvencimiento,'dd') =='15'){
+                                vvencimiento = getLastDayOfMonth(vvencimiento);
+                            }else {
+                                vvencimiento = date.parse('15' + toString(Date.getMonth(vvencimiento,1),'mm/yyyy'),'dd/mmm/yyyy');
+                            }  
+                            vcuota = $nvl(vcuota,0)+1;
+                            if (vcuota = v_nro_cuota){
+                               vimporte = Math.round(v_monto_total / v_nro_cuota);
+                               vmonto = v_monto_total - (vimporte * (v_nro_cuota - 1 ));
+                            }else if (v_monto_total > (monto_cuota * (total_cuotas + 1 ))){
+                                  vmonto = v_monto_total - (monto_cuota * (total_cuotas));
+                            }
+                            if (vcuota > 1){
+                               
+                            }
+                    
+                        });
+                    
+                        
+                        // $s('P235_TOT_DEBE',v_mon_debe.toString().replace('.', ''));
+                        // $s('P235_TOT_HABER',v_mon_haber.toString().replace('.', ''));
+                    
+                    
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var vcuota = 0;
+                    var vvencimiento =0;
+                    var vmonto =0;
+                    var vimporte =0;
+                    
+                    for 1 in :P331_NRO_CUOTAS
+                    LOOP
+                    IF :P331_TIPO_CUOTA = 'M' THEN 
+                    vvencimiento = getMonth(:P331_FEC_INI_CUO,vcuota);
+                    else if :P331_TIPO_CUOTA = 'Q' THEN 
+                    if vvencimiento is null then
+                              	  vvencimiento = :P331_FEC_INI_CUO;
+                    else
+                              	  if to_char(vvencimiento,'dd') = '15' then
+                              	    vvencimiento = last_day(vvencimiento);
+                              	  else
+                              		  vvencimiento = to_date('15'||to_char(getMonth(vvencimiento,1),'mm/yyyy'),'dd/mm/yyyy');
+                              	  end if;
+                                end if;
+                              END IF;
+                    
+                    vcuota = nvl( vcuota, 0 ) + 1;
+                    
+                              IF vcuota = :P331_NRO_CUOTAS THEN
+                                vimporte = round( :P331_MONTO_TOTAL / :P331_NRO_CUOTAS, :decimales );
+                                vmonto = :P331_MONTO_TOTAL - ( vimporte * ( :P331_NRO_CUOTAS - 1 ) );
+                              ELSE
+                                IF :P331_MONTO_TOTAL > ( :P331_MONTO_CUOTA * ( :b_cabecera.total_cuotas + 1 ) ) THEN
+                                  vmonto := :b_cabecera.monto_cuota;
+                                ELSE
+                                  vmonto := :b_cabecera.monto_total - (:b_cabecera.monto_cuota * (:b_cabecera.total_cuotas));
+                                END IF;
+                              END IF;
+                    
+                              IF vcuota > 1 THEN
+                                next_record;
+                              END IF;
+                    
+                              :b_detalle.nro_cuota   := vcuota;
+                              :b_detalle.fec_vencimiento := vvencimiento;
+                              :b_detalle.monto_cuota := vmonto;
+                              :b_detalle.saldo_cuota := vmonto;
+                              :b_cabecera.total_detalle := nvl(:b_cabecera.total_detalle,0) + vmonto;
+                              :b_cabecera.total_saldo   := nvl(:b_cabecera.total_saldo,0) + vmonto;
+                              :variables.monto_ant      := nvl(:b_detalle.monto_cuota,0);
+                              :b_cabecera.total_cuotas  := nvl(:b_cabecera.total_cuotas,0) + 1;
+                              synchronize;
+                            ELSE
+                              EXIT;
+                            END IF;
+                          END LOOP;
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-javascript-code-3 (
+            action: executeJsCode
+            settings {
+                jsCode: console.log($v('P331_JSON_DETALLES'));
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code-4 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var orden =0;
+                    var json_detalle = JSON.parse($v('P331_JSON_DETALLES'));
+                    
+                    
+                    
+                    
+                    //console.log(json_detalle);
+                    if ((Object.keys(json_detalle.DETALLE).length)!=0){
+                    
+                    
+                    for(let i=0;i<json_detalle.DETALLE.length;i++){
+                    
+                    
+                    //Con este codigo podemos insertar una nueva fila en el detalle de comprobantes 
+                    
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                         $grid.setEditMode(true);
+                    //insert new record on a model
+                    var newRecordId = $model.insertNewRecord();
+                    
+                    //continuation of above code
+                    //get the new record
+                    
+                    var $newRecord = $model.getRecord(newRecordId);
+                    $model.setValue($newRecord, "NRO_CUOTA",(json_detalle.DETALLE[i].NRO_CUOTA).toString());
+                    $model.setValue($newRecord, "FEC_VENCIMIENTO",(json_detalle.DETALLE[i].VENCIMIENTO).toString());
+                    $model.setValue($newRecord, "MONTO_CUOTA",(json_detalle.DETALLE[i].MONTO_CUOTA).toString());
+                    $model.setValue($newRecord, "SALDO_CUOTA",(json_detalle.DETALLE[i].SALDO_CUOTA).toString());
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    }
+                    
+                    }
+                    
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction monto-copia (
+        name: MONTO_COPIA
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle-de-débitos-y-créditos-programados
+            columns: MONTO_CUOTA
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :MONTO_CUOTA
+                itemsToSubmit: MONTO_CUOTA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: region
+            region: @cabecera-de-débitos-y-créditos-programados
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    declare 
+                    desc_empleado VARCHAR (200);
+                    desc_concepto VARCHAR (200);
+                    
+                    
+                    BEGIN
+                     select ltrim( rtrim( pe.nombre ) )
+                        into desc_empleado
+                        from rhw_empleados em ,BSW_personas pe
+                       where EM.ID_empresa = :P0_ID_EMPRESA
+                        and EM.ID = :P331_ID_EMPLEADO;
+                    EXCEPTION
+                      when others then
+                        desc_empleado := NULL;
+                    END;
+                    DECLARE
+                    desc_concepto VARCHAR(200);
+                    BEGIN
+                      select descripcion
+                        into desc_concepto
+                        from rhw_conceptos
+                       where ID = :P331_ID_CONCEPTO;
+                    EXCEPTION
+                      when others then
+                        desc_concepto := NULL;
+                    END;
+                    
+                    DECLARE 
+                    procesar VARCHAR(200);
+                    total_detalle VARCHAR(500);
+                    total_saldo VARCHAR(1000);
+                    total_cuotas VARCHAR(100);
+                    --IF nvl(procesar, 'N' ) = 'N' THEN
+                      BEGIN
+                    
+                        Select sum( monto_cuota ), sum( saldo_cuota ), count(*)
+                          into total_detalle, total_saldo, total_cuotas
+                          from rhw_debcred_prog_det
+                         where ID_empresa = :P0_ID_EMPRESA
+                           and nro_programa = :P331_NRO_PROGRAMA;
+                      EXCEPTION
+                        when others then
+                          total_detalle := 0;
+                          total_saldo := 0;
+                          total_cuotas := 0;
+                      END;
+                    --END IF;
+                    
+                    --      *********** que me traiga decimales
+                    DECLARE 
+                     desc_moneda VARCHAR(500);
+                     decimales VARCHAR(100);
+                    BEGIN
+                      select descripcion, nvl( decimales, 0 )
+                        into desc_moneda, decimales
+                        from bsw_monedas
+                       where cod_moneda = cod_moneda;
+                    EXCEPTION
+                      when others then
+                        desc_moneda := NULL;
+                        decimales := 0;
+                    END;
+                    DECLARE
+                    fec_ini_cuo DATE;
+                    total_detalle VARCHAR(100);
+                    BEGIN
+                      select fec_vencimiento
+                        into fec_ini_cuo
+                        from RHw_DEBCRED_PROG_DET det
+                       where det.ID_empresa  = :P0_ID_EMPRESA
+                         and det.nro_programa = :P331_NRO_PROGRAMA
+                         and det.nro_cuota    = 1;
+                    EXCEPTION
+                      when others then
+                        fec_ini_cuo := NULL;
+                    END;
+                    
+                    
+                    
+                    /*
+                    BEGIN
+                      select descripcion
+                        into :b_cabecera.desc_moneda
+                        from monedas
+                       where cod_moneda = :b_cabecera.cod_moneda ;
+                    EXCEPTION
+                      when others then
+                        :b_cabecera.desc_moneda := null;
+                    END;
+                    */
+                    
+                    :nro_cuotas := :total_cuotas;
+                    --:formato;
+                    ```
+                errorMessage: #SQLERRM#
+                extraOptions: escapeSpecialCharactersInMessages
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code-2 (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    IF nvl(:total_detalle, 0 ) <> nvl( :total_saldo, 0 ) THEN
+                      RAISE_APPLICATION_ERROR(20999,'No se puede borrar el registro, porque posee cuotas canceladas.');
+                    
+                      --mensaje_ex('No se puede borrar el registro, porque posee cuotas canceladas.',2);
+                      --raise form_trigger_failure;
+                    ELSE
+                      delete from RHW_DEBCRED_PROG_DET
+                    where id= :P331_ID
+                    AND ID_EMPRESA = :P0_ID_EMPRESA
+                    AND NRO_PROGRAMA = :P331_NRO_PROGRAMA;
+                    END IF;
+                    
+                    ```
+                errorMessage: #SQLERRM#
+                extraOptions: escapeSpecialCharactersInMessages
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code-3 (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    if nvl(:procesar,'N') = 'N' then 
+                       :total_detalle := nvl(:total_detalle,0) - nvl(:monto_cuota,0) ;
+                       :total_saldo := nvl(:total_detalle,0) - nvl(:saldo_cuota,0) ;
+                       :total_cuotas := nvl(:total_cuotas,0) - 1 ;
+                    end if ;
+                    ```
+                errorMessage: #SQLERRM#
+                extraOptions: escapeSpecialCharactersInMessages
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction saldo-copia (
+        name: SALDO_COPIA
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle-de-débitos-y-créditos-programados
+            columns: SALDO_CUOTA
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :SALDO_CUOTA
+                itemsToSubmit: SALDO_CUOTA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: SALDO_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction validación-de-fecha (
+        name: Validación de Fecha
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: items
+            items: P331_FEC_FINAL
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    If :P331_FEC_FINAL is not null then
+                       If :P331_FEC_FINAL < :P331_FEC_INICIO then
+                          --raise(20000,'La fecha inicial debe ser mayor a la final');
+                            RAISE_APPLICATION_ERROR(-20999,'La fecha inicial debe ser mayor a la final');
+                         -- raise form_trigger_failure;
+                       End If;
+                    End If;
+                    ```
+                itemsToSubmit: [
+                    P331_FEC_INICIO
+                    P331_FEC_FINAL
+                ]
+                itemsToReturn: P331_FEC_FINAL
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p331-nro-cuotas (
+        itemName: P331_NRO_CUOTAS
+        execution {
+            sequence: 40
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT COUNT(NRO_CUOTA) FROM RHW_DEBCRED_PROG_DET D WHERE
+                D.ID_CABECERA=:P331_ID;
+                ```
+        }
+    )
+
+    computation p331-nro-programa (
+        itemName: P331_NRO_PROGRAMA
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            sqlQuery: select  nvl( max( nro_programa ), 0 ) + 1 from RHW_DEBCRED_PROG_CAB where id_empresa = :P0_ID_EMPRESA
+        }
+    )
+
+    computation p331-total-detalle (
+        itemName: P331_TOTAL_DETALLE
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT SUM(MONTO_CUOTA) FROM RHW_DEBCRED_PROG_DET D WHERE
+                D.ID_CABECERA=:P331_ID;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    computation p331-total-saldo (
+        itemName: P331_TOTAL_SALDO
+        execution {
+            sequence: 30
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT SUM(SALDO_CUOTA) FROM RHW_DEBCRED_PROG_DET D WHERE
+                D.ID_CABECERA=:P331_ID;
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+    process detalle-de-débitos-y-créditos-programados-save-interactive-grid-data (
+        name: Detalle de Débitos y Créditos programados - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle-de-débitos-y-créditos-programados
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                
+                                insert into RHW_DEBCRED_PROG_DET
+                                (ID_EMPRESA, ID_CABECERA, NRO_PROGRAMA, NRO_CUOTA, FEC_VENCIMIENTO,
+                                 MONTO_CUOTA,SALDO_CUOTA,ID_SUCURSAL,COD_USUARIO_AUD)
+                                VALUES(:P0_ID_EMPRESA,:P331_ID,:P331_NRO_PROGRAMA,:NRO_CUOTA,:FEC_VENCIMIENTO,
+                                REPLACE(:MONTO_CUOTA,'.',''),REPLACE(:SALDO_CUOTA,'.',''),:ID_SUCURSAL,:COD_USUARIO_AUD);
+                
+                            WHEN 'U' then 
+                   
+                                update RHW_DEBCRED_PROG_DET 
+                                    set --ID        = :ID,
+                                        ---ID_PLANILLA      = :P322_ID,
+                                        NRO_PROGRAMA      = :P331_NRO_PROGRAMA,
+                                        NRO_CUOTA         = :P331_NRO_CUOTAS,
+                                        FEC_VENCIMIENTO      = :FEC_VENCIMIENTO,
+                                        MONTO_CUOTA  = REPLACE(:MONTO_CUOTA,'.',''),
+                                        SALDO_CUOTA      = REPLACE(:SALDO_CUOTA,'.',''),
+                                        ID_SUCURSAL       = :ID_SUCURSAL,
+                                        COD_USUARIO_AUD     = :COD_USUARIO_AUD    
+                
+                                    where  ID_CABECERA = :P331_ID
+                                    AND ID = :ID;
+                                  -- and ID_CABECERA = :P331_ID; 
+                
+                                     when 'D' then
+                                delete RHW_DEBCRED_PROG_DET     
+                                  where  ID_CABECERA = :ID_CABECERA
+                                    AND ID = :ID;
+                
+                    end case;
+                
+                    EXCEPTION
+                when no_data_found then
+                RAISE_APPLICATION_ERROR(-20999,'ERROR: al insertar al detalle'||:id_CABECERA);
+                                         
+                
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 17446456797119628
+        }
+        comments {
+            comments: Proceso para guardar, actualizar, eliminar los detalles de debitos y creditos programados
+        }
+    )
+
+    process eliminar-linea (
+        name: ELIMINAR_LINEA
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                /* Borra todas las lineas de detalle, al borrarse la cabecera  */
+                delete from RHW_DEBCRED_PROG_DET
+                where id_cabecera= :P331_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 17448468824119648
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+        comments {
+            comments: "Elimina los detalles de debitos y creditos programados al borrase esta "
+        }
+    )
+
+    process initialize-form-carga-de-debitos-y-creditos-programados (
+        name: Initialize form Carga de Debitos y Creditos Programados
+        type: formInitialization
+        formRegion: @cabecera-de-débitos-y-créditos-programados
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 15862806560708140
+        }
+    )
+
+    process limpiar-estado-de-sesion (
+        name: limpiar_estado_de_sesion
+        type: clearSessionState
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 17448514354119649
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process save-form-from-cabecera (
+        name: "Save Form from Cabecera "
+        type: formAutoRowProcessing
+        formRegion: @cabecera-de-débitos-y-créditos-programados
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 17447948067119643
+        }
+    )
+
+    branch (
+        name: Go To Page 335
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 355
+                items: {
+                    P331_NRO_PROGRAMA: &P331_NRO_PROGRAMA.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @prit
+        }
+    )
+
+    branch (
+        name: GO TO PAGE 385
+        execution {
+            sequence: 20
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 385
+                items: {
+                    P331_NRO_PROGRAMA: &P331_NRO_PROGRAMA.
+                    P331_ID_EMPLEADO: &P331_ID_EMPLEADO.
+                    P331_ID_EMPRESA: &P331_ID_EMPRESA.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @print
+            type: itemIsNotNull
+            item: P331_ID
+        }
+    )
+
+)
+

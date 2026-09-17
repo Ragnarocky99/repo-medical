@@ -1,0 +1,665 @@
+page 369 (
+    name: Liquidaciones
+    alias: LIQUIDACIONES
+    title: Liquidaciones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region liquidaciones (
+        name: Liquidaciones
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                SER_LIQUID,
+                NRO_LIQUID,
+                TIP_LIQUID,
+                FEC_LIQUID,
+                FEC_DESDE,
+                FEC_HASTA,
+                ID_CENTRO_PAGO,
+                FEC_PAGO,
+                CERRADO,
+                CASE CERRADO
+                    WHEN 'S' THEN 'fa fa-check u-success-text'
+                    WHEN 'N' THEN 'fa fa-remove u-danger-text'
+                END CERRADO_ICON,
+                FEC_CIERRE,
+                COMENTARIO,
+                CASE CERRADO
+                    WHEN 'S' THEN ''
+                    WHEN 'N' THEN 'Generar Liq.'
+                END AS BOTON,
+                EXTRACT(MONTH FROM FEC_PAGO) MES,
+                EXTRACT(YEAR FROM FEC_PAGO) ANIO
+                FROM RHW_LIQUIDACIONES
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                ORDER BY ID DESC;
+                
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 450
+                items: {
+                    P450_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 21726021099810803
+        }
+
+        column ANIO (
+            type: plainText
+            heading {
+                heading: Anio
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column BOTON (
+            type: link
+            heading {
+                heading: Generar
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 370
+                    items: {
+                        P370_ID: #ID#
+                        P370_MES: #MES#
+                        P370_ANIO: #ANIO#
+                    }
+                }
+                linkText: <img src="#IMAGE_PwEFIX#app_ui/img/icons/apex-fa-plus.png" class="fa fa-plus"" alt="">
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                htmlDomId: BOTON
+                endUserAlias: N
+            }
+        )
+
+        column CERRADO (
+            type: plainText
+            heading {
+                heading: Cerrado
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#CERRADO_ICON#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column CERRADO_ICON (
+            type: plainText
+            heading {
+                heading: Cerrado Icon
+                alignment: center
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column COMENTARIO (
+            type: plainText
+            heading {
+                heading: Obs.
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column FEC_CIERRE (
+            type: plainText
+            heading {
+                heading: Fecha Cierre
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FEC_DESDE (
+            type: plainText
+            heading {
+                heading: Periodo desde
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column FEC_HASTA (
+            type: plainText
+            heading {
+                heading: Periodo hasta
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column FEC_LIQUID (
+            type: plainText
+            heading {
+                heading: Fecha Liquid.
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FEC_PAGO (
+            type: plainText
+            heading {
+                heading: Fecha Pago
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ID_CENTRO_PAGO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Centro de Pago
+                alignment: center
+            }
+            lov {
+                lov: @lv-centros-pagos
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column MES (
+            type: plainText
+            heading {
+                heading: Mes
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column NRO_LIQUID (
+            type: link
+            heading {
+                heading: Nro.
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 433
+                    items: {
+                        P433_NRO_LIQ: #NRO_LIQUID#
+                    }
+                }
+                linkText: #NRO_LIQUID#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column SER_LIQUID (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column TIP_LIQUID (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Tipo Liquid.
+                alignment: center
+            }
+            lov {
+                lov: @lv-tipliq
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Liquidaciones
+        }
+
+        savedReport 219783 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn BOTON (
+                sequence: 11
+            )
+
+            displayColumn CERRADO (
+                sequence: 9
+            )
+
+            displayColumn FEC_CIERRE (
+                sequence: 10
+            )
+
+            displayColumn FEC_DESDE (
+                sequence: 5
+            )
+
+            displayColumn FEC_HASTA (
+                sequence: 6
+            )
+
+            displayColumn FEC_LIQUID (
+                sequence: 4
+            )
+
+            displayColumn FEC_PAGO (
+                sequence: 8
+            )
+
+            displayColumn ID_CENTRO_PAGO (
+                sequence: 7
+            )
+
+            displayColumn NRO_LIQUID (
+                sequence: 2
+            )
+
+            displayColumn SER_LIQUID (
+                sequence: 1
+            )
+
+            displayColumn TIP_LIQUID (
+                sequence: 3
+            )
+
+            sort (
+                column: NRO_LIQUID
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    button consulta (
+        buttonName: CONSULTA
+        label: Consulta de Liquidación
+        layout {
+            sequence: 20
+            region: @liquidaciones
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-search
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 433
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button crear (
+        buttonName: CREAR
+        label: Crear
+        layout {
+            sequence: 40
+            region: @liquidaciones
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 450
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button desliquidar (
+        buttonName: DESLIQUIDAR
+        label: Desliquidar
+        layout {
+            sequence: 30
+            region: @liquidaciones
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-ban
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 441
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    dynamicAction bandera (
+        name: bandera
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P369_BANDERA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare 
+                    vencontro varchar2(1);
+                    begin  
+                         vencontro := 'N' ;
+                         Select 'S'
+                           into vencontro 
+                           from rhw_liquidaciones 
+                          where id_empresa = :P0_ID_EMPRESA
+                            and ser_liquid = :SER_LIQUID
+                            and nro_liquid = :NRO_LIQUID
+                            AND :CERRADO = 'S';
+                         if vencontro = 'S' then
+                            :P369_BANDERA := 1;
+                         end if;
+                         RETURN :P369_BANDERA;
+                         END;
+                    ```
+                itemsToSubmit: P369_BANDERA
+            }
+            affectedElements {
+                selectionType: items
+                items: P369_BANDERA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @liquidaciones
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @liquidaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

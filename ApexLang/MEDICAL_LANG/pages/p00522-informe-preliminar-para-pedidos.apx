@@ -1,0 +1,841 @@
+page 522 (
+    name: Informe Preliminar para Pedidos
+    alias: INFORME-PRELIMINAR-PARA-PEDIDOS
+    title: Informe Preliminar para Pedidos
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 90
+            parentRegion: @filtros
+            slot: regionBody
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region pedidos (
+        name: Pedidos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT c.id_empresa,
+                	   EM.TITULO_REPORTES,
+                       lpad( rtrim( ltrim( s.cod_articulo)),5,' ') cod_articulo,
+                       lpad( s.descripcion,length(s.descripcion)+2,' ') descripcion,
+                       s.cod_origen_art,
+                       sum( st.cant_dispon ) stock,
+                       sum( decode( tc.stock, 'S', d.cantidad * -1, d.cantidad )) vendido,
+                       s.id_proveedor_dflt as id_proveedor,
+                       pr.cod_proveedor,
+                       nvl(pe.nomb_fantasia,pe.nombre) as nom_proveedor
+                
+                FROM STW_ARTICULOS s,
+                     VTW_COMPROBANTES_CABECERA c,
+                     VTW_COMPROBANTES_DETALLE d,
+                     BSW_TIPOS_COMPROBANTES tc,
+                     STW_EXISTENCIA_ART st,
+                     CMW_PROVEEDORES pr,
+                     BSW_PERSONAS pe,
+                     BSW_EMPRESAS EM
+                
+                WHERE nvl( c.estado,'N') <> 'A'
+                  AND EM.ID = :P0_ID_EMPRESA
+                  AND c.ID_EMPRESA = EM.ID
+                  AND c.id_empresa = tc.id_empresa
+                  AND nvl( c.tip_comprobante, 'CCC')  = tc.tip_comprobante
+                  AND c.id = d.id_comprobante_cabecera
+                  AND d.id_articulo = s.id
+                  AND s.id_proveedor_dflt = pr.id
+                  AND pr.id_persona = pe.id
+                  AND s.id = st.id_articulo
+                  AND (pr.id = :P522_ID_PROVEEDOR OR :P522_ID_PROVEEDOR IS NULL)
+                  AND (c.fec_comprobante  BETWEEN :P522_FEC_INI AND :P522_FEC_FIN)
+                  AND (to_number(s.cod_articulo) between to_number(:P522_COD_ARTICULO_DESDE) and to_number(:P522_COD_ARTICULO_HASTA) or (:P522_COD_ARTICULO_DESDE is null and :P522_COD_ARTICULO_HASTA is null))
+                
+                GROUP BY c.id_empresa,
+                         lpad( rtrim( ltrim( s.cod_articulo )),5,' '),
+                         s.cod_articulo,
+                         s.descripcion,
+                         s.cod_origen_art,
+                         0,
+                         s.id_proveedor_dflt,
+                         pr.cod_proveedor,
+                         nvl(pe.nomb_fantasia,pe.nombre),
+                         EM.TITULO_REPORTES
+                         
+                ORDER BY TO_NUMBER(PR.COD_PROVEEDOR), 
+                         TO_NUMBER(S.COD_ARTICULO)
+                
+                ```
+            pageItemsToSubmit: [
+                P522_COD_ARTICULO_DESDE
+                P0_ID_EMPRESA
+                P522_FEC_INI
+                P522_FEC_FIN
+                P522_ID_PROVEEDOR
+                P522_COD_ARTICULO_HASTA
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 243802890527001533
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: hidden
+            heading {
+                heading: Cod Origen Art
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column COD_PROVEEDOR (
+            type: plainText
+            heading {
+                heading: Cod Proveedor
+                alignment: center
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AY
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+                alignment: center
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 220
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            heading {
+                heading: Proveedor
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column NOM_PROVEEDOR (
+            type: plainText
+            heading {
+                heading: Nom Proveedor
+                alignment: center
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: center
+            }
+            layout {
+                sequence: 260
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AW
+            }
+        )
+
+        column TITULO_REPORTES (
+            type: hidden
+            heading {
+                heading: Titulo Reportes
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AZ
+            }
+        )
+
+        column VENDIDO (
+            type: plainText
+            heading {
+                heading: Vendido
+                alignment: center
+            }
+            layout {
+                sequence: 270
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Pedidos
+        }
+
+        savedReport 696935 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn COD_PROVEEDOR (
+                sequence: 1
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 4
+            )
+
+            displayColumn NOM_PROVEEDOR (
+                sequence: 2
+            )
+
+            displayColumn STOCK (
+                sequence: 5
+            )
+
+            displayColumn VENDIDO (
+                sequence: 6
+            )
+
+        )
+
+    )
+
+    pageItem P522_COD_ARTICULO_DESDE (
+        type: popupLov
+        label {
+            label: <p>Artículo Ini.: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulo-pg
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P522_COD_ARTICULO_HASTA (
+        type: popupLov
+        label {
+            label: New
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulo-pg
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            preText: <p>Articulo Fin:</p>
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P522_DIAS (
+        type: numberField
+        label {
+            label: <p><b style="color:red;">*</b>Días</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            preText: <p><b style="color:red;">*</b> Días: </p>
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    pageItem P522_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. Hasta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 3
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        advanced {
+            preText: <p><b style="color:red;">*</b>Fec. Hasta:</p>
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT LAST_DAY(TRUNC(SYSDATE)) FROM DUAL;
+        }
+    )
+
+    pageItem P522_FEC_INI (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. desde:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/'||TO_CHAR(SYSDATE,'MM/YYYY') FROM DUAL;
+        }
+    )
+
+    pageItem P522_ID_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 6
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @botones
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction calc-dias (
+        name: CALC_DIAS
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: [
+                P522_FEC_INI
+                P522_FEC_FIN
+            ]
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    IF :P522_FEC_INI IS NOT NULL AND :P522_FEC_FIN IS NOT NULL THEN
+                        :P522_DIAS := TO_DATE(:P522_FEC_FIN) - TO_DATE(:P522_FEC_INI) + 1;
+                    ELSE
+                        :P522_DIAS := 0;
+                    END IF;
+                    ```
+                itemsToSubmit: [
+                    P522_FEC_INI
+                    P522_FEC_FIN
+                ]
+                itemsToReturn: P522_DIAS
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P522_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P522_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P522_FEC_FIN,'/','');
+                            conv_fecha := substr(:P522_FEC_FIN,1,2)||'/'||
+                                                      substr(:P522_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:P522_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P522_FEC_FIN := conv_fecha;
+                            ELSIF (length(:P522_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P522_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P522_FEC_FIN
+                itemsToReturn: P522_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P522_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P522_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P522_FEC_INI,'/','');
+                            conv_fecha := substr(:P522_FEC_INI,1,2)||'/'||
+                                                      substr(:P522_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:P522_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P522_FEC_INI := conv_fecha;
+                            ELSIF (length(:P522_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P522_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P522_FEC_INI
+                itemsToReturn: P522_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH_GRID
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P522_COD_ARTICULO_DESDE
+                P522_ID_PROVEEDOR
+                P522_FEC_INI
+                P522_FEC_FIN
+                P522_COD_ARTICULO_HASTA
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @pedidos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 545
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 545
+                items: {
+                    P522_ID_PROVEEDOR: &P522_ID_PROVEEDOR.
+                    P522_FEC_INI: &P522_FEC_INI.
+                    P522_FEC_FIN: &P522_FEC_FIN.
+                    P522_COD_ARTICULO_DESDE: &P522_COD_ARTICULO_DESDE.
+                    P522_COD_ARTICULO_HASTA: &P522_COD_ARTICULO_HASTA.
+                    P522_DIAS: &P522_DIAS.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

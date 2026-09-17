@@ -1,0 +1,2941 @@
+page 616 (
+    name: Solicitud de Envío
+    alias: SOLICITUD-DE-ENVÍO
+    title: Solicitud de Envío
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            function calculaTotales(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_cantidad = model.getFieldKey("CANTIDAD_COPIA");
+                var v_total_cantidad     = 0;
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                         
+                          
+                        v_total_cantidad      = v_total_cantidad     + parseFloat(r[v_cantidad].replace(/\./g,''));
+                       
+                    }
+                    
+                });
+            
+                if(isNaN(v_total_cantidad)){
+                     v_total_cantidad=1;
+                 }
+            
+                 $s('P616_TOTALES',v_total_cantidad);
+            }
+            
+            function updateColorCheckbox(e) {
+            
+                e.stopPropagation();
+            
+                var region = apex.region('Detalles');      // Static ID of the Interactive Grid
+                var grid = region.call("getViews").grid;
+                var model = grid.model;
+                var totalRec = model.getTotalRecords();
+                var  selectedRec = 0;
+                var col_selected = model.getFieldKey("IND_RECEPCION");      // Column Name
+                
+                model.forEach(function (record, index, id) {
+                   var n_sal = (record[col_selected]);
+                     if (!isNaN(n_sal) && n_sal == 1) {
+                        selectedRec += 1;
+                    }
+                    
+                });
+            
+            if (selectedRec == totalRec ){
+             model.forEach(function (record, index, id) {
+                        model.setValue(record, "IND_RECEPCION", "S" + 1);
+                    });
+                
+            }else{
+                 model.forEach(function (record, index, id) {
+                        model.setValue(record, "IND_RECEPCION", "S");
+                    });
+                
+            }
+            }
+            
+            function marcarTodos(){
+                try{
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_seleccionada = model.getFieldKey("IND_RECEPCION");
+                var v_total_cantidad     = 0;
+                var bandera ='N'
+                model.forEach(function(r, index, id) {
+                        
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+                 
+                    if(r[v_seleccionada]=='N' || r[v_seleccionada]==null || r[v_seleccionada]==''){
+                        bandera='S'
+                       model.setValue(r,'IND_RECEPCION','S');
+                       
+                    }
+               if(r[v_seleccionada]=='S' && bandera=='N'){
+                 
+                       model.setValue(r,'IND_RECEPCION','N');
+                 
+                    }    
+                       
+                    }
+                    
+                });
+            }catch(e){
+                
+            }
+            
+            }
+            
+            
+            ```
+        executeWhenPageLoads: document.getElementById("P616_TOTALES").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .mostrar{
+                   background-color:#eeeeee;
+                width: 85px;
+                height: 24px;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: bold;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .solo-mostrar{
+                   background-color:#eeeeee;
+                width: 171px;
+                height: 24.5px;
+              
+                vertical-align: text-bottom;
+                border-style: dashed;
+                font-weight: lighter;
+                font-size: 13px;
+                text-align: center;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: center;
+              height: 26px;
+            }
+            
+            .borrar{
+                width: 93px;
+                background-color:#FF0000;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @totales
+            slot: subRegions
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noBorder
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: helpText
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    region datos (
+        name: Datos
+        type: staticContent
+        layout {
+            sequence: 300
+            parentRegion: @solicitud-de-envío
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+    )
+
+    region nota-de-envios-det (
+        name: Nota de Envios Det
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select D.ID,
+                       D.ID_EMPRESA,
+                       D.TIP_ENVIO,
+                       D.ID_NRO_ENVIO_CAB,
+                       D.ID_ARTICULO,
+                       A.COD_ARTICULO,
+                       D.CANTIDAD,
+                       D.CANTIDAD AS CANTIDAD_COPIA,
+                       D.IND_RECEPCION,
+                       D.SER_ENVIO,
+                       D.COD_USUARIO_AUD,
+                       D.CANTIDAD_UB,
+                       D.ID_UNIDAD_MEDIDA,
+                       D.NRO_LOTE,
+                       D.FEC_VENC,
+                       D.ID_LOTE,
+                       D.CANT_FAC,
+                       D.DESC_ARTICULO,
+                       D.ID_BARRA
+                  from STW_NOTAS_ENVIO_DET_SOL D, STW_ARTICULOS A
+                 where D.id_nro_envio_cab=:P616_ID
+                 AND A.ID = D.ID_ARTICULO
+                
+                ```
+            pageItemsToSubmit: P616_ID
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+                t-Form--labelsAbove
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                
+                        $( ".selector" ).grid( {
+                    autoAddRecord: false
+                } );
+                        
+                           
+                
+                
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    calculaTotales();
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    calculaTotales();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    calculaTotales();
+                            }; 
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    calculaTotales();
+                            };    
+                
+                            /*
+                             var rowAddRow = actions.lookup("selection-add-row"),
+                                originalDuplicateAction = rowAddRow.action;
+                
+                            rowAddRow.action = function(_, el){
+                                 var $widget = apex.region("Detalles").widget();
+                               var $grid = $widget.interactiveGrid("getViews", "grid");
+                              var $model = $grid.model;
+                                var cantidadDet= $model.getTotalRecords();
+                                var lineas = $v('P135_LINEAS');
+                                if (cantidadDet>lineas){
+                                    apex.message.alert('El comprobante solo puede contener '+lineas+'  lineas!');
+                                    return;
+                                }
+                                  var newRecordId=  $model.insertNewRecord();
+                                  
+                                   $grid.gotoCell(newRecordId,'COD_ARTICULO');
+                                   
+                            };  
+                
+                */
+                
+                /*
+                
+                            var rowAddRow2 = actions.lookup("row-add-row"),
+                                originalDuplicateAction = rowAddRow2.action;
+                
+                            rowAddRow2.action = function(_, el){
+                                 var det=   apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                                var cantidadDet= det.getTotalRecords();
+                                var lineas = $v('P135_LINEAS');
+                                if (cantidadDet>lineas){
+                                    apex.message.alert('El comprobante solo puede contener '+lineas+'  lineas!');
+                                    return;
+                                }
+                                    originalDuplicateAction(_, el);
+                            }; 
+                       
+                       */
+                                
+                
+                        } ;      
+                        return config;
+                        console.log($v('MONTO_COPIA'));
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 81638553721721990
+        }
+
+        savedReport 419159 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 61
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_BARRA
+                layout {
+                    show: false
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 1
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 487
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_COPIA
+                layout {
+                    show: false
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIP_ENVIO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_NRO_ENVIO_CAB
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    width: 149
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    width: 170
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @IND_RECEPCION
+                layout {
+                    width: 66
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @SER_ENVIO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_UB
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 55
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    width: 96
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENC
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_LOTE
+                layout {
+                    show: false
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @CANT_FAC
+                layout {
+                    sequence: 16
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_COPIA (
+            type: textField
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: CANTIDAD_COPIA
+                dataType: number
+                queryOnly: true
+            }
+        )
+
+        column CANTIDAD_UB (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: CANTIDAD_UB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANT_FAC (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: CANT_FAC
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                width: 5
+            }
+            validation {
+                maxLength: 3000
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FEC_VENC (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: FEC_VENC
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: <p>Articulo</p>
+            }
+            settings {
+                displayAs: modalDialog
+                fetchOnSearch: true
+                popupWidth: 750
+                popupHeight: 550
+                additionalOutputs: ID_BARRA:ID_BAR
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos
+            }
+            layout {
+                sequence: 70
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                sort: false
+            }
+            advanced {
+                htmlDomId: ID_ART
+            }
+        )
+
+        column ID_BARRA (
+            type: numberField
+            heading {
+                heading: <p>Barra</p>
+                alignment: end
+            }
+            layout {
+                sequence: 250
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_BARRA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+            advanced {
+                htmlDomId: ID_BAR
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LOTE (
+            type: textField
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_LOTE
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_NRO_ENVIO_CAB (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: ID_NRO_ENVIO_CAB
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P616_ID
+                duplicateCopiesExistingValue: false
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: selectList
+            heading {
+                heading: <p>UM</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT UPPER(ABREVIATURA),ID FROM 
+                    STW_UNIDADES_MEDIDA 
+                    ```
+            }
+            layout {
+                sequence: 100
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column IND_RECEPCION (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: IND_RECEPCION
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            advanced {
+                htmlDomId: color_check
+                columnInitJavaScriptFunction:
+                    ```javascript-browser
+                    function(config) {
+                        config.defaultGridColumnOptions = {
+                            noHeaderActivate: true
+                        };
+                        return config;
+                    }
+                    ```
+            }
+        )
+
+        column NRO_LOTE (
+            type: selectList
+            heading {
+                heading: <p>Nro Lote</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT NRO_LOTE,ID FROM STW_LOTES
+                    WHERE ID_ARTICULO=:ID_ARTICULO
+                    ```
+                displayNullValue: false
+            }
+            cascadingLov {
+                parentColumns: ID_ARTICULO
+                itemsToSubmit: ID_ARTICULO
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+        )
+
+        column SER_ENVIO (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: SER_ENVIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_ENVIO (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: TIP_ENVIO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Nota de Envios Det
+        }
+    )
+
+    region observación (
+        name: Observación
+        type: staticContent
+        layout {
+            sequence: 310
+            parentRegion: @solicitud-de-envío
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 3
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+    )
+
+    region solicitud-de-envío (
+        name: Solicitud de Envío
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       TIP_ENVIO,
+                       NRO_ENVIO,
+                       ID_SUCURSAL,
+                       ID_SUCURSAL_ENT,
+                       FECHA,
+                       ESTADO,
+                       IND_RECEPCION,
+                       ID_USUARIO,
+                       SER_ENVIO,
+                       NO_DESC_STOCK,
+                       DESC_SUCUR_ENT,
+                       CI,
+                       DIRECCION,
+                       COD_DIRECCION,
+                       COD_USUARIO_AUD,
+                       IND_IMPRESO,
+                       ID_AUT_RE_IMPRE_POR,
+                       FEC_AUT_RE_IMPRE,
+                       ID_CLIENTE,
+                       OBSERVACION,
+                       ID_EMPRESA_ENT,
+                       ID_SUCURSAL_CENTRAL,
+                       ID_SUCURSAL_ENT_CENTRAL,
+                       REFERENCIA,
+                       CANT_TOTAL,
+                       IND_ANULADO
+                  from STW_NOTAS_ENVIO_CAB_SOL
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P616_BANDERA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P616_BANDERA1 (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P616_BANDERA2 (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P616_CANT_TOTAL (
+        type: hidden
+        layout {
+            sequence: 280
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: CANT_TOTAL
+            dataType: number
+        }
+    )
+
+    pageItem P616_CI (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: CI
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_COD_DIRECCION (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: COD_DIRECCION
+            dataType: number
+        }
+    )
+
+    pageItem P616_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_DESC_SUCUR_ENT (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 160
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: DESC_SUCUR_ENT
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_DIRECCION (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: DIRECCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_ESTADO (
+        type: hidden
+        layout {
+            sequence: 120
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ESTADO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: P
+        }
+    )
+
+    pageItem P616_FECHA (
+        type: datePicker
+        label {
+            label: <p>Fecha:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 40
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: FECHA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: to_char(sysdate,'DD-MM-YYYY')
+        }
+    )
+
+    pageItem P616_FEC_AUT_RE_IMPRE (
+        type: hidden
+        layout {
+            sequence: 230
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: FEC_AUT_RE_IMPRE
+            dataType: date
+        }
+    )
+
+    pageItem P616_ID (
+        type: hidden
+        layout {
+            sequence: 100
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+    )
+
+    pageItem P616_ID_AUT_RE_IMPRE_POR (
+        type: hidden
+        layout {
+            sequence: 220
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_AUT_RE_IMPRE_POR
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_ID_CLIENTE (
+        type: hidden
+        layout {
+            sequence: 240
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_CLIENTE
+            dataType: number
+        }
+    )
+
+    pageItem P616_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 110
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_EMPRESA
+        }
+    )
+
+    pageItem P616_ID_EMPRESA_ENT (
+        type: hidden
+        layout {
+            sequence: 250
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_EMPRESA_ENT
+            dataType: number
+        }
+    )
+
+    pageItem P616_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal Salida:  &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            displayExtraValues: false
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_SUCURSAL
+        }
+    )
+
+    pageItem P616_ID_SUCURSAL_CENTRAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 260
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_SUCURSAL_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P616_ID_SUCURSAL_ENT (
+        type: popupLov
+        label {
+            label: <p>Sucursal Entrada:  &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION||'('||COD_SUCURSAL||')', ID
+                FROM BSW_SUCURSALES
+                WHERE ID_EMPRESA = :P0_COD_EMPRESA 
+                AND ID != :P616_ID_SUCURSAL
+                ```
+        }
+        cascadingLov {
+            parentItems: P616_ID_SUCURSAL
+            itemsToSubmit: P616_ID_SUCURSAL
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            columnSpan: 4
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 30
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_SUCURSAL_ENT
+            dataType: number
+        }
+    )
+
+    pageItem P616_ID_SUCURSAL_ENT_CENTRAL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 270
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_SUCURSAL_ENT_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P616_ID_USUARIO (
+        type: hidden
+        layout {
+            sequence: 140
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: ID_USUARIO
+            dataType: number
+        }
+    )
+
+    pageItem P616_IND_ANULADO (
+        type: checkbox
+        label {
+            label: <p>Anulado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 20
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 10
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: IND_ANULADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_IND_IMPRESO (
+        type: hidden
+        layout {
+            sequence: 210
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: IND_IMPRESO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_IND_RECEPCION (
+        type: hidden
+        layout {
+            sequence: 130
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: IND_RECEPCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_NO_DESC_STOCK (
+        type: hidden
+        layout {
+            sequence: 150
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: NO_DESC_STOCK
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_NRO_ENVIO (
+        type: displayOnly
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;"></a>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: NRO_ENVIO
+            dataType: number
+        }
+    )
+
+    pageItem P616_OBSERVACION (
+        type: textarea
+        label {
+            label: <p>Observación: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @observación
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 200
+            height: 1
+        }
+        validation {
+            maxLength: 200
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: OBSERVACION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_REFERENCIA (
+        type: numberField
+        label {
+            label: <p>Referencia:  &ensp;</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 40
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: REFERENCIA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P616_SER_ENVIO (
+        type: textField
+        label {
+            label: <p>Número:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @datos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 2
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+                margin-top-none
+                margin-bottom-none
+            ]
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 7
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: SER_ENVIO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue:
+                ```
+                A
+                
+                ```
+        }
+    )
+
+    pageItem P616_TIP_ENVIO (
+        type: hidden
+        layout {
+            sequence: 90
+            region: @solicitud-de-envío
+            slot: regionBody
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: TIP_ENVIO
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: ENV
+        }
+    )
+
+    pageItem P616_TOTALES (
+        type: textField
+        label {
+            label: <p class="totales">TOTAL:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        source {
+            formRegion: @solicitud-de-envío
+            column: CANT_TOTAL
+            dataType: number
+        }
+    )
+
+    pageItem P616_USUARIO (
+        type: textField
+        label {
+            label: <p class="totales">Usuario:  &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        default {
+            type: expression
+            plsqlExpression:
+                ```plsql
+                :APP_USER
+                
+                ```
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 20
+            region: @solicitud-de-envío
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 615
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P616_ID
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 30
+            region: @solicitud-de-envío
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P616_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 50
+            region: @solicitud-de-envío
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: [
+                t-Button--danger,
+                borrar
+            ]
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P616_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 20
+            region: @solicitud-de-envío
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P616_ID
+        }
+    )
+
+    button marcar-todo (
+        buttonName: MARCAR_TODO
+        label: Marcar Todos
+        layout {
+            sequence: 10
+            region: @nota-de-envios-det
+            slot: sortOrder
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: [
+                #DEFAULT#
+                t-Button--small
+                t-Button--success
+                t-Button--simple
+                t-Button--stretch
+            ]
+        }
+        behavior {
+            action: definedByDynamicAction
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar cambios
+        layout {
+            sequence: 40
+            region: @solicitud-de-envío
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P616_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @solicitud-de-envío
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 615
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P616_ID
+        }
+    )
+
+    dynamicAction abrir-lv (
+        name: Abrir LV
+        execution {
+            sequence: 70
+        }
+        when {
+            event: dblclick
+            selectionType: columns
+            interactiveGrid: @nota-de-envios-det
+            columns: COD_ARTICULO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_ART_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction after-dialog-close (
+        name: AFTER_DIALOG_CLOSE
+        execution {
+            sequence: 80
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: region
+            region: @nota-de-envios-det
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: columns
+                columns: ID_ARTICULO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction buscar-articulo (
+        name: Buscar Articulo
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @nota-de-envios-det
+            columns: COD_ARTICULO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    --Cargan los datos del articulo
+                    BEGIN
+                    SELECT A.ID
+                    INTO :ID_ARTICULO
+                    FROM STW_ARTICULOS A
+                    LEFT JOIN STW_BARRAS B ON A.ID=B.ID_ARTICULO
+                    WHERE
+                    (COD_ARTICULO=:COD_ARTICULO OR B.COD_BARRA=:COD_ARTICULO) AND
+                    A.ID_EMPRESA=:P0_COD_EMPRESA AND
+                    ROWNUM=1;
+                    END;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'No se encontro el articulo');
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de articulos');
+                    ```
+                itemsToSubmit: COD_ARTICULO
+                itemsToReturn: ID_ARTICULO
+                showProcessing: true
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                value: 1
+            }
+            affectedElements {
+                selectionType: items
+                items: P616_BANDERA2
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction calcular-totales (
+        name: Calcular Totales
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @nota-de-envios-det
+            columns: CANTIDAD
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    if :cantidad <= 0 then
+                    :cantidad := null;
+                    RAISE_APPLICATION_ERROR(-20000, 'La cantidad no debe ser menor o igual a 0');
+                    end if;
+                    ```
+                itemsToSubmit: CANTIDAD
+                itemsToReturn: CANTIDAD
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            affectedElements {
+                selectionType: items
+                items: P616_TOTALES
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :cantidad
+                itemsToSubmit: CANTIDAD
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD_COPIA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                value: 0
+            }
+            affectedElements {
+                selectionType: items
+                items: P616_TOTALES
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: CANTIDAD
+            }
+        )
+
+    )
+
+    dynamicAction cargar-datos-de-articulos (
+        name: Cargar Datos de Articulos
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @nota-de-envios-det
+            columns: ID_ARTICULO
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                    SELECT NRO_LOTE,ID
+                    INTO :NRO_LOTE,:ID_LOTE
+                    FROM STW_LOTES
+                    WHERE ID_ARTICULO=:ID_ARTICULO
+                    and rownum=1;
+                    END;
+                    ```
+                itemsToSubmit: ID_ARTICULO
+                itemsToReturn: [
+                    NRO_LOTE
+                    ID_LOTE
+                ]
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    var array = grid.getSelectedRecords();
+                    grid.gotoCell(array[0][14],'COD_ARTICULO');
+                    ```
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DESCRIPCION FROM STW_ARTICULOS
+                    WHERE ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DESC_ARTICULO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: 1
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANTIDAD
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    v_id_unidad_medida number(18);
+                    begin
+                    SELECT ID_UNIDAD_MEDIDA 
+                    INTO V_ID_UNIDAD_MEDIDA
+                    FROM 
+                    STW_ARTICULOS 
+                    WHERE ID=:ID_ARTICULO;
+                    RETURN V_ID_UNIDAD_MEDIDA;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    NULL;
+                    WHEN OTHERS THEN
+                    NULL;
+                    end;
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_UNIDAD_MEDIDA
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-4 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT COD_ARTICULO FROM STW_ARTICULOS
+                    WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                    AND ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+                suppressChangeEvent: true
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_ARTICULO
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-5 (
+            action: setValue
+            settings {
+                value: 0
+            }
+            affectedElements {
+                selectionType: items
+                items: P616_BANDERA2
+            }
+            execution {
+                sequence: 70
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-feecha (
+        name: CONVERT_FEECHA
+        execution {
+            sequence: 110
+        }
+        when {
+            selectionType: items
+            items: P616_FECHA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P616_FECHA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P616_FECHA,'/','');
+                            conv_fecha := substr(:P616_FECHA,1,2)||'/'||
+                                                      substr(:P616_FECHA,3,2)||'/'||
+                                                      lpad(substr(:P616_FECHA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P616_FECHA := conv_fecha;
+                            ELSIF (length(:P616_FECHA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P616_FECHA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P616_FECHA
+                itemsToReturn: P616_FECHA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction descripcion-sucursal (
+        name: Descripcion Sucursal
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P616_ID_SUCURSAL_ENT
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select descripcion from bsw_sucursales where
+                    id_empresa=:P0_COD_EMPRESA and id =:P616_ID_SUCURSAL_ENT
+                    ```
+                itemsToSubmit: P616_ID_SUCURSAL_ENT
+            }
+            affectedElements {
+                selectionType: items
+                items: P616_DESC_SUCUR_ENT
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: Inicializar
+        execution {
+            sequence: 90
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    grid.setEditMode(false);
+                    //grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction marcar-todo (
+        name: Marcar Todo
+        execution {
+            sequence: 100
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @marcar-todo
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: marcarTodos();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction validar-que-no-quede-en (
+        name: Validar que no quede en 0
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P616_TOTALES
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    if (parseInt($v('CANTIDAD').replace(/\./g,''))<=0){
+                        apex.message.alert('La cantidad no puede ser menor o igual a 0')
+                     $s('CANTIDAD',null);
+                    }
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction validar-serie (
+        name: Validar Serie
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P616_SER_ENVIO
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                title: Advertencia
+                message: No se encontró la serie
+                style: warning
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: item=value
+                item: P616_BANDERA
+                value: 0
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare
+                    vbandera number:=0;
+                    BEGIN 
+                    IF :P616_SER_ENVIO IS NOT NULL THEN
+                        SELECT NVL((SELECT 1 FROM BSW_SERIES_COMPROB WHERE ID_EMPRESA = :P0_COD_EMPRESA AND
+                      --  TIP_COMPROBANTE = 'ENV' AND
+                        SER_COMPROBANTE = :P616_SER_ENVIO),0) 
+                        AS BANDERA 
+                        INTO vbandera
+                        FROM DUAL;
+                        :P616_BANDERA := VBANDERA;        
+                    end if;
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        RAISE_APPLICATION_ERROR(-20000,'No se encontro la serie'||:P616_BANDERA);
+                    END;
+                    ```
+                itemsToSubmit: P616_SER_ENVIO
+                itemsToReturn: P616_BANDERA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    validation validar-detalle-vacio (
+        name: Validar Detalle Vacio
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                IF :P616_TOTALES IS NULL OR :P616_TOTALES<=0 THEN
+                    RETURN FALSE;
+                ELSE
+                    RETURN TRUE;
+                END IF;
+                ```
+        }
+        error {
+            errorMessage: El detalle no puede quedar vacio
+            displayLocation: onErrorPage
+            associatedItem: @P616_TOTALES
+        }
+    )
+
+    validation validar-fec (
+        name: Validar Fec
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                 v_mensaje varchar2(200);
+                begin
+                  begin
+                    select ver_fecha(:P0_ID_EMPRESA, W_BUSCA_PARAMETRO('CM','ID_MODULO_CM'),:P616_FECHA) 
+                       into v_mensaje
+                    from dual;
+                    return TRUE;
+                  exception
+                    when no_data_found then
+                      v_mensaje := null;
+                    when others then
+                      v_mensaje := null;
+                  end;
+                  return FALSE;
+                end;
+                ```
+        }
+        error {
+            errorMessage: Fecha fuera de rango
+            associatedItem: @P616_FECHA
+        }
+    )
+
+    computation p616-nro-envio (
+        itemName: P616_NRO_ENVIO
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                v_nro_envio STW_NOTAS_ENVIO_CAB_SOL.NRO_ENVIO%TYPE;
+                BEGIN
+                IF :P616_NRO_ENVIO IS  NULL THEN
+                SELECT NVL(MAX(NRO_ENVIO),0)+1
+                INTO v_nro_envio
+                FROM
+                STW_NOTAS_ENVIO_CAB_SOL 
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                AND :P616_SER_ENVIO=SER_ENVIO;
+                RETURN V_NRO_ENVIO;
+                END IF;
+                 RETURN :P616_NRO_ENVIO;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                V_NRO_ENVIO:=1;
+                RETURN V_NRO_ENVIO;
+                WHEN OTHERS THEN 
+                RAISE_APPLICATION_ERROR(-20000,'Error al cargar el numero de comprobante'||sqlerrm);
+                END;
+                EXCEPTION WHEN
+                OTHERS THEN
+                RAISE_APPLICATION_ERROR(-20000,'Error al cargar el numero de comprobante'||sqlerrm);
+                ```
+        }
+    )
+
+    process eliminar-detalles (
+        name: Eliminar Detalles
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                delete from STW_NOTAS_ENVIO_det_SOL
+                where id_nro_envio_cab = :P616_ID;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 10288505179561548
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process initialize-form-nota-de-envios (
+        name: Initialize form Nota de Envios
+        type: formInitialization
+        formRegion: @solicitud-de-envío
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 10272956814561439
+        }
+    )
+
+    process limpiar (
+        name: "LIMPIAR "
+        type: clearSessionState
+        execution {
+            sequence: 90
+        }
+        advanced {
+            executionMappingIdentifier: 10288930512561548
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: DELETE
+        }
+    )
+
+    process marcar-todo (
+        name: Marcar Todo
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                delete from STW_NOTAS_ENVIO_det_SOL
+                where id_nro_envio_cab = :P616_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Operación realizada exitosamente
+        }
+        advanced {
+            executionMappingIdentifier: 10289244046561548
+        }
+        serverSideCondition {
+            whenButtonPressed: @marcar-todo
+        }
+    )
+
+    process nota-de-envios-cab (
+        name: Nota de Envios Cab
+        type: formAutoRowProcessing
+        formRegion: @solicitud-de-envío
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 10273389190561450
+        }
+    )
+
+    process nota-de-envios-det-save-interactive-grid-data (
+        name: Nota de Envios Det - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @nota-de-envios-det
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                
+                
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                                insert into STW_NOTAS_ENVIO_DET_SOL
+                                (ID_EMPRESA,
+                                TIP_ENVIO,
+                                ID_NRO_ENVIO_CAB,
+                                ID_ARTICULO, 
+                                DESC_ARTICULO,
+                                CANTIDAD, 
+                                ID_UNIDAD_MEDIDA, 
+                                NRO_LOTE, 
+                                ID_LOTE, 
+                                IND_RECEPCION,
+                                SER_ENVIO, 
+                                ID_BARRA)
+                                values(:P0_COD_EMPRESA, 
+                                :P616_TIP_ENVIO, 
+                                :P616_ID, 
+                                ----:ID_NRO_ENVIO_CAB,
+                                :ID_ARTICULO, 
+                                :DESC_ARTICULO, 
+                                :CANTIDAD, 
+                                :ID_UNIDAD_MEDIDA,
+                                :NRO_LOTE, 
+                                :ID_LOTE, 
+                                :IND_RECEPCION, 
+                                :P616_SER_ENVIO, 
+                                :ID_BARRA);
+                            
+                            WHEN 'U' then 
+                   
+                                update STW_NOTAS_ENVIO_DET_SOL  d
+                                    set D.ID_ARTICULO = :ID_ARTICULO,
+                                        D.CANTIDAD       = :CANTIDAD,
+                                        D.ID_UNIDAD_MEDIDA     = :ID_UNIDAD_MEDIDA,
+                                        D.NRO_LOTE        = :NRO_LOTE,
+                                        D.IND_RECEPCION       = :IND_RECEPCION,
+                                        D.ID_BARRA = :ID_BARRA
+                                             
+                                where   ID_NRO_ENVIO_CAB = :P616_ID
+                                  and   d.id = :id;
+                
+                             
+                            when 'D' then
+                                delete STW_NOTAS_ENVIO_DET_SOL d     
+                                WHERE d.ID_NRO_ENVIO_CAB = :P616_ID
+                                  and d.id = :id;  
+                    end case;
+                    
+                         EXCEPTION
+                when no_data_found then
+                RAISE_APPLICATION_ERROR(-20998,'ERROR: al insertar'|| SQLERRM );
+                WHEN OTHERS THEN 
+                RAISE_APPLICATION_ERROR(-20995,'ERROR: al insertar AA'|| SQLERRM);
+                              
+                
+                END;
+                
+                
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        successMessage {
+            successMessage: Operación correcta
+        }
+        error {
+            displayLocation: onErrorPage
+        }
+        advanced {
+            executionMappingIdentifier: 10283572811561518
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,CREATE,DELETE
+        }
+    )
+
+    process relacionar-cabecera-con-detalle (
+        name: relacionar cabecera con detalle
+        type: executeCode
+        editableRegion: @nota-de-envios-det
+        source {
+            plsqlCode:
+                ```plsql
+                :ID_EMPRESA  := :P0_ID_EMPRESA;
+                :ID_NRO_ENVIO_CAB := :P616_ID;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 10338373743752801
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,CREATE,DELETE
+        }
+    )
+
+    branch (
+        name: Go To Page 617
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 617
+                items: {
+                    P617_FECHA: &P616_FECHA.
+                    P617_ID_SUCURSAL: &P616_ID_SUCURSAL.
+                    P617_ID_SUCURSAL_ENT: &P616_ID_SUCURSAL_ENT.
+                    P617_NRO_ENVIO: &P616_NRO_ENVIO.
+                    P617_USUARIO: &P616_USUARIO.
+                    P617_SER_ENVIO: &P616_SER_ENVIO.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

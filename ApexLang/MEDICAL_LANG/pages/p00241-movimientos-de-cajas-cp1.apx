@@ -1,0 +1,586 @@
+page 241 (
+    name: Movimientos de Cajas-Pagos
+    alias: MOVIMIENTOS-DE-CAJAS-CP1
+    title: Movimientos de Cajas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region movimientos-de-cajas-cp (
+        name: Movimientos de Cajas CP
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.NRO_MOV_CAJ,
+                       C.FEC_MOV_CAJ,
+                       C.ANULADO,
+                       C.FEC_ANULACION,
+                       C.ID_USUARIO,
+                       C.TOT_NRO_MOV_CAJ,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.ID_PROVEEDOR,
+                       C.COD_USUARIO_AUD,
+                       C.ID_ORDEN_PAGO,
+                       C.IND_IMPRESION,
+                       REPLACE(REPLACE(C.ASIENTOS,'*'),'caja') ASIENTOS,
+                       (SELECT D.ID
+                        FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(C.ASIENTOS,'*'),'caja'))
+                          AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(C.FEC_MOV_CAJ)
+                          AND D.ID_EMPRESA  = C.ID_EMPRESA) ASIENTO_ID,
+                       C.ID_CENTRO_COSTO,
+                       C.NRO_MOV_CAJ_CEN,
+                       C.COMENTARIO,
+                         CASE ANULADO
+                        WHEN 'S' THEN 'fa fa-check u-success-text'
+                        WHEN 'N' THEN ''
+                       END AS ANULADO_ICON
+                  from CPW_CABECERA_CAJAS C
+                  WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                  ORDER BY TO_NUMBER(NRO_MOV_CAJ) DESC
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 238
+                items: {
+                    P238_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 52899837831986250
+        }
+
+        column ANULADO (
+            type: plainText
+            heading {
+                heading: Anulado
+            }
+            layout {
+                sequence: 9
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ANULADO_ICON#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ANULADO_ICON (
+            type: hidden
+            heading {
+                heading: Anulado Icon
+            }
+            layout {
+                sequence: 97
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 22
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTO_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ASIENTO_ID (
+            type: plainText
+            heading {
+                heading: Asiento Id
+                alignment: center
+            }
+            layout {
+                sequence: 107
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Usuario Auditor
+            }
+            layout {
+                sequence: 19
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column COMENTARIO (
+            type: hidden
+            heading {
+                heading: Comentario
+            }
+            layout {
+                sequence: 27
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column FEC_ANULACION (
+            type: plainText
+            heading {
+                heading: Fec.Anulacion
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FEC_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: hidden
+            heading {
+                heading: Id Centro Costo
+            }
+            layout {
+                sequence: 24
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 67
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_ORDEN_PAGO (
+            type: hidden
+            heading {
+                heading: Id Orden Pago
+            }
+            layout {
+                sequence: 87
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Proveedor
+                alignment: center
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 77
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column ID_USUARIO (
+            type: hidden
+            heading {
+                heading: Id Usuario
+            }
+            layout {
+                sequence: 57
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column IND_IMPRESION (
+            type: hidden
+            heading {
+                heading: Ind Impresion
+            }
+            layout {
+                sequence: 21
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column NRO_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Nro
+                alignment: end
+            }
+            layout {
+                sequence: 5
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_MOV_CAJ_CEN (
+            type: hidden
+            heading {
+                heading: Nro Mov Caj Cen
+            }
+            layout {
+                sequence: 25
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Cambio
+                alignment: end
+            }
+            layout {
+                sequence: 14
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column TOT_NRO_MOV_CAJ (
+            type: plainText
+            heading {
+                heading: Total Caja
+                alignment: end
+            }
+            layout {
+                sequence: 12
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Movimientos de Cajas CP
+        }
+
+        savedReport 529114 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ANULADO (
+                sequence: 7
+            )
+
+            displayColumn ASIENTOS (
+                sequence: 10
+            )
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 9
+            )
+
+            displayColumn FEC_ANULACION (
+                sequence: 8
+            )
+
+            displayColumn FEC_MOV_CAJ (
+                sequence: 2
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 6
+            )
+
+            displayColumn ID_PROVEEDOR (
+                sequence: 4
+            )
+
+            displayColumn NRO_MOV_CAJ (
+                sequence: 1
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 5
+            )
+
+            displayColumn TOT_NRO_MOV_CAJ (
+                sequence: 3
+            )
+
+            sort (
+                column: NRO_MOV_CAJ
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @movimientos-de-cajas-cp
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 238
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button listado (
+        buttonName: Listado
+        label: Listado
+        layout {
+            sequence: 10
+            region: @breadcrumb
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 680
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+)
+

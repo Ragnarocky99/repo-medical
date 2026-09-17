@@ -1,0 +1,874 @@
+page 594 (
+    name: Cheques Emitidos en Caja
+    alias: CHEQUES-EMITIDOS-EN-CAJA1
+    title: Cheques Emitidos en Caja
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            
+            .mostrar{
+            background-color:#eeeeee;
+            width: 190px;
+            height: 25px;
+            pointer-events: none;
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region cheques-emitidos-en-caja (
+        name: Cheques Emitidos  en Caja
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select 
+                C.ID,
+                C.ID_BANCO,
+                C.SER_VALOR,
+                C.NUM_VALOR,
+                C.FEC_EMISION,
+                C.FEC_VENCIMIENTO,
+                C.TOT_VALOR,
+                C.BENEFICIARIO,
+                C.ESTADO,
+                C.NRO_CUENTA,
+                c.id_empresa,
+                s.descripcion subtipo,
+                CASE 
+                        WHEN C.ANULADO = 'S' THEN 'Anulado'
+                        WHEN C.IND_CONCILIADO = 'S' THEN 'Entregado'              
+                        ELSE 'Pendiente'
+                    END AS Estados,
+                
+                
+                
+                C.FEC_ANULACION
+                
+                
+                
+                from cpw_valores_cajas c, BSW_SUBTIPOS_TRANS S, BSW_TIPOS_TRANS T 
+                WHERE C.ID_SUB_TIPO_TRANS = S.ID
+                AND C.ID_EMPRESA = S.ID_EMPRESA
+                AND S.TIP_DOCUMENTO = 'CHE'
+                AND T.ID_EMPRESA = S.ID_EMPRESA
+                AND S.ID_TIPO_TRANS  = T.ID
+                AND T.TIPO_TRANS = w_busca_PARAMETRO('CP','COD_TRAN_PA')
+                
+                AND (C.ID_BANCO = :P594_BANCO OR :P594_BANCO IS NULL)
+                
+                AND (C.FEC_VENCIMIENTO >= :P594_PERIODO_VENCI_INI OR :P594_PERIODO_VENCI_INI IS NULL)
+                AND (C.FEC_VENCIMIENTO <= :P594_PERIODO_VENCI_FIN OR :P594_PERIODO_VENCI_FIN IS NULL)
+                AND (C.FEC_EMISION >= :P594_PERIODO_EMI_INI OR :P594_PERIODO_EMI_INI IS NULL)
+                AND (C.FEC_EMISION <= :P594_PERIODO_EMI_FIN OR :P594_PERIODO_EMI_FIN IS NULL)
+                
+                --AND (C.ESTADO = :P594_ESTADO OR :P594_ESTADO IS NULL)
+                AND (C.NUM_VALOR = :P594_NRO_CHEQUE OR :P594_NRO_CHEQUE IS NULL)
+                AND (S.ID = :P594_SUBTIPO_TRANS or :P594_SUBTIPO_TRANS IS NULL)
+                
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 595
+                items: {
+                    P595_ID: \#ID#\
+                    P595_ID_EMPRESA: \#ID_EMPRESA#\
+                    P595_BENEFICIARIO: \#BENEFICIARIO#\
+                    P595_FEC_EMISION: \#FEC_EMISION#\
+                    P595_FEC_VENCIMIENTO: \#FEC_VENCIMIENTO#\
+                    P595_ESTADO: \#ESTADO#\
+                    P595_NRO_CUENTA: \#NRO_CUENTA#\
+                }
+                action: resetPagination
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 13568714574960496
+        }
+
+        column BENEFICIARIO (
+            type: plainText
+            heading {
+                heading: Beneficiario
+                alignment: center
+            }
+            layout {
+                sequence: 85
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 38
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                htmlDomId: OPERACION
+                endUserAlias: AL
+            }
+        )
+
+        column ESTADOS (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 125
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                htmlDomId: OPERACION
+                endUserAlias: BB
+            }
+        )
+
+        column FEC_ANULACION (
+            type: plainText
+            heading {
+                heading: Fec Anulacion
+            }
+            layout {
+                sequence: 135
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: BC
+            }
+        )
+
+        column FEC_EMISION (
+            type: plainText
+            heading {
+                heading: Fecha Emisión
+                alignment: center
+            }
+            layout {
+                sequence: 15
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fecha Vencimiento
+                alignment: center
+            }
+            layout {
+                sequence: 16
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                primaryKey: true
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_BANCO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Banco
+                alignment: center
+            }
+            lov {
+                lov: @lv-bancos
+            }
+            layout {
+                sequence: 75
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 105
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AZ
+            }
+        )
+
+        column NRO_CUENTA (
+            type: plainText
+            heading {
+                heading: Nro Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 95
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AY
+            }
+        )
+
+        column NUM_VALOR (
+            type: plainText
+            heading {
+                heading: Nro Cheque
+                alignment: center
+            }
+            layout {
+                sequence: 9
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column SER_VALOR (
+            type: plainText
+            heading {
+                heading: Ser Valor
+            }
+            layout {
+                sequence: 145
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BD
+            }
+        )
+
+        column SUBTIPO (
+            type: plainText
+            heading {
+                heading: "Sub tipo Transacción "
+                alignment: center
+            }
+            layout {
+                sequence: 115
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BA
+            }
+        )
+
+        column TOT_VALOR (
+            type: plainText
+            heading {
+                heading: Total Valor
+                alignment: center
+            }
+            layout {
+                sequence: 17
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Cheques Emitidos  en Caja
+        }
+
+        savedReport 135895 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn BENEFICIARIO (
+                sequence: 7
+            )
+
+            displayColumn ESTADOS (
+                sequence: 10
+            )
+
+            displayColumn FEC_ANULACION (
+                sequence: 11
+            )
+
+            displayColumn FEC_EMISION (
+                sequence: 4
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 5
+            )
+
+            displayColumn ID_BANCO (
+                sequence: 1
+            )
+
+            displayColumn NRO_CUENTA (
+                sequence: 9
+            )
+
+            displayColumn NUM_VALOR (
+                sequence: 3
+            )
+
+            displayColumn SER_VALOR (
+                sequence: 2
+            )
+
+            displayColumn SUBTIPO (
+                sequence: 8
+            )
+
+            displayColumn TOT_VALOR (
+                sequence: 6
+            )
+
+        )
+
+    )
+
+    region filtro (
+        name: Filtro
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+    )
+
+    pageItem P594_BANCO (
+        type: popupLov
+        label {
+            label: <p>Banco</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-bancos
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 10
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P594_ESTADO (
+        type: selectList
+        label {
+            label: <p>Estado</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Pendiente;P,Entregado;E,Anulado;A
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 70
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P594_NRO_CHEQUE (
+        type: textField
+        label {
+            label: <p>Nro Cheque</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P594_PERIODO_EMI_FIN (
+        type: datePicker
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P594_PERIODO_EMI_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Emisión </p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 7
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P594_PERIODO_VENCI_FIN (
+        type: datePicker
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P594_PERIODO_VENCI_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Vencimiento</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+    )
+
+    pageItem P594_SUBTIPO_TRANS (
+        type: selectList
+        label {
+            label: <p>Subtipo Transacción</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Cheques Adelantados;617,Cheques al Día;616
+            nullDisplayValue: - - Sin Seleccionar --
+        }
+        layout {
+            sequence: 80
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Create
+        layout {
+            sequence: 10
+            region: @cheques-emitidos-en-caja
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 595
+                clearCache: 595
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    button ejecutar (
+        buttonName: EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtro
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button imprimir (
+        buttonName: IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 20
+            region: @filtro
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction edit-report-dialog-closed (
+        name: Edit Report - Dialog Closed
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @cheques-emitidos-en-caja
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @cheques-emitidos-en-caja
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 40
+        }
+        when {
+            event: apexafterrefresh
+            selectionType: region
+            region: @cheques-emitidos-en-caja
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    /*$('td[headers="OPERACION"]').each(function() {
+                      if ($(this).text() == 'Entregado') {
+                        $(this).css({"color": "green"});
+                      }
+                    });*/
+                    $('td[headers="OPERACION"]').each(function() {
+                      var texto = $(this).text();
+                      if (texto === 'Entregado') {
+                        $(this).css("color", "green");
+                      } else if (texto === 'Pendiente') {
+                        $(this).css("color", "yellow");
+                      } else if (texto === 'Anulado') {
+                        $(this).css("color", "red");
+                      }
+                    });
+                    
+                    
+                    
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new-2 (
+        name: New_2
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @cheques-emitidos-en-caja
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    branch (
+        name: Go to Page 596
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 596
+                items: {
+                    P596_BANCO: &P594_BANCO.
+                    P596_ESTADO: &P594_ESTADO.
+                    P596_NRO_CHEQUE: &P594_NRO_CHEQUE.
+                    P596_PERIODO_EMI_FIN: &P594_PERIODO_EMI_FIN.
+                    P596_PERIODO_EMI_INI: &P594_PERIODO_EMI_INI.
+                    P596_PERIODO_VENCI_FIN: &P594_PERIODO_VENCI_FIN.
+                    P596_PERIODO_VENCI_INI: &P594_PERIODO_VENCI_INI.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

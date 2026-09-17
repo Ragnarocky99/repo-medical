@@ -1,0 +1,599 @@
+page 597 (
+    name: Rg90Descarga
+    alias: RG90DESCARGA
+    title: Rg90Descarga
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P597_ANIO (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P597_DIA_DESDE (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P597_DIA_HASTA (
+        type: textField
+        label {
+            label: Dia Hasta
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P597_MES (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P597_NOMBRE (
+        type: textField
+        label {
+            label: Nombre
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P597_TIP_LIBRO (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    process apex-collections (
+        name: APEX_COLLECTIONS
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                select c001, c002, c003, c004 ,c005,c006 
+                into :P597_ANIO, :P597_DIA_DESDE, :P597_DIA_HASTA, :P597_MES, :P597_NOMBRE, :P597_TIP_LIBRO
+                FROM APEX_COLLECTIONS WHERE COLLECTION_NAME = 'TMP_RG90';
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 15226618713392901
+        }
+    )
+
+    process generador-de-la-rg (
+        name: generador de la rg90
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  l_file UTL_FILE.FILE_TYPE;
+                  l_blob        blob;
+                  l_position    INTEGER := 1;
+                
+                  CURSOR ventas IS
+                      SELECT '1' TIPO,--TIPO,
+                           to_chaR(cc.TIP_IDEN) CODIGO_TIPO_ID,-- CODIGO_TIPO_ID,
+                           cc.ruc RUC_CLIENTE,--RUC_CLIENTE,
+                           cc.CLIENTE,--CLIENTE,
+                           cc.codigo,
+                           cc.TIP_COMPROBANTE TIPO_COMPROBANTE,--TIPO_COMPROBANTE,
+                           cc.FEC_COMPROBANTE,--FEC_COMPROBANTE,
+                           cc.NRO_TIMBRADO TIMBRADO,--TIMBRADO,
+                           cc.NRO_COMPROBANTE NRO_COMPROBANTE,--NRO_COMPROBANTE,
+                           cc.TOT_GRAVADA_10 TOT_GRAVADAS_10,--TOT_GRAVADAS_10,
+                           cc.TOT_GRAVADA_5 TOT_GRAVADAS_5,--TOT_GRAVADAS_5,
+                           cc.TOT_exenta TOT_EXENTAS, --TOT_EXENTAS,
+                           cc.TOT_COMPROBANTE, --TOT_COMPROBANTE,
+                           cc.CONDICION_VENTA, --CONDICION_VENTA,
+                           cc.OPERACION_EXTRANJERA,--OPERACION_EXTRANJERA,
+                           cc.IND_IVA IMPUTA_AL_IVA,--IMPUTA_AL_IVA,
+                           cc.IND_IRE IMPUTA_AL_IRE,--IMPUTA_AL_IRE,
+                           cc.IND_IRP IMPUTA_AL_IRP_RSP, --IMPUTA_AL_IRP_RSP,
+                           cc.NRO_COMP_REF REFERENCIA,--REFERENCIA,
+                           cc.timbrado_Ref TIMBRADO_VENTA,--TIMBRADO_VENTA,
+                           cc.ID_EMPRESA COD_EMPRESA, --COD_EMPRESA,
+                           cc.TIP_COMPROBANTE TIP_COMPROBANTE, --TIP_COMPROBANTE,
+                           cc.ser_comprobante SER_COMPROBANTE, --SER_COMPROBANTE,
+                           null DV_CLIENTE, --DV_CLIENTE,
+                           null IND_HECHAUKA --IND_HECHAUKA
+                    FROM VTWV_RES_90 cc
+                     WHERE cc.id_empresa = :P0_ID_EMPRESA
+                       AND to_number(to_char(cc.fec_comprobante, 'MM')) = :P597_MES
+                           AND to_number(to_char(cc.fec_comprobante, 'yyyy')) = :P597_ANIO
+                           AND to_number(to_char(cc.fec_comprobante, 'dd')) BETWEEN
+                           												NVL(:P597_DIA_DESDE,0) AND	NVL(:P597_DIA_HASTA,31);
+                
+                  cursor compras is SELECT '2'    TIPO_REG,
+                       to_char(cm.TIP_IDEN)         TIP_IDENT,
+                       cm.RUC_PROV          RUC_PROV,
+                       cm.NOMBRE            NOMBRE,
+                       cm.Codigo            CODIGO,
+                       cm.FEC_COMPROBANTE,
+                       cm.TIMBRADO,
+                       cm.NUM_COMPROBANTE,
+                       cm.TOT_GRAVADA_10,
+                       cm.TOT_GRAVADA_5,
+                       cm.TOT_EXENTA,
+                       cm.TOT_COMPROBANTE,
+                       cm.CONDICION_COMPRA,
+                       cm.OPERACION_EXTRANJERA,
+                       CM.IND_IVA IMPUTA_AL_IVA,
+                       CM.IND_IRE IMPUTA_AL_IRE,
+                       CM.IND_IRP IMPUTA_AL_IRP_RSP,
+                       CM.NO_IMPUTA NO_IMPUTA,
+                       CM.referencia ,
+                       CM.TIMBRADO_REF TIMBRADO_VENTA,
+                       CM.ID_EMPRESA COD_EMPRESA
+                  from CMWV_LIBRO_COMPRA CM
+                  WHERE cm.id_empresa = :P0_ID_EMPRESA
+                       AND to_number(to_char(cm.fec_comprobante, 'MM')) = :P597_MES
+                           AND to_number(to_char(cm.fec_comprobante, 'yyyy')) = :P597_ANIO
+                           AND to_number(to_char(cm.fec_comprobante, 'dd')) BETWEEN
+                           												NVL(:P597_DIA_DESDE,0) AND	NVL(:P597_DIA_HASTA,31);
+                
+                 -- l_text VARCHAR2(32767) := 'Texto que se escribirá en el archivo';
+                   --RAISE_APPLICATION_ERROR(-20000,'ES ESTE EL ERROR' || sqlerrm );
+                
+                BEGIN
+                  ---RAISE_APPLICATION_ERROR(-20000,'ES ESTE EL ERROR' || :P508_NOMBRE);
+                
+                /*select c001, c002, c003, c004 ,c005,c006 
+                into :P508_ANIO, :P508_DIA_DESDE, :P508_DIA_HASTA, :P508_MES, :P508_NOMBRE, :P508_TIP_LIBRO
+                FROM APEX_COLLECTIONS WHERE COLLECTION_NAME = 'TMP_RG90';*/
+                  l_file := UTL_FILE.FOPEN('DIR_RG90', :P597_NOMBRE ||'.txt', 'W');
+                  if :P597_TIP_LIBRO = 'V' then
+                  FOR c IN ventas LOOP
+                    UTL_FILE.PUT_LINE(l_file, LPAD(NVL(C.TIPO, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO_TIPO_ID, ' '), 2, ' ') || CHR(9) ||
+                               RPAD(NVL(C.RUC_CLIENTE, ' '), 20, ' ') || CHR(9)|| 
+                               RPAD(NVL(C.CLIENTE,' '), 80, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIPO_COMPROBANTE, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(TO_CHAR(C.FEC_COMPROBANTE, 'DD/MM/YYYY'), ' '),
+                                    10,
+                                    ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TIMBRADO, 0)), 8, ' ') || CHR(9) ||
+                               LTRIM(RTRIM(LPAD(NVL(NVL(C.NRO_COMPROBANTE, '0'), ' '),
+                                                20,
+                                                ' '))) || CHR(9) ||
+                               LPAD(NVL(C.TOT_GRAVADAS_10, 0), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_GRAVADAS_5, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_EXENTAS, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_COMPROBANTE, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CONDICION_VENTA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.OPERACION_EXTRANJERA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IVA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRE, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRP_RSP, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.REFERENCIA, ' '), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIMBRADO_VENTA, ' '), 8, ' ') || CHR(9)
+                               );
+                  END LOOP;
+                  ELSE
+                       FOR c IN COMPRAS LOOP
+                    UTL_FILE.PUT_LINE(l_file, LPAD(NVL(C.TIPO_REG, ' '), 1, ' ') || CHR(9)|| 
+                               LPAD(NVL(C.TIP_IDENT, ' '), 2, ' ') || CHR(9) ||
+                               RPAD(NVL(C.RUC_PROV, ' '), 20, ' ') || CHR(9) ||
+                               RPAD(NVL(C.NOMBRE, ' '), 80, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(TO_CHAR(C.FEC_COMPROBANTE, 'DD/MM/YYYY'), ' '),
+                                    10,
+                                    ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TIMBRADO, 0)), 8, ' ') || CHR(9) ||
+                               LTRIM(RTRIM(LPAD(NVL(NVL(C.NUM_COMPROBANTE, '0'), ' '),
+                                                20,
+                                                ' '))) || CHR(9) ||
+                               LPAD(NVL(C.TOT_GRAVADA_10, 0), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_GRAVADA_5, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_EXENTA, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_COMPROBANTE, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CONDICION_COMPRA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.OPERACION_EXTRANJERA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IVA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRE, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRP_RSP, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.NO_IMPUTA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.REFERENCIA, ' '), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIMBRADO_VENTA, ' '), 8, ' ') || CHR(9)
+                    );
+                  END LOOP;
+                  end if;
+                  UTL_FILE.FCLOSE(l_file);
+                
+                   -- Write the content of the file to the BLOB
+                
+                END;
+                
+                
+                
+                declare
+                    lBlob  BLOB;
+                    lFile  BFILE := BFILENAME('DIR_RG90',:P597_NOMBRE||'.txt');
+                    BEGIN
+                    ---raise_application_error(-20000,'aqui esta el error'||:P508_NOMBRE);
+                    INSERT INTO tmp_blob (id, archivo)
+                        VALUES (1, empty_blob())
+                        RETURNING arcHivo INTO lBlob;
+                
+                    DBMS_LOB.OPEN(lFile, DBMS_LOB.LOB_READONLY);
+                
+                    DBMS_LOB.OPEN(lBlob, DBMS_LOB.LOB_READWRITE);
+                
+                    DBMS_LOB.LOADFROMFILE(DEST_LOB => lBlob,
+                                          SRC_LOB  => lFile,
+                                          AMOUNT   => DBMS_LOB.GETLENGTH(lFile));
+                
+                    owa_util.mime_header('text/plain',false,'UTF-8'); 
+                    htp.p('Content-length: ' || DBMS_LOB.GETLENGTH(lFile)); 
+                    htp.p('Content-Disposition: attachment; filename="rg90.txt"'); 
+                    owa_util.http_header_close; 
+                                      
+                    wpg_docload.download_file(lblob); 
+                    /*DBMS_LOB.CLOSE(lFile);
+                    DBMS_LOB.CLOSE(lBlob);
+                   
+                    apex_application.stop_apex_engine;*/
+                
+                
+                    end;
+                ```
+        }
+        execution {
+            sequence: 20
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 15226728570392902
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process generador-de-la-rg-2 (
+        name: generador de la rg902
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  l_file UTL_FILE.FILE_TYPE;
+                  l_blob        blob;
+                  l_position    INTEGER := 1;
+                
+                  CURSOR ventas IS
+                      SELECT '1' TIPO,--TIPO,
+                           to_chaR(cc.TIP_IDEN) CODIGO_TIPO_ID,-- CODIGO_TIPO_ID,
+                           cc.ruc RUC_CLIENTE,--RUC_CLIENTE,
+                           cc.CLIENTE,--CLIENTE,
+                           cc.codigo,
+                           --cc.TIP_COMPROBANTE TIPO_COMPROBANTE,--TIPO_COMPROBANTE,
+                           cc.FEC_COMPROBANTE,--FEC_COMPROBANTE,
+                           cc.NRO_TIMBRADO TIMBRADO,--TIMBRADO,
+                           cc.NRO_COMPROBANTE NRO_COMPROBANTE,--NRO_COMPROBANTE,
+                           cc.TOT_GRAVADA_10 TOT_GRAVADAS_10,--TOT_GRAVADAS_10,
+                           cc.TOT_GRAVADA_5 TOT_GRAVADAS_5,--TOT_GRAVADAS_5,
+                           cc.TOT_exenta TOT_EXENTAS, --TOT_EXENTAS,
+                           ---cc.TOT_COMPROBANTE,   esto reemplazo abajo ~MR.
+                           (cc.TOT_GRAVADA_10 + cc.TOT_GRAVADA_5 + cc.TOT_exenta) TOT_COMPROBANTE,
+                           cc.CONDICION_VENTA, --CONDICION_VENTA,
+                           cc.OPERACION_EXTRANJERA,--OPERACION_EXTRANJERA,
+                           cc.IND_IVA IMPUTA_AL_IVA,--IMPUTA_AL_IVA,
+                           cc.IND_IRE IMPUTA_AL_IRE,--IMPUTA_AL_IRE,
+                           cc.IND_IRP IMPUTA_AL_IRP_RSP, --IMPUTA_AL_IRP_RSP,
+                           cc.NRO_COMP_REF REFERENCIA,--REFERENCIA,
+                           cc.timbrado_Ref TIMBRADO_VENTA,--TIMBRADO_VENTA,
+                           cc.ID_EMPRESA COD_EMPRESA, --COD_EMPRESA,
+                           cc.TIP_COMPROBANTE TIP_COMPROBANTE, --TIP_COMPROBANTE,
+                           cc.ser_comprobante SER_COMPROBANTE, --SER_COMPROBANTE,
+                           null DV_CLIENTE, --DV_CLIENTE,
+                           null IND_HECHAUKA --IND_HECHAUKA
+                    FROM VTWV_RES_902 cc
+                     WHERE cc.id_empresa = :P0_ID_EMPRESA
+                       AND to_number(to_char(cc.fec_comprobante, 'MM')) = :P597_MES
+                       AND to_number(to_char(cc.fec_comprobante, 'yyyy')) = :P597_ANIO
+                       AND to_number(to_char(cc.fec_comprobante, 'dd')) BETWEEN NVL(:P597_DIA_DESDE,0) AND	NVL(:P597_DIA_HASTA,31)
+                                                                           
+                    order by cc.FEC_COMPROBANTE, cc.NRO_COMPROBANTE;
+                
+                  cursor compras is SELECT '2'    TIPO_REG,
+                       to_char(cm.TIP_IDEN)         TIP_IDENT,
+                       cm.RUC_PROV          RUC_PROV,
+                       cm.NOMBRE            NOMBRE,
+                       cm.Codigo            CODIGO,
+                       cm.FEC_COMPROBANTE,
+                       cm.TIMBRADO,
+                       cm.NUM_COMPROBANTE,
+                       cm.TOT_GRAVADA_10,
+                       cm.TOT_GRAVADA_5,
+                       cm.TOT_EXENTA,
+                       (cm.TOT_GRAVADA_10 + cm.TOT_GRAVADA_5 + cm.TOT_EXENTA) TOT_COMPROBANTE,--cm.TOT_COMPROBANTE,
+                       cm.CONDICION_COMPRA,
+                       cm.OPERACION_EXTRANJERA,
+                       CM.IND_IVA IMPUTA_AL_IVA,
+                       CM.IND_IRE IMPUTA_AL_IRE,
+                       CM.IND_IRP IMPUTA_AL_IRP_RSP,
+                       CM.NO_IMPUTA NO_IMPUTA,
+                       CM.referencia ,
+                       CM.TIMBRADO_REF TIMBRADO_VENTA,
+                       CM.ID_EMPRESA COD_EMPRESA
+                  from CMWV_LIBRO_COMPRA2 CM
+                  WHERE cm.id_empresa = :P0_ID_EMPRESA
+                    and cm.tip_iden != '18'
+                       AND to_number(to_char(cm.fec_comprobante, 'MM')) = :P597_MES
+                           AND to_number(to_char(cm.fec_comprobante, 'yyyy')) = :P597_ANIO
+                           AND to_number(to_char(cm.fec_comprobante, 'dd')) BETWEEN
+                           												NVL(:P597_DIA_DESDE,0) AND	NVL(:P597_DIA_HASTA,31);
+                
+                 -- l_text VARCHAR2(32767) := 'Texto que se escribirá en el archivo';
+                   --RAISE_APPLICATION_ERROR(-20000,'ES ESTE EL ERROR' || sqlerrm );
+                
+                BEGIN
+                  ---RAISE_APPLICATION_ERROR(-20000,'ES ESTE EL ERROR' || :P508_NOMBRE);
+                
+                /*select c001, c002, c003, c004 ,c005,c006 
+                into :P508_ANIO, :P508_DIA_DESDE, :P508_DIA_HASTA, :P508_MES, :P508_NOMBRE, :P508_TIP_LIBRO
+                FROM APEX_COLLECTIONS WHERE COLLECTION_NAME = 'TMP_RG90';*/
+                 --:P597_NOMBRE := 'rg90';
+                  l_file := UTL_FILE.FOPEN('DIR_RG90', :P597_NOMBRE||'.txt', 'W');
+                  if :P597_TIP_LIBRO = 'V' then
+                  FOR c IN ventas LOOP
+                    UTL_FILE.PUT_LINE(l_file, LPAD(NVL(C.TIPO, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO_TIPO_ID, ' '), 2, ' ') || CHR(9) ||
+                               RPAD(NVL(C.RUC_CLIENTE, ' '), 20, ' ') || CHR(9)|| 
+                               RPAD(NVL(C.CLIENTE,' '), 80, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO, ' '), 3, ' ') || CHR(9) ||
+                               --LPAD(NVL(C.TIPO_COMPROBANTE, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(TO_CHAR(C.FEC_COMPROBANTE, 'DD/MM/YYYY'), ' '),
+                                    10,
+                                    ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TIMBRADO, 0)), 8, ' ') || CHR(9) ||
+                               LTRIM(RTRIM(LPAD(NVL(NVL(C.NRO_COMPROBANTE, '0'), ' '),
+                                                20,
+                                                ' '))) || CHR(9) ||
+                               LPAD(NVL(C.TOT_GRAVADAS_10, 0), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_GRAVADAS_5, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_EXENTAS, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_COMPROBANTE, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CONDICION_VENTA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.OPERACION_EXTRANJERA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IVA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRE, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRP_RSP, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.REFERENCIA, ' '), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIMBRADO_VENTA, ' '), 8, ' ') || CHR(9)
+                               );
+                  END LOOP;
+                  ELSE
+                       FOR c IN COMPRAS LOOP
+                    UTL_FILE.PUT_LINE(l_file, LPAD(NVL(C.TIPO_REG, ' '), 1, ' ') || CHR(9)|| 
+                               LPAD(NVL(C.TIP_IDENT, ' '), 2, ' ') || CHR(9) ||
+                               RPAD(NVL(C.RUC_PROV, ' '), 20, ' ') || CHR(9) ||
+                               RPAD(NVL(C.NOMBRE, ' '), 80, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(TO_CHAR(C.FEC_COMPROBANTE, 'DD/MM/YYYY'), ' '),
+                                    10,
+                                    ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TIMBRADO, 0)), 8, ' ') || CHR(9) ||
+                               LTRIM(RTRIM(LPAD(NVL(NVL(C.NUM_COMPROBANTE, '0'), ' '),
+                                                20,
+                                                ' '))) || CHR(9) ||
+                               LPAD(NVL(C.TOT_GRAVADA_10, 0), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_GRAVADA_5, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_EXENTA, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_COMPROBANTE, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CONDICION_COMPRA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.OPERACION_EXTRANJERA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IVA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRE, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRP_RSP, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.NO_IMPUTA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.REFERENCIA, ' '), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIMBRADO_VENTA, ' '), 8, ' ') || CHR(9)
+                    );
+                  END LOOP;
+                  end if;
+                  UTL_FILE.FCLOSE(l_file);
+                
+                   -- Write the content of the file to the BLOB
+                EXCEPTION
+                 WHEN OTHERS THEN
+                   RAISE_APPLICATION_ERROR(-20000, SQLERRM);
+                END;
+                
+                
+                
+                -- declare
+                --     lBlob    BLOB;
+                --     lFile    BFILE := BFILENAME('DIR_RG90',:P597_NOMBRE||'.txt');
+                --     lZipFile BLOB;
+                -- BEGIN
+                --     INSERT INTO tmp_blob (id, archivo)
+                --     VALUES (1, empty_blob())
+                --     RETURNING arcHivo INTO lBlob;
+                
+                --     DBMS_LOB.OPEN(lFile, DBMS_LOB.LOB_READONLY);
+                
+                --     DBMS_LOB.OPEN(lBlob, DBMS_LOB.LOB_READWRITE);
+                
+                --     DBMS_LOB.LOADFROMFILE(DEST_LOB => lBlob,
+                --                           SRC_LOB  => lFile,
+                --                           AMOUNT   => DBMS_LOB.GETLENGTH(lFile));
+                    
+                --     -- Agregar el archivo TXT al archivo ZIP
+                --     apex_zip.add_file(p_zipped_blob => lZipFile, p_file_name => :P597_NOMBRE || '.txt', p_content => lBlob);
+                --     apex_zip.finish(lZipFile);
+                
+                --     --owa_util.mime_header('text/plain',false,'UTF-8'); 
+                --     --htp.p('Content-length: ' || DBMS_LOB.GETLENGTH(lFile)); 
+                --     --htp.p('Content-Disposition: attachment; filename="'|| :P597_NOMBRE || '.txt"'); 
+                --     --owa_util.http_header_close;
+                --     owa_util.mime_header('application/zip', false, 'UTF-8');
+                --     htp.p('Content-length: ' || DBMS_LOB.GETLENGTH(lZipFile));
+                --     htp.p('Content-Disposition: attachment; filename="' || :P597_NOMBRE || '.zip"');
+                --     owa_util.http_header_close;
+                                      
+                --     wpg_docload.download_file(lZipFile);
+                --     --wpg_docload.download_file(lblob); 
+                -- end;
+                
+                declare
+                    lBlob    BLOB;
+                    lFile    BFILE := BFILENAME('DIR_RG90', :P597_NOMBRE || '.txt');
+                    lZipFile BLOB;
+                begin
+                    -- Crear un BLOB temporal para el ZIP
+                    DBMS_LOB.CREATETEMPORARY(lZipFile, TRUE);
+                
+                    -- Abrir el archivo físico
+                    DBMS_LOB.OPEN(lFile, DBMS_LOB.LOB_READONLY);
+                
+                    -- Crear un BLOB temporal para el contenido del TXT
+                    DBMS_LOB.CREATETEMPORARY(lBlob, TRUE);
+                    DBMS_LOB.LOADFROMFILE(lBlob, lFile, DBMS_LOB.GETLENGTH(lFile));
+                    DBMS_LOB.CLOSE(lFile);
+                
+                    -- Agregar el TXT dentro del ZIP
+                    apex_zip.add_file(
+                        p_zipped_blob => lZipFile,
+                        p_file_name   => :P597_NOMBRE || '.txt',
+                        p_content     => lBlob
+                    );
+                    apex_zip.finish(lZipFile);
+                
+                    -- Cabeceras para descargar como ZIP
+                    owa_util.mime_header('application/zip', false, 'UTF-8');
+                    htp.p('Content-length: ' || DBMS_LOB.GETLENGTH(lZipFile));
+                    htp.p('Content-Disposition: attachment; filename="' || :P597_NOMBRE || '.zip"');
+                    owa_util.http_header_close;
+                
+                    -- Descargar el ZIP
+                    wpg_docload.download_file(lZipFile);
+                
+                    -- Liberar recursos
+                    DBMS_LOB.FREETEMPORARY(lBlob);
+                    DBMS_LOB.FREETEMPORARY(lZipFile);
+                end;
+                
+                ```
+        }
+        execution {
+            sequence: 30
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 52200598072772101
+        }
+        comments {
+            comments: Esta es la version de Paranair.
+        }
+    )
+
+)
+

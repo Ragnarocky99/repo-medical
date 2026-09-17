@@ -1,0 +1,1623 @@
+page 507 (
+    name: RG_90
+    alias: RG_90
+    title: Resolucion 90
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            /*anio*/
+            $("#P507_ANIO").keypress(function(event){
+            event = (event) ? event : window.event;
+            var charCode = (event.which) ? event.which : event.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+            }
+            return true;
+            });
+            /* para dias*/
+            $("#P507_DIA_DESDE").keypress(function(event){
+            event = (event) ? event : window.event;
+            var charCode = (event.which) ? event.which : event.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+            }
+            return true;
+            });
+            $("#P507_DIA_HASTA").keypress(function(event){
+            event = (event) ? event : window.event;
+            var charCode = (event.which) ? event.which : event.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+            }
+            return true;
+            });
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalle (
+        name: detalle
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  query1 varchar2(5000);
+                  query2 varchar2(5000);
+                  vmask     varchar2(15)  := 'DD/MM/YYYY';
+                begin
+                
+                
+                QUERY1 := ('SELECT 2       LIBRO,
+                       cm.TIP_IDEN          IDENTIFICACION,
+                       cm.RUC_PROV          RUC,
+                       cm.NOMBRE            NOMBRE,
+                       cm.Codigo            CODIGO,
+                       cm.FEC_COMPROBANTE,
+                       cm.TIMBRADO,
+                       cm.NUM_COMPROBANTE COMPROBANTE,
+                       cm.TOT_GRAVADA_10  GRAVADAS_10,
+                       cm.TOT_GRAVADA_5   GRAVADAS_5,
+                       cm.TOT_EXENTA      EXENTAS,
+                       cm.TOT_COMPROBANTE  TOTAL,
+                       cm.CONDICION_COMPRA  CONDICION,
+                       CM.OPERACION_EXTRANJERA,
+                       CM.IND_IVA IMPUTA_AL_IVA,
+                       CM.IND_IRE IMPUTA_AL_IRE,
+                       CM.IND_IRP IMPUTA_AL_IRP_RSP,
+                       CM.NO_IMPUTA NO_IMPUTA,
+                       CM.referencia ,
+                       CM.TIMBRADO_REF TIMBRADO_REF,
+                       CM.ID_EMPRESA COD_EMPRESA
+                  from CMWV_LIBRO_COMPRA CM 
+                    where cm.id_Empresa = :P0_ID_EMPRESA
+                      and cm.mes        = :P507_MES
+                      and cm.anio       = :P507_ANIO
+                      and cm.tip_iden   != 18 --no deben aparecer los del exterior, según me dijeron. ~MR. 12-03-2025.
+                      and cm.dia     between :P507_DIA_DESDE and :P507_DIA_HASTA'
+                 );
+                  
+                  QUERY2 := ('SELECT 1 libro,
+                           to_chaR(cc.TIP_IDEN) IDENTIFICACION,
+                           cc.ruc RUC,
+                           cc.CLIENTE NOMBRE,
+                           cc.codigo, 
+                           cc.FEC_COMPROBANTE,
+                           cc.NRO_TIMBRADO TIMBRADO,
+                           cc.NRO_COMPROBANTE comprobante,
+                           cc.TOT_GRAVADA_10  GRAVADAS_10,
+                           cc.TOT_GRAVADA_5 GRAVADAS_5,
+                           cc.TOT_exenta EXENTAS,
+                           cc.TOT_COMPROBANTE TOTAL,
+                           cc.CONDICION_VENTA CONDICION,
+                           cc.OPERACION_EXTRANJERA,
+                           cc.IND_IVA IMPUTA_AL_IVA,
+                           cc.IND_IRE IMPUTA_AL_IRE,
+                           cc.IND_IRP IMPUTA_AL_IRP_RSP, 
+                           CC.NO_IMPUTA NO_IMPUTA,
+                           cc.NRO_COMP_REF REFERENCIA,
+                           cc.timbrado_Ref TIMBRADO_ref,
+                           cc.ID_EMPRESA COD_EMPRESA
+                    FROM VTWV_RES_90 cc
+                       where cc.id_Empresa = :P0_ID_EMPRESA
+                      and cc.mes        = :P507_MES
+                      and cc.anio       = :P507_ANIO
+                      and cc.dia     between :P507_DIA_DESDE and :P507_DIA_HASTA');
+                    
+                    if :P507_TIP_LIBRO = 'V' then
+                      return(query2);
+                     else
+                       return(query1);
+                    end if;
+                 
+                end;
+                ```
+            pageItemsToSubmit: [
+                P507_TIP_LIBRO
+                P507_MES
+                P507_ANIO
+                P507_DIA_DESDE
+                P507_DIA_HASTA
+                P0_ID_EMPRESA
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 68505812645649030
+        }
+
+        column CODIGO (
+            type: plainText
+            heading {
+                heading: Codigo
+                alignment: center
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column COD_EMPRESA (
+            type: plainText
+            heading {
+                heading: Cod Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column CONDICION (
+            type: plainText
+            heading {
+                heading: Condicion
+                alignment: center
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column EXENTAS (
+            type: plainText
+            heading {
+                heading: Exentas
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fec Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column GRAVADAS_10 (
+            type: plainText
+            heading {
+                heading: Gravadas 10
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column GRAVADAS_5 (
+            type: plainText
+            heading {
+                heading: Gravadas 5
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column IDENTIFICACION (
+            type: plainText
+            heading {
+                heading: Identificacion
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column IMPUTA_AL_IRE (
+            type: plainText
+            heading {
+                heading: Imputa Al Ire
+                alignment: center
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column IMPUTA_AL_IRP_RSP (
+            type: plainText
+            heading {
+                heading: Imputa Al Irp Rsp
+                alignment: center
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column IMPUTA_AL_IVA (
+            type: plainText
+            heading {
+                heading: Imputa Al Iva
+                alignment: center
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column LIBRO (
+            type: plainText
+            heading {
+                heading: Libro
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column NOMBRE (
+            type: plainText
+            heading {
+                heading: Nombre
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NO_IMPUTA (
+            type: plainText
+            heading {
+                heading: No Imputa
+                alignment: center
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column OPERACION_EXTRANJERA (
+            type: plainText
+            heading {
+                heading: Operacion Extranjera
+                alignment: center
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column RUC (
+            type: plainText
+            heading {
+                heading: Ruc
+                alignment: center
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TIMBRADO (
+            type: plainText
+            heading {
+                heading: Timbrado
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column TIMBRADO_REF (
+            type: plainText
+            heading {
+                heading: Timbrado Ref
+                alignment: center
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column TOTAL (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: detalle
+        }
+
+        savedReport 694438 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CODIGO (
+                sequence: 5
+            )
+
+            displayColumn COD_EMPRESA (
+                sequence: 21
+            )
+
+            displayColumn COMPROBANTE (
+                sequence: 8
+            )
+
+            displayColumn CONDICION (
+                sequence: 13
+            )
+
+            displayColumn EXENTAS (
+                sequence: 11
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 6
+            )
+
+            displayColumn GRAVADAS_10 (
+                sequence: 9
+            )
+
+            displayColumn GRAVADAS_5 (
+                sequence: 10
+            )
+
+            displayColumn IDENTIFICACION (
+                sequence: 2
+            )
+
+            displayColumn IMPUTA_AL_IRE (
+                sequence: 16
+            )
+
+            displayColumn IMPUTA_AL_IRP_RSP (
+                sequence: 17
+            )
+
+            displayColumn IMPUTA_AL_IVA (
+                sequence: 15
+            )
+
+            displayColumn LIBRO (
+                sequence: 1
+            )
+
+            displayColumn NOMBRE (
+                sequence: 4
+            )
+
+            displayColumn NO_IMPUTA (
+                sequence: 18
+            )
+
+            displayColumn OPERACION_EXTRANJERA (
+                sequence: 14
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 19
+            )
+
+            displayColumn RUC (
+                sequence: 3
+            )
+
+            displayColumn TIMBRADO (
+                sequence: 7
+            )
+
+            displayColumn TIMBRADO_REF (
+                sequence: 20
+            )
+
+            displayColumn TOTAL (
+                sequence: 12
+            )
+
+        )
+
+    )
+
+    region resolución (
+        name: Resolución 90
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P507_ANIO (
+        type: numberField
+        label {
+            label: <p>Año:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @resolución
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 4
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: expression
+            plsqlExpression: to_number(to_char(sysdate, 'yyyy'))
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P507_DIA_DESDE (
+        type: numberField
+        label {
+            label: <p>Dia Inicial:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @resolución
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: static
+            staticValue: 1
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P507_DIA_HASTA (
+        type: numberField
+        label {
+            label: <p>Dia Hasta:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            region: @resolución
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P507_MES (
+        type: selectList
+        label {
+            label: <p>Mes:&ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-meses
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @resolución
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: expression
+            plsqlExpression: to_number(to_char(sysdate, 'mm'))
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P507_NOMBRE (
+        type: textField
+        label {
+            label: <p>Nombre:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @resolución
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P507_TIP_LIBRO (
+        type: selectList
+        label {
+            label: <p>Tipo Libro:&ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:VENTAS;V,COMPRAS;C
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 90
+            region: @resolución
+            slot: regionBody
+            alignment: left
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            height: 1
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: static
+            staticValue: V
+        }
+    )
+
+    button execute (
+        buttonName: execute
+        label: EJECUTAR
+        layout {
+            sequence: 110
+            region: @resolución
+            slot: regionBody
+            columnSpan: 2
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+            icon: fa-dynamic-content
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: REFRESCAR
+        layout {
+            sequence: 120
+            region: @resolución
+            slot: regionBody
+            startNewRow: false
+            column: 3
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--gapTop
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+            executeValidations: false
+        }
+    )
+
+    dynamicAction acción-spinner (
+        name: Acción spinner
+        execution {
+            sequence: 80
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @execute
+        }
+
+        action plugin-com-fos-spinner-actions (
+            action: plugin/fosSpinnerActions
+            settings {
+                action: removeSpinner
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar Paginacion
+        execution {
+            sequence: 90
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @resolución
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction crea-nombre (
+        name: crea_nombre
+        execution {
+            sequence: 10
+        }
+        when {
+            event: focusin
+            selectionType: items
+            items: P507_NOMBRE
+        }
+
+        action set-valuea (
+            name: set_valuea01
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    	cont number(4);
+                        vruc_empresa varchar2(50);
+                        vmes         varchar2(10);
+                    begin
+                    	vruc_empresa := trae_empresa(:P0_ID_EMPRESA);
+                    
+                    if :P507_TIP_LIBRO = 'V' THEN
+                            begin	
+                             SELECT SEQ_RES90V.nextval 
+                               INTO cont
+                               FROM DUAL;
+                            exception
+                            	when others then
+                            	null;
+                            end;
+                    else
+                         begin	
+                             SELECT SEQ_RES90C.nextval 
+                               INTO cont
+                               FROM DUAL;
+                            exception
+                            	when others then
+                            	null;
+                            end;
+                    end if;
+                    if :P507_MES < 10 then
+                      vmes := '0'||:P507_MES;
+                    else 
+                      vmes := :P507_MES;
+                    end if;
+                    
+                    :P507_NOMBRE := (vruc_empresa||'_REG_'||vmes||
+                    :P507_ANIO||'_'||:P507_TIP_LIBRO||lpad(cont,4,0));
+                    return :P507_NOMBRE;
+                    end;
+                    ```
+                itemsToSubmit: [
+                    P507_NOMBRE
+                    P507_ANIO
+                    P507_MES
+                    P507_TIP_LIBRO
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P507_NOMBRE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction crea-nombre-2 (
+        name: crea_nombre02
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P507_TIP_LIBRO
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare
+                    	cont number(4);
+                        vruc_empresa varchar2(50);
+                    begin
+                    	vruc_empresa := trae_empresa(:P0_ID_EMPRESA);
+                    
+                    if :P507_TIP_LIBRO = 'V' THEN
+                            begin	
+                             SELECT SEQ_RES90V.nextval 
+                               INTO cont
+                               FROM DUAL;
+                            exception
+                            	when others then
+                            	null;
+                            end;
+                    else
+                         begin	
+                             SELECT SEQ_RES90C.nextval 
+                               INTO cont
+                               FROM DUAL;
+                            exception
+                            	when others then
+                            	null;
+                            end;
+                    end if;
+                    
+                    :P507_NOMBRE := (vruc_empresa||'_REG_'||:P507_MES||
+                    :P507_ANIO||'_'||:P507_TIP_LIBRO||lpad(cont,4,0));
+                    return :P507_NOMBRE;
+                    end;
+                    ```
+                itemsToSubmit: [
+                    P507_MES
+                    P507_ANIO
+                    P507_TIP_LIBRO
+                    P507_NOMBRE
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P507_NOMBRE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction procesos-al-presionar-execute (
+        name: Procesos al presionar execute
+        execution {
+            sequence: 70
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @execute
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      TMP_RG90 CONSTANT VARCHAR2(255) := 'TMP_RG90';     -- WWV_FLOW.G_INSTANCE is your user session number and will keep the collections per user session
+                    BEGIN
+                      IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_RG90) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_RG90);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_RG90);
+                     
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => TMP_RG90,
+                        p_c001 => :P507_ANIO,
+                        p_c002 => :P507_DIA_DESDE,
+                        p_c003 => :P507_DIA_HASTA,
+                        p_c004 => :P507_MES,
+                        p_c005 => :P507_NOMBRE,
+                        p_c006 => :P507_TIP_LIBRO
+                        
+                         );
+                    EXCEPTION
+                      WHEN OTHERS THEN
+                        RAISE_APPLICATION_ERROR(-20000, SQLERRM);
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P507_MES
+                    P507_ANIO
+                    P507_DIA_DESDE
+                    P507_DIA_HASTA
+                    P507_TIP_LIBRO
+                    P507_NOMBRE
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-submit-page (
+            action: submitPage
+            settings {
+                requestButtonName: execute
+                showProcessing: false
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresca-grilla (
+        name: refresca_grilla
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P507_TIP_LIBRO
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalle
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh (
+        name: REFRESH
+        execution {
+            sequence: 60
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action refresca-grilla (
+            name: REFRESCA_GRILLA01
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalle
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction set-dia-final (
+        name: set_dia_final
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P507_MES
+        }
+
+        action envia-dia-fin (
+            name: envia_dia_fin
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                      v_mes NUMBER;
+                      v_anio NUMBER;
+                      v_dias NUMBER;
+                    BEGIN
+                      v_mes := :P507_MES;
+                      v_anio := :P507_ANIO;
+                      
+                      CASE v_mes
+                        WHEN 4 THEN v_dias := 30;
+                        WHEN 6 THEN v_dias := 30;
+                        WHEN 9 THEN v_dias := 30;
+                        WHEN 11 THEN v_dias := 30;
+                        WHEN 2 THEN 
+                          IF (MOD(v_anio, 4) = 0 AND (MOD(v_anio, 100) != 0 OR MOD(v_anio, 400) = 0)) THEN
+                            v_dias := 29;
+                          ELSE
+                            v_dias := 28;
+                          END IF;
+                        ELSE v_dias := 31;
+                      END CASE;
+                      
+                      
+                      return v_dias;
+                        --RAISE_APPLICATION_ERROR(-20001, 'La fecha ingresada no es válida. El mes seleccionado tiene ' || v_dias || ' días.');
+                    
+                    
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P507_MES
+                    P507_ANIO
+                ]
+            }
+            affectedElements {
+                selectionType: items
+                items: P507_DIA_HASTA
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    validation new (
+        name: New
+        execution {
+            sequence: 40
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                If :P507_NOMBRE is null then
+                  return 'El campo de nombre no puede quedar vacio, favor validar';
+                end if;
+                ```
+        }
+        error {
+            associatedItem: @P507_NOMBRE
+        }
+    )
+
+    validation valida-anio (
+        name: valida_anio
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                if :P507_ANIO < 2000 or :P507_ANIO > to_number(to_char(sysdate, 'YYYY')) then
+                   return false;
+                 else 
+                  return true;
+                end if;
+                ```
+        }
+        error {
+            errorMessage: El año debe ser mayor al año 2000 y no puede sobrepasar el año actual, favor validar!!
+            associatedItem: @P507_ANIO
+        }
+        serverSideCondition {
+            whenButtonPressed: @execute
+        }
+    )
+
+    validation valida-dia-final (
+        name: valida_dia_final
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                  v_mes NUMBER;
+                  v_anio NUMBER;
+                  v_dias NUMBER;
+                BEGIN
+                  v_mes := :P507_MES;
+                  v_anio := :P507_ANIO;
+                  
+                  CASE v_mes
+                    WHEN 4 THEN v_dias := 30;
+                    WHEN 6 THEN v_dias := 30;
+                    WHEN 9 THEN v_dias := 30;
+                    WHEN 11 THEN v_dias := 30;
+                    WHEN 2 THEN 
+                      IF (MOD(v_anio, 4) = 0 AND (MOD(v_anio, 100) != 0 OR MOD(v_anio, 400) = 0)) THEN
+                        v_dias := 29;
+                      ELSE
+                        v_dias := 28;
+                      END IF;
+                    ELSE v_dias := 31;
+                  END CASE;
+                  
+                  IF :P507_DIA_HASTA < 1 or  :P507_DIA_HASTA > v_dias  THEN
+                  return 'La fecha ingresada no es válida. El mes seleccionado tiene ' || v_dias || ' días.';
+                    --RAISE_APPLICATION_ERROR(-20001, 'La fecha ingresada no es válida. El mes seleccionado tiene ' || v_dias || ' días.');
+                  elsif to_number(:P507_DIA_DESDE) > to_number(:P507_DIA_hasta) then
+                       return 'El dia final no puede ser menor al dia inicial, favor validar';
+                  elsif :P507_DIA_hasta is null then
+                         return 'El campo de dia final no puede quedar vacío, favor validar';
+                  END IF;
+                
+                END;
+                ```
+        }
+        error {
+            associatedItem: @P507_DIA_HASTA
+        }
+        serverSideCondition {
+            whenButtonPressed: @execute
+        }
+    )
+
+    validation valida-dia-inicial (
+        name: valida_dia_inicial
+        execution {
+            sequence: 20
+        }
+        validation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                  v_mes NUMBER;
+                  v_anio NUMBER;
+                  v_dias NUMBER;
+                BEGIN
+                  v_mes := :P507_MES;
+                  v_anio := :P507_ANIO;
+                  
+                  CASE v_mes
+                    WHEN 4 THEN v_dias := 30;
+                    WHEN 6 THEN v_dias := 30;
+                    WHEN 9 THEN v_dias := 30;
+                    WHEN 11 THEN v_dias := 30;
+                    WHEN 2 THEN 
+                      IF (MOD(v_anio, 4) = 0 AND (MOD(v_anio, 100) != 0 OR MOD(v_anio, 400) = 0)) THEN
+                        v_dias := 29;
+                      ELSE
+                        v_dias := 28;
+                      END IF;
+                    ELSE v_dias := 31;
+                  END CASE;
+                  
+                  IF :P507_DIA_DESDE < 1 or  :P507_DIA_DESDE > v_dias  THEN
+                  return 'La fecha ingresada no es válida. El mes seleccionado tiene ' || v_dias || ' días.';
+                    --RAISE_APPLICATION_ERROR(-20001, 'La fecha ingresada no es válida. El mes seleccionado tiene ' || v_dias || ' días.');
+                  elsif :P507_DIA_DESDE is null then
+                         return 'El campo de dia inicial no puede quedar vacío, favor validar';
+                  END IF;
+                
+                END;
+                ```
+        }
+        error {
+            associatedItem: @P507_DIA_DESDE
+        }
+        serverSideCondition {
+            whenButtonPressed: @execute
+        }
+    )
+
+    process execute-button (
+        name: execute_button
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  l_file UTL_FILE.FILE_TYPE;
+                  CURSOR ventas IS
+                      SELECT '1' TIPO,--TIPO,
+                           to_chaR(cc.TIP_IDEN) CODIGO_TIPO_ID,-- CODIGO_TIPO_ID,
+                           cc.ruc RUC_CLIENTE,--RUC_CLIENTE,
+                           cc.CLIENTE,--CLIENTE,
+                           cc.codigo,
+                           cc.TIP_COMPROBANTE TIPO_COMPROBANTE,--TIPO_COMPROBANTE,
+                           cc.FEC_COMPROBANTE,--FEC_COMPROBANTE,
+                           cc.NRO_TIMBRADO TIMBRADO,--TIMBRADO,
+                           cc.NRO_COMPROBANTE NRO_COMPROBANTE,--NRO_COMPROBANTE,
+                           cc.TOT_GRAVADA_10 TOT_GRAVADAS_10,--TOT_GRAVADAS_10,
+                           cc.TOT_GRAVADA_5 TOT_GRAVADAS_5,--TOT_GRAVADAS_5,
+                           cc.TOT_exenta TOT_EXENTAS, --TOT_EXENTAS,
+                           cc.TOT_COMPROBANTE, --TOT_COMPROBANTE,
+                           cc.CONDICION_VENTA, --CONDICION_VENTA,
+                           cc.OPERACION_EXTRANJERA,--OPERACION_EXTRANJERA,
+                           cc.IND_IVA IMPUTA_AL_IVA,--IMPUTA_AL_IVA,
+                           cc.IND_IRE IMPUTA_AL_IRE,--IMPUTA_AL_IRE,
+                           cc.IND_IRP IMPUTA_AL_IRP_RSP, --IMPUTA_AL_IRP_RSP,
+                           cc.NRO_COMP_REF REFERENCIA,--REFERENCIA,
+                           cc.timbrado_Ref TIMBRADO_VENTA,--TIMBRADO_VENTA,
+                           cc.ID_EMPRESA COD_EMPRESA, --COD_EMPRESA,
+                           cc.TIP_COMPROBANTE TIP_COMPROBANTE, --TIP_COMPROBANTE,
+                           cc.ser_comprobante SER_COMPROBANTE, --SER_COMPROBANTE,
+                           null DV_CLIENTE, --DV_CLIENTE,
+                           null IND_HECHAUKA --IND_HECHAUKA
+                    FROM VTWV_RES_90 cc
+                     WHERE cc.id_empresa = :P0_ID_EMPRESA
+                       AND to_number(to_char(cc.fec_comprobante, 'MM')) = :P507_MES
+                           AND to_number(to_char(cc.fec_comprobante, 'yyyy')) = :P507_ANIO
+                           AND to_number(to_char(cc.fec_comprobante, 'dd')) BETWEEN
+                           												NVL(:P507_DIA_DESDE,0) AND	NVL(:P507_DIA_HASTA,31);
+                
+                  cursor compras is SELECT '2'    TIPO_REG,
+                       to_char(cm.TIP_IDEN)         TIP_IDENT,
+                       cm.RUC_PROV          RUC_PROV,
+                       cm.NOMBRE            NOMBRE,
+                       cm.Codigo            CODIGO,
+                       cm.FEC_COMPROBANTE,
+                       cm.TIMBRADO,
+                       cm.NUM_COMPROBANTE,
+                       cm.TOT_GRAVADA_10,
+                       cm.TOT_GRAVADA_5,
+                       cm.TOT_EXENTA,
+                       cm.TOT_COMPROBANTE,
+                       cm.CONDICION_COMPRA,
+                       cm.OPERACION_EXTRANJERA,
+                       CM.IND_IVA IMPUTA_AL_IVA,
+                       CM.IND_IRE IMPUTA_AL_IRE,
+                       CM.IND_IRP IMPUTA_AL_IRP_RSP,
+                       CM.NO_IMPUTA NO_IMPUTA,
+                       CM.referencia ,
+                       CM.TIMBRADO_REF TIMBRADO_VENTA,
+                       CM.ID_EMPRESA COD_EMPRESA
+                  from CMWV_LIBRO_COMPRA CM
+                  WHERE cm.id_empresa = :P0_ID_EMPRESA
+                       AND to_number(to_char(cm.fec_comprobante, 'MM')) = :P507_MES
+                           AND to_number(to_char(cm.fec_comprobante, 'yyyy')) = :P507_ANIO
+                           AND to_number(to_char(cm.fec_comprobante, 'dd')) BETWEEN
+                           												NVL(:P507_DIA_DESDE,0) AND	NVL(:P507_DIA_HASTA,31);
+                
+                 -- l_text VARCHAR2(32767) := 'Texto que se escribirá en el archivo';
+                BEGIN
+                  l_file := UTL_FILE.FOPEN('DIR_RG90', :P507_NOMBRE||'.txt', 'W');
+                  if :P507_TIP_LIBRO = 'V' then
+                  FOR c IN ventas LOOP
+                    UTL_FILE.PUT_LINE(l_file, LPAD(NVL(C.TIPO, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO_TIPO_ID, ' '), 2, ' ') || CHR(9) ||
+                               RPAD(NVL(C.RUC_CLIENTE, ' '), 20, ' ') || CHR(9)|| 
+                               RPAD(NVL(C.CLIENTE,' '), 80, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIPO_COMPROBANTE, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(TO_CHAR(C.FEC_COMPROBANTE, 'DD/MM/YYYY'), ' '),
+                                    10,
+                                    ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TIMBRADO, 0)), 8, ' ') || CHR(9) ||
+                               LTRIM(RTRIM(LPAD(NVL(NVL(C.NRO_COMPROBANTE, '0'), ' '),
+                                                20,
+                                                ' '))) || CHR(9) ||
+                               LPAD(NVL(C.TOT_GRAVADAS_10, 0), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_GRAVADAS_5, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_EXENTAS, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_COMPROBANTE, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CONDICION_VENTA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.OPERACION_EXTRANJERA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IVA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRE, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRP_RSP, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.REFERENCIA, ' '), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIMBRADO_VENTA, ' '), 8, ' ') || CHR(9)
+                               );
+                  END LOOP;
+                  ELSE
+                       FOR c IN COMPRAS LOOP
+                    UTL_FILE.PUT_LINE(l_file, LPAD(NVL(C.TIPO_REG, ' '), 1, ' ') || CHR(9)|| 
+                               LPAD(NVL(C.TIP_IDENT, ' '), 2, ' ') || CHR(9) ||
+                               RPAD(NVL(C.RUC_PROV, ' '), 20, ' ') || CHR(9) ||
+                               RPAD(NVL(C.NOMBRE, ' '), 80, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CODIGO, ' '), 3, ' ') || CHR(9) ||
+                               LPAD(NVL(TO_CHAR(C.FEC_COMPROBANTE, 'DD/MM/YYYY'), ' '),
+                                    10,
+                                    ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TIMBRADO, 0)), 8, ' ') || CHR(9) ||
+                               LTRIM(RTRIM(LPAD(NVL(NVL(C.NUM_COMPROBANTE, '0'), ' '),
+                                                20,
+                                                ' '))) || CHR(9) ||
+                               LPAD(NVL(C.TOT_GRAVADA_10, 0), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_GRAVADA_5, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_EXENTA, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(ROUND(NVL(C.TOT_COMPROBANTE, 0)), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.CONDICION_COMPRA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.OPERACION_EXTRANJERA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IVA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRE, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.IMPUTA_AL_IRP_RSP, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.NO_IMPUTA, ' '), 1, ' ') || CHR(9) ||
+                               LPAD(NVL(C.REFERENCIA, ' '), 20, ' ') || CHR(9) ||
+                               LPAD(NVL(C.TIMBRADO_VENTA, ' '), 8, ' ') || CHR(9)
+                    );
+                  END LOOP;
+                  end if;
+                  UTL_FILE.FCLOSE(l_file);
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage: Procesado correctamente.
+        }
+        error {
+            errorMessage: Error al descargar el libro, favor verificar con el administrador.
+        }
+        advanced {
+            executionMappingIdentifier: 67438528298892518
+        }
+        serverSideCondition {
+            whenButtonPressed: @execute
+            type: never
+        }
+    )
+
+    branch (
+        name: enviar a la pagina 597
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 597
+                items: {
+                    P597_NOMBRE: &P507_NOMBRE.
+                    P597_TIP_LIBRO: &P507_TIP_LIBRO.
+                    P597_ANIO: &P507_ANIO.
+                    P597_MES: &P507_MES.
+                    P597_DIA_DESDE: &P507_DIA_DESDE.
+                    P597_DIA_HASTA: &P507_DIA_HASTA.
+                }
+            }
+        }
+    )
+
+)
+

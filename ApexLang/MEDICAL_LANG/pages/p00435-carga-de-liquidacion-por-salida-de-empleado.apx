@@ -1,0 +1,1600 @@
+page 435 (
+    name: Carga de Liquidacion por Salida de Empleado
+    alias: CARGA-DE-LIQUIDACION-POR-SALIDA-DE-EMPLEADO
+    title: Carga de Liquidacion por Salida de Empleado
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            var orden = 0;
+            function calculaTotales(){
+                var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                var v_monto_detalle    = model.getFieldKey("MONTO_COPIA");
+                //var v_cambio       = $v("P235_TIPO_CAMBIO");
+                var v_monto_total     = 0;
+              
+            
+                model.forEach(function(r, index, id) {
+            
+                
+                    var meta = model.getRecordMetadata(id);
+                    if ((meta.fields != undefined) && (!meta.deleted)){
+            
+            
+                          
+                        v_monto_total     = v_monto_total     + parseFloat(r[v_monto_detalle].replace(/\./g,''));
+                       
+                    }
+                    
+                    
+                });
+            
+                //v_cambio_debe = ( v_mon_debe * parseFloat(v_cambio.replace(/\./g,'')) );
+                //v_cambio_haber = ( v_mon_haber * parseFloat(v_cambio.replace(/\./g,'')));
+            
+                 $s('P435_TOTAL',v_monto_total.toString().replace('.', ''));
+            
+                 //console.log('cambio es '+ v_cambio_debe + " | " + v_cambio_haber);
+            
+            }
+            ```
+        executeWhenPageLoads: document.getElementById("P435_TOTAL").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+              text-align: right;
+              height: 26px;
+            }
+            
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region carga-de-liquidacion-por-salida-de-empleado (
+        name: Carga de Liquidacion por Salida de Empleado
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT C.ID, C.SER_LIQUID, C.NRO_LIQUID, C.FEC_LIQUID, C.ID_EMPRESA,
+                C.MONTO, C.MES, C.ANIO, C.ID_EMPLEADO, C.ID_MOTIVO_SALIDA, C.SUELDO_BASE, C.DIAS,
+                C.SUELDO_FINAL, C.SUELDO_PROMEDIO, C.TIP_LIQUID, C.COD_USUARIO_AUD
+                FROM RHW_CABECERA_LIQ C 
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    region detalle (
+        name: Detalle
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT D.ID_CAB_LIQUID, D.ID_EMPRESA, D.ID, D.ID_CONCEPTO, 
+                       D.TIPO, D.CANTIDAD, 
+                       D.MONTO, 
+                       D.OBSERVACION, D.ID_EMPLEADO, D.MONTO AS MONTO_COPIA,
+                       D.NRO_ORDEN, D.COD_USUARIO_AUD 
+                FROM RHW_DETALLE_LIQ D
+                WHERE D.ID_CAB_LIQUID=:P435_ID;
+                ```
+            pageItemsToSubmit: P435_ID
+        }
+        layout {
+            sequence: 10
+            parentRegion: @carga-de-liquidacion-por-salida-de-empleado
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--standardPadding
+                t-Form--large
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 37063301490283536
+        }
+
+        savedReport 374915 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_CAB_LIQUID
+                layout {
+                    show: false
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONCEPTO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ORDEN
+                layout {
+                    show: false
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_COPIA
+                layout {
+                    show: false
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPLEADO
+                layout {
+                    show: false
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @MONTO
+                layout {
+                    sequence: 14
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: RHW_DETALLE_LIQ_ID_SEQ
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CAB_LIQUID (
+            type: numberField
+            heading {
+                heading: Id Cab Liquid
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_CAB_LIQUID
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_CONCEPTO (
+            type: popupLov
+            heading {
+                heading: <p>Concepto</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @rhw-conceptos
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_CONCEPTO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPLEADO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_EMPLEADO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO (
+            type: numberField
+            heading {
+                heading: <p>Monto</p>
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D0000
+            }
+            source {
+                databaseColumn: MONTO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column MONTO_COPIA (
+            type: numberField
+            heading {
+                heading: Monto Copia
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: MONTO_COPIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_ORDEN (
+            type: numberField
+            heading {
+                heading: Nro Orden
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NRO_ORDEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column OBSERVACION (
+            type: textarea
+            heading {
+                heading: <p>Observación</p>
+            }
+            layout {
+                sequence: 100
+            }
+            validation {
+                maxLength: 150
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column TIPO (
+            type: popupLov
+            heading {
+                heading: <p>Tipo</p>
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-tipos-cuentas
+            }
+            layout {
+                sequence: 80
+            }
+            validation {
+                maxLength: 1
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle
+        }
+    )
+
+    region totales (
+        name: Totales
+        type: staticContent
+        layout {
+            sequence: 20
+            parentRegion: @carga-de-liquidacion-por-salida-de-empleado
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--hideHeader
+                t-Region--textContent
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P435_ANIO (
+        type: numberField
+        label {
+            label: <p>Año: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ANIO
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: EXTRACT(YEAR FROM SYSDATE)
+        }
+    )
+
+    pageItem P435_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P435_DIAS (
+        type: numberField
+        label {
+            label: <p>Días: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 330
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: DIAS
+            dataType: number
+        }
+    )
+
+    pageItem P435_FEC_LIQUID (
+        type: datePicker
+        label {
+            label: <p>Fec Liquid: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 230
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: FEC_LIQUID
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P435_ID (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: RHW_CABECERA_LIQ_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P435_ID_EMPLEADO (
+        type: popupLov
+        label {
+            label: <p>Empleado: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empleados-activos
+            displayExtraValues: false
+            displayNullValue: false
+        }
+        layout {
+            sequence: 280
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_EMPLEADO
+            dataType: number
+        }
+    )
+
+    pageItem P435_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 410
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P435_ID_MOTIVO_SALIDA (
+        type: popupLov
+        label {
+            label: <p>Motivo Salida: &ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-motivos-estado
+        }
+        layout {
+            sequence: 290
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: ID_MOTIVO_SALIDA
+            dataType: number
+        }
+    )
+
+    pageItem P435_MES (
+        type: numberField
+        label {
+            label: <p>Mes: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 250
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: MES
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: EXTRACT(MONTH FROM SYSDATE)
+        }
+    )
+
+    pageItem P435_MONTO (
+        type: numberField
+        label {
+            label: Monto
+            alignment: left
+        }
+        layout {
+            sequence: 420
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: MONTO
+            dataType: number
+        }
+    )
+
+    pageItem P435_NRO_LIQUID (
+        type: numberField
+        label {
+            label: <p>Nro Liquid: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 210
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: NRO_LIQUID
+            dataType: number
+        }
+    )
+
+    pageItem P435_SER_LIQUID (
+        type: textField
+        label {
+            label: <p>Ser Liquid: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 200
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 1
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SER_LIQUID
+            dataType: varchar2
+        }
+        default {
+            type: static
+            staticValue: X
+        }
+    )
+
+    pageItem P435_SUELDO_BASE (
+        type: numberField
+        label {
+            label: <p>Sueldo Base: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 400
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SUELDO_BASE
+            dataType: number
+        }
+    )
+
+    pageItem P435_SUELDO_FINAL (
+        type: numberField
+        label {
+            label: <p>Sueldo Final: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 390
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SUELDO_FINAL
+            dataType: number
+        }
+    )
+
+    pageItem P435_SUELDO_PROMEDIO (
+        type: numberField
+        label {
+            label: <p>Sueldo Promedio: &ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 340
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: SUELDO_PROMEDIO
+            dataType: number
+        }
+    )
+
+    pageItem P435_TIP_LIQUID (
+        type: selectList
+        label {
+            label: <p>Tip Liquid: &ensp;</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-tip-liquidacion
+        }
+        layout {
+            sequence: 370
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            formRegion: @carga-de-liquidacion-por-salida-de-empleado
+            column: TIP_LIQUID
+            dataType: varchar2
+        }
+    )
+
+    pageItem P435_TOTAL (
+        type: numberField
+        label {
+            label: " <p class=\"totales\">Total: </p>"
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 10
+            region: @totales
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 9
+            columnSpan: 2
+        }
+        appearance {
+            template: @optional-above
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: totalespp
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    button borrar (
+        buttonName: BORRAR
+        label: Borrar
+        layout {
+            sequence: 10
+            region: @totales
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Seguro que desea eliminar?
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P435_ID
+        }
+    )
+
+    button calcular (
+        buttonName: CALCULAR
+        label: Calcular
+        layout {
+            sequence: 320
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            column: 12
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-calculator
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button crear (
+        buttonName: CREAR
+        label: Crear
+        layout {
+            sequence: 10
+            region: @totales
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P435_ID
+        }
+    )
+
+    button guardar (
+        buttonName: GUARDAR
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @totales
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P435_ID
+        }
+    )
+
+    button recalcular (
+        buttonName: RECALCULAR
+        label: Recalcular
+        layout {
+            sequence: 380
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-calculator
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button reporte (
+        buttonName: REPORTE
+        label: Reporte
+        layout {
+            sequence: 350
+            region: @carga-de-liquidacion-por-salida-de-empleado
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-file-text-o
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button volver (
+        buttonName: VOLVER
+        label: Volver
+        layout {
+            sequence: 10
+            region: @totales
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 434
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction calcula-monto-total (
+        name: CALCULA_MONTO_TOTAL
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle
+            columns: MONTO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: calculaTotales();
+            }
+            affectedElements {
+                selectionType: items
+                items: P435_TOTAL
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :MONTO
+                itemsToSubmit: MONTO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_COPIA
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction d235-inicializar (
+        name: D235_INICIALIZAR
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    //grid.view$.grid("option", "editable", true);
+                    //editable true
+                    grid.model.setOption("editable", true);
+                    grid.setEditMode(true);
+                    //editable false
+                    //grid.model.setOption("editable", false);
+                    grid.setEditMode(false);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P435_ID_EMPLEADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: SELECT SUELDO_FINAL, SUELDO_BASE FROM RHW_EMPLEADOS WHERE ID = :P435_ID_EMPLEADO;
+                itemsToSubmit: P435_ID_EMPLEADO
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P435_SUELDO_FINAL
+                    P435_SUELDO_BASE
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction nro-lineas-row (
+        name: NRO_LINEAS_ROW
+        execution {
+            sequence: 20
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalle
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: orden += 1
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: orden
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NRO_ORDEN
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    computation p435-nro-liquid (
+        itemName: P435_NRO_LIQUID
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                   v_numero number;
+                   
+                   begin
+                   if :P435_NRO_LIQUID is null then
+                      select nvl(max(to_number(NRO_LIQUID)), 0) + 1
+                         into v_numero
+                         from RHW_CABECERA_LIQ
+                         where SER_LIQUID=:P435_NRO_LIQUID;
+                       RETURN v_numero;
+                      end if; 
+                      RETURN :P435_NRO_LIQUID;
+                   exception
+                      when no_data_found then
+                        :P435_NRO_LIQUID := 1 ;
+                        RETURN :P435_NRO_LIQUID;
+                      when others then
+                         raise_application_error(-20000,'Error en la tabla de Cabecera de Liquidación' || sqlerrm ) ;
+                   end ;
+                ```
+        }
+    )
+
+    process cab-det (
+        name: CAB_DET
+        type: executeCode
+        editableRegion: @detalle
+        source {
+            plsqlCode:
+                ```plsql
+                :ID_CAB_LIQUID:=:P435_ID;
+                :ID_EMPLEADO:=:P435_ID_EMPLEADO;
+                ```
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 37809018017597213
+        }
+    )
+
+    process detalle-save-interactive-grid-data (
+        name: Detalle - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle
+        target {
+            targetType: tableView
+            tableName: RHW_DETALLE_LIQ
+        }
+        execution {
+            sequence: 80
+        }
+        successMessage {
+            successMessage: ...se guardo
+        }
+        error {
+            errorMessage: error detalle
+        }
+        advanced {
+            executionMappingIdentifier: 37490552562953750
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: GUARDAR,CREAR
+        }
+    )
+
+    process detalle-save-interactive-grid-data-copy (
+        name: Detalle - Save Interactive Grid Data_copy
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                
+                                insert into RHW_DETALLE_LIQ(D.ID_CAB_LIQUID, D.ID, D.ID_CONCEPTO, D.TIPO, D.CANTIDAD, D.MONTO, D.OBSERVACION,
+                D.COD_USUARIO_AUD)
+                		        values (:P435_ID, )
+                WHEN 'U' then 
+                   
+                                update 
+                                    set 
+                 where   ID_DIARIO_CAB = :P235_ID
+                                    and d.ID = :ID;
+                             
+                when 'D' then
+                                delete COW_DIARIO_DETALLES_PROV d     
+                                WHERE d.ID_DIARIO_CAB = :P235_ID
+                                           and d.ID = :ID;  
+                    end case;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 37489212024953737
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process eliminar-cab (
+        name: ELIMINAR CAB
+        type: executeCode
+        editableRegion: @carga-de-liquidacion-por-salida-de-empleado
+        source {
+            plsqlCode:
+                ```plsql
+                DELETE RHW_CABECERA_LIQ
+                WHERE ID = :P435_ID;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 37391642631446830
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process initialize-form-carga-de-liquidacion-por-salida-de-empleado (
+        name: Initialize form Carga de Liquidacion por Salida de Empleado
+        type: formInitialization
+        formRegion: @carga-de-liquidacion-por-salida-de-empleado
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 37447182527096593
+        }
+    )
+
+    process process-form-carga-de-liquidacion-por-salida-de-empleado (
+        name: Process form Carga de Liquidacion por Salida de Empleado
+        type: formAutoRowProcessing
+        formRegion: @carga-de-liquidacion-por-salida-de-empleado
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 37489716019953742
+        }
+    )
+
+    process test (
+        name: TEST
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                delete RHW_DETALLE_LIQ
+                where ID_CAB_LIQUID = :P435_ID;
+                
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 37391564742446829
+        }
+        serverSideCondition {
+            whenButtonPressed: @borrar
+        }
+    )
+
+    branch (
+        name: Go To Page 434
+        execution {
+            sequence: 1
+        }
+        behavior {
+            target: {
+                page: 434
+            }
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

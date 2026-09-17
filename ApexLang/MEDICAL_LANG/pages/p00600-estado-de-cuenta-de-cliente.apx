@@ -1,0 +1,1442 @@
+page 600 (
+    name: Estado de Cuenta de Cliente
+    alias: ESTADO-DE-CUENTA-DE-CLIENTE
+    title: Estado de Cuenta de Cliente
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botón (
+        name: Botón
+        type: staticContent
+        layout {
+            sequence: 80
+            parentRegion: @filtro
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--noUI
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region estado-de-cuenta-de-cliente (
+        name: Estado de Cuenta de Cliente
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select V.ID_EMPRESA,
+                       V.ID_SUCURSAL,
+                       V.NRO_CUOTA,
+                       V.ID_CLIENTE,
+                       V.FEC_ORIGEN,
+                       V.FEC_ACOBRAR,
+                       V.FEC_VENCIMIENTO,
+                       V.TIP_CAMBIO,
+                       V.ID_MONEDA,
+                       --V.MONTO_CUOTA,
+                       V.ID_IVA,
+                       V.SALDO_CUOTA,
+                       V.SALDO_INTERES,
+                       V.ID_USUARIO,
+                       V.REC_PENDIENTES,
+                       V.NOMBRE,
+                       V.SUB_TIPO_TRANS,
+                       V.DESC_SUBTIPO_TRANS,
+                       V.ID_FRACCION,
+                       V.ID_MANZANA,
+                       V.ID_LOTE,
+                       V.SALDO_MORA,
+                       V.IND_INTERES,
+                       V.ID_GASTO,
+                       V.IND_EXONERADO,
+                       V.ID_VENDEDOR,
+                       V.ORDEN,
+                       V.FEC_ULT_PAGO,
+                       V.RUC,
+                       V.ID_CONTRATO,
+                       V.ID_CUOTA,
+                       V.NRO_COMPROBANTE,
+                
+                       decode(v.sub_tipo_trans,1,decode(nvl(v.saldo_cuota,0),0,0,g.precio),10,decode(nvl(v.saldo_cuota,0),0,0,g.precio),0) gasto_operativo,
+                       decode(v.saldo_cuota,0,0,v.monto_cuota) monto_cuota, 
+                
+                    CF_desc_fraccion(v.id_empresa,v.id_fraccion) desc_fraccion,
+                    CF_desc_cliente(v.id_empresa,v.id_contrato) desc_cliente,
+                    CF_Cant_cuotas(v.id_empresa , v.id_contrato) Cant_cuotas,
+                    CF_desc_vendedor(v.id_empresa, v.id_vendedor) desc_vendedor,
+                    CF_dias_atraso(v.sub_tipo_trans, v.fec_vencimiento) dias_atraso,
+                    CF_empresa(v.id_empresa) empresa,
+                    CF_fec_pago(v.id_empresa, v.id_cliente) fec_pago,
+                    CF_usuario usuario,
+                    CF_Busca_interes(v.ind_interes, v.id_empresa, v.id_contrato, id_cuota, v.nro_cuota, v.saldo_cuota, v.fec_vencimiento, v.saldo_mora, v.id_lote, v.saldo_interes) Busca_interes,
+                    monto_dias_de_atras(v.id_empresa, v.id_contrato, v.saldo_cuota, v.id_fraccion) monto_dias_de_atras,
+                    CP_CUOTA_PAG(v.id_empresa, v.id_contrato, v.saldo_cuota) CUOTA_PAG,
+                    CP_CUO_ATRAS (v.id_empresa, v.id_contrato, v.fec_vencimiento, v.saldo_cuota) CUO_ATRAS
+                
+                
+                  from ltwv_saldos v,
+                       ltw_gasto_lote g
+                
+                
+                 where v.id_empresa = g.id_empresa(+)
+                   and v.id_gasto   = g.id_gasto(+)
+                   and v.id_empresa        = :P0_ID_EMPRESA
+                   AND (v.id_contrato   = :P600_CONTRATO_NRO OR :P600_CONTRATO_NRO IS NULL)
+                   and (v.id_fraccion    = :P600_FRACCION OR :P600_FRACCION IS NULL)
+                   and (v.id_manzana     = :P600_MANZANA OR :P600_MANZANA IS NULL)
+                   and (v.id_lote        = :P600_LOTE OR :P600_LOTE IS NULL)
+                   and (v.id_cliente = :P600_CLIENTE OR :P600_CLIENTE IS NULL)
+                   and (v.fec_vencimiento <= :P600_FECHA_HASTA )
+                
+                 order by v.fec_vencimiento, v.nro_cuota
+                ```
+            pageItemsToSubmit: [
+                P600_CLIENTE
+                P600_CONTRATO_NRO
+                P600_FECHA_HASTA
+                P600_FRACCION
+                P600_MANZANA
+                P600_LOTE
+                P0_ID_EMPRESA
+            ]
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filtro
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 12293982990079104
+        }
+
+        column BUSCA_INTERES (
+            type: plainText
+            heading {
+                heading: Busca Interes
+                alignment: end
+            }
+            layout {
+                sequence: 410
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column CANT_CUOTAS (
+            type: plainText
+            heading {
+                heading: Cant Cuotas
+                alignment: end
+            }
+            layout {
+                sequence: 350
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column CUOTA_PAG (
+            type: plainText
+            heading {
+                heading: Cuota Pag
+                alignment: end
+            }
+            layout {
+                sequence: 430
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column CUO_ATRAS (
+            type: plainText
+            heading {
+                heading: Cuo Atras
+                alignment: end
+            }
+            layout {
+                sequence: 440
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column DESC_CLIENTE (
+            type: plainText
+            heading {
+                heading: Desc Cliente
+            }
+            layout {
+                sequence: 340
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column DESC_FRACCION (
+            type: plainText
+            heading {
+                heading: Desc Fraccion
+            }
+            layout {
+                sequence: 330
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column DESC_SUBTIPO_TRANS (
+            type: plainText
+            heading {
+                heading: Desc Subtipo Trans
+            }
+            layout {
+                sequence: 180
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column DESC_VENDEDOR (
+            type: plainText
+            heading {
+                heading: Desc Vendedor
+            }
+            layout {
+                sequence: 360
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column DIAS_ATRASO (
+            type: plainText
+            heading {
+                heading: Dias Atraso
+                alignment: end
+            }
+            layout {
+                sequence: 370
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column EMPRESA (
+            type: plainText
+            heading {
+                heading: Empresa
+            }
+            layout {
+                sequence: 380
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column FEC_ACOBRAR (
+            type: plainText
+            heading {
+                heading: Fec Acobrar
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column FEC_ORIGEN (
+            type: plainText
+            heading {
+                heading: Fec Origen
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column FEC_PAGO (
+            type: plainText
+            heading {
+                heading: Fec Pago
+            }
+            layout {
+                sequence: 390
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column FEC_ULT_PAGO (
+            type: plainText
+            heading {
+                heading: Fec Ult Pago
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: plainText
+            heading {
+                heading: Fec Vencimiento
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column GASTO_OPERATIVO (
+            type: plainText
+            heading {
+                heading: Gasto Operativo
+                alignment: end
+            }
+            layout {
+                sequence: 320
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainText
+            heading {
+                heading: Cliente
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ID_CONTRATO (
+            type: plainText
+            heading {
+                heading: Contrato
+                alignment: end
+            }
+            layout {
+                sequence: 300
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column ID_CUOTA (
+            type: plainText
+            heading {
+                heading: Id Cuota
+                alignment: end
+            }
+            layout {
+                sequence: 310
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Empresa
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_FRACCION (
+            type: plainText
+            heading {
+                heading: Id Fraccion
+                alignment: end
+            }
+            layout {
+                sequence: 190
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column ID_GASTO (
+            type: plainText
+            heading {
+                heading: Id Gasto
+                alignment: end
+            }
+            layout {
+                sequence: 240
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_IVA (
+            type: plainText
+            heading {
+                heading: IVA
+                alignment: end
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column ID_LOTE (
+            type: plainText
+            heading {
+                heading: Id Lote
+                alignment: end
+            }
+            layout {
+                sequence: 210
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column ID_MANZANA (
+            type: plainText
+            heading {
+                heading: Id Manzana
+                alignment: end
+            }
+            layout {
+                sequence: 200
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainText
+            heading {
+                heading: Moneda
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainText
+            heading {
+                heading: Sucursal
+                alignment: end
+            }
+            layout {
+                sequence: 20
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_USUARIO (
+            type: plainText
+            heading {
+                heading: Id Usuario
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: plainText
+            heading {
+                heading: Id Vendedor
+                alignment: end
+            }
+            layout {
+                sequence: 260
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column IND_EXONERADO (
+            type: plainText
+            heading {
+                heading: Ind Exonerado
+            }
+            layout {
+                sequence: 250
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column IND_INTERES (
+            type: plainText
+            heading {
+                heading: Ind Interes
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column MONTO_CUOTA (
+            type: plainText
+            heading {
+                heading: Monto Cuota
+                alignment: end
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column MONTO_DIAS_DE_ATRAS (
+            type: plainText
+            heading {
+                heading: Monto Dias De Atras
+                alignment: end
+            }
+            layout {
+                sequence: 450
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column NOMBRE (
+            type: plainText
+            heading {
+                heading: Nombre
+            }
+            layout {
+                sequence: 160
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Contrato
+                alignment: center
+            }
+            layout {
+                sequence: 460
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column NRO_CUOTA (
+            type: plainText
+            heading {
+                heading: Número Cuota
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column ORDEN (
+            type: plainText
+            heading {
+                heading: Orden
+                alignment: end
+            }
+            layout {
+                sequence: 270
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column REC_PENDIENTES (
+            type: plainText
+            heading {
+                heading: Rec Pendientes
+                alignment: end
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column RUC (
+            type: plainText
+            heading {
+                heading: Ruc
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column SALDO_CUOTA (
+            type: plainText
+            heading {
+                heading: Saldo Cuota
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column SALDO_INTERES (
+            type: plainText
+            heading {
+                heading: Saldo Interes
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column SALDO_MORA (
+            type: plainText
+            heading {
+                heading: Saldo Mora
+                alignment: end
+            }
+            layout {
+                sequence: 220
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column SUB_TIPO_TRANS (
+            type: plainText
+            heading {
+                heading: Sub Tipo Trans
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Tip Cambio
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column USUARIO (
+            type: plainText
+            heading {
+                heading: Usuario
+            }
+            layout {
+                sequence: 400
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Estado de Cuenta de Cliente
+        }
+
+        savedReport 123159 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn DESC_SUBTIPO_TRANS (
+                sequence: 11
+            )
+
+            displayColumn FEC_ACOBRAR (
+                sequence: 4
+            )
+
+            displayColumn FEC_ORIGEN (
+                sequence: 3
+            )
+
+            displayColumn FEC_ULT_PAGO (
+                sequence: 13
+            )
+
+            displayColumn FEC_VENCIMIENTO (
+                sequence: 5
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 2
+            )
+
+            displayColumn MONTO_CUOTA (
+                sequence: 6
+            )
+
+            displayColumn NOMBRE (
+                sequence: 10
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 15
+            )
+
+            displayColumn NRO_CUOTA (
+                sequence: 1
+            )
+
+            displayColumn REC_PENDIENTES (
+                sequence: 9
+            )
+
+            displayColumn RUC (
+                sequence: 14
+            )
+
+            displayColumn SALDO_CUOTA (
+                sequence: 7
+            )
+
+            displayColumn SALDO_INTERES (
+                sequence: 8
+            )
+
+            displayColumn SALDO_MORA (
+                sequence: 12
+            )
+
+        )
+
+    )
+
+    region filtro (
+        name: Filtro
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P600_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cliente-contrato-lt
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 10
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 6
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P600_CONTRATO_NRO (
+        type: popupLov
+        label {
+            label: <p>Contrato Nro: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+            popupWidth: 700
+            popupHeight: 500
+            additionalOutputs: ID_LOTE:P600_LOTE,ID_MANZANA:P600_MANZANA,ID_FRACCION:P600_FRACCION
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-contratos-lt-id
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 20
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P600_FECHA_HASTA (
+        type: datePicker
+        label {
+            label: <p>Fecha Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P600_FRACCION (
+        type: popupLov
+        label {
+            label: <p>Fracción: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-fracciones
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 40
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P600_LOTE (
+        type: popupLov
+        label {
+            label: <p>Lote: </p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-lotes-ltw
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 60
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P600_MANZANA (
+        type: popupLov
+        label {
+            label: <p>Manzana:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-manzana-2
+            nullDisplayValue: --Sin Seleccionar--
+        }
+        layout {
+            sequence: 50
+            region: @filtro
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button imprimir (
+        buttonName: Imprimir
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @botón
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button limpiar (
+        buttonName: Limpiar
+        label: Limpiar
+        layout {
+            sequence: 30
+            region: @botón
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button refrescar (
+        buttonName: REFRESCAR
+        label: Refrescar
+        layout {
+            sequence: 20
+            region: @botón
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P600_FECHA_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P600_FECHA_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P600_FECHA_HASTA,'/','');
+                            conv_fecha := substr(:P600_FECHA_HASTA,1,2)||'/'||
+                                                      substr(:P600_FECHA_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P600_FECHA_HASTA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P600_FECHA_HASTA := conv_fecha;
+                            ELSIF (length(:P600_FECHA_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P600_FECHA_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P600_FECHA_HASTA
+                itemsToReturn: P600_FECHA_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: REFRESCAR
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refrescar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @estado-de-cuenta-de-cliente
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh (
+        name: REFRESH
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P600_CLIENTE
+                P600_CONTRATO_NRO
+                P600_FECHA_HASTA
+                P600_FRACCION
+                P600_MANZANA
+                P600_LOTE
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @estado-de-cuenta-de-cliente
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process limpiar (
+        name: Limpiar
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 14017447862561423
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+    branch (
+        name: Go to page 601
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 601
+                items: {
+                    P600_CLIENTE: &P600_CLIENTE.
+                    P600_CONTRATO_NRO: &P600_CONTRATO_NRO.
+                    P600_FECHA_HASTA: &P600_FECHA_HASTA.
+                    P600_FRACCION: &P600_FRACCION.
+                    P600_MANZANA: &P600_MANZANA.
+                    P600_LOTE: &P600_LOTE.
+                }
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @imprimir
+        }
+    )
+
+)
+

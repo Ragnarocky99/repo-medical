@@ -1,0 +1,718 @@
+page 629 (
+    name: Reporte Valores Recibidos en Caja Por Fecha
+    alias: REPORTE-VALORES-RECIBIDOS-EN-CAJA-POR-FECHA
+    title: Reporte Valores Recibidos en Caja Por Fecha
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    css {
+        inline:
+            ```css
+            /*.a-IRR-header {    background-color:#4047bc;color: white;}.a-IRR-headerLink {    font-weight: bold;color: white;}
+             */ 
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region anulación-de-comprobantes-de-venta (
+        name: Anulación de Comprobantes de Venta
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    region grafico (
+        name: Grafico
+        type: chart
+        layout {
+            sequence: 10
+            parentRegion: @reporte-de-valores
+            slot: subRegions
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        chart {
+            type: pie
+        }
+        chartLayout {
+            height: 400
+        }
+        value {
+            format: decimal
+            decimalPlaces: 0
+            formatScaling: none
+        }
+
+        series new (
+            name: New
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select fc.id_sub_tipo_trans, st.descripcion, sum(nvl(fc.monto,0)*nvl(fc.tip_cambio,1)) tot_valor
+                    from ccw_movimientos_cajas mc,
+                         ccw_formas_cobros fc,
+                         bsw_subtipos_trans st
+                    where mc.id = fc.id_mov_caj
+                      and st.id = fc.id_sub_tipo_trans
+                      AND (mc.fec_mov_caj BETWEEN :P629_FEC_INI AND :P629_FEC_FIN)
+                      AND (mc.NRO_HABILITACION = :P629_HABILITACION OR :P629_HABILITACION IS NULL)
+                      
+                    GROUP BY fc.id_sub_tipo_trans, st.descripcion
+                    ```
+                pageItemsToSubmit: [
+                    P629_FEC_INI
+                    P629_FEC_FIN
+                    P629_HABILITACION
+                ]
+            }
+            columnMapping {
+                label: DESCRIPCION
+                value: TOT_VALOR
+            }
+            label {
+                show: true
+            }
+        )
+
+    )
+
+    region reporte-de-valores (
+        name: Reporte de Valores
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select  st.subtipo_trans, st.descripcion, sum(nvl(fc.monto,0)*nvl(fc.tip_cambio,1)) tot_valor, st.descripcion as VerDetalle
+                from ccw_movimientos_cajas mc,
+                     ccw_formas_cobros fc,
+                     bsw_subtipos_trans st
+                where mc.id = fc.id_mov_caj
+                  and st.id = fc.id_sub_tipo_trans
+                  AND (mc.fec_mov_caj BETWEEN :P629_FEC_INI AND :P629_FEC_FIN)
+                  AND (mc.NRO_HABILITACION = :P629_HABILITACION OR :P629_HABILITACION IS NULL)
+                  
+                GROUP BY st.subtipo_trans, st.descripcion
+                ```
+            pageItemsToSubmit: [
+                P629_FEC_INI
+                P629_FEC_FIN
+            ]
+        }
+        layout {
+            sequence: 20
+            parentRegion: @filtros
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+            ]
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: Aún no hay valores en el rango seleccionado.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 111674475211317375
+        }
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FW
+            }
+        )
+
+        column SUBTIPO_TRANS (
+            type: plainText
+            heading {
+                heading: Subtipo
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FV
+            }
+        )
+
+        column TOT_VALOR (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: FX
+            }
+        )
+
+        column VERDETALLE (
+            type: link
+            heading {
+                heading: Detalle
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 630
+                    items: {
+                        P630_DESCRIPCION: #DESCRIPCION#
+                        P630_FEC_INI: &P629_FEC_INI.
+                        P630_FEC_FIN: &P629_FEC_FIN.
+                        P630_HABILITACION: &P629_HABILITACION.
+                    }
+                }
+                linkText: Ver Detalle
+                linkAttributes: class="t-Button t-Button--hot"
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FY
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Reporte de Valores
+        }
+
+        savedReport 196915 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn DESCRIPCION (
+                sequence: 1
+            )
+
+            displayColumn SUBTIPO_TRANS (
+                sequence: 2
+            )
+
+            displayColumn TOT_VALOR (
+                sequence: 3
+            )
+
+            displayColumn VERDETALLE (
+                sequence: 4
+            )
+
+            sort (
+                column: FEC_COMPROBANTE
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P629_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. Final: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P629_FEC_INI (
+        type: datePicker
+        label {
+            label: <p><b style="color:red;">*</b>Fec. Inicial: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P629_HABILITACION (
+        type: popupLov
+        label {
+            label: <p>Nro Habillitacion:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-nro-habilitaciones
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 2
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P629_PAGE_ID (
+        type: hidden
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+        }
+        default {
+            type: static
+            staticValue: VC
+        }
+    )
+
+    pageItem P629_TRAER_IP (
+        type: hidden
+        layout {
+            sequence: 100
+            slot: body
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @reporte-de-valores
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 135
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: never
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P629_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P629_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P629_FEC_FIN,'/','');
+                            conv_fecha := substr(:P629_FEC_FIN,1,2)||'/'||
+                                                      substr(:P629_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:P629_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P629_FEC_FIN := conv_fecha;
+                            ELSIF (length(:P629_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P629_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P629_FEC_FIN
+                itemsToReturn: P629_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P629_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P629_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P629_FEC_INI,'/','');
+                            conv_fecha := substr(:P629_FEC_INI,1,2)||'/'||
+                                                      substr(:P629_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:P629_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P629_FEC_INI := conv_fecha;
+                            ELSIF (length(:P629_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P629_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P629_FEC_INI
+                itemsToReturn: P629_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-valores
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refresh-grid (
+        name: REFRESH GRID
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: [
+                P629_FEC_INI
+                P629_FEC_FIN
+                P629_HABILITACION
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte-de-valores
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @grafico
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction resaltar-fila (
+        name: Resaltar Fila
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterrefresh
+            selectionType: region
+            region: @reporte-de-valores
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    //En el headers ponemos el Static ID de la columna que queramos comparar
+                    $('td[headers="Estado"]').each(function() {  
+                    
+                      if ( $(this).text() == 'COBRADO' ) {
+                    
+                    //    $(this).closest('tr').find('td').css({"background-color":"rgb(37 90 185 / 68%)"});
+                    
+                          $(this).closest('tr').find('td').css({"color":"#13bd4b"});
+                    
+                          $(this).closest('tr').find('td').css({"font-weight":"bold"});
+                    
+                          $(this).closest('tr').find('td').css({"border":"1px solid #D6EAF8  !important"});
+                    
+                      }
+                    
+                      if ( $(this).text() == 'PENDIENTE' ) {
+                    
+                    //    $(this).closest('tr').find('td').css({"background-color":"rgb(37 90 185 / 68%)"});
+                    
+                          $(this).closest('tr').find('td').css({"color":"#f26555"});
+                    
+                          $(this).closest('tr').find('td').css({"font-weight":"bold"});
+                    
+                          $(this).closest('tr').find('td').css({"border":"1px solid #D6EAF8  !important"});
+                    
+                      }
+                    
+                      if ( $(this).text() == 'COBRO PARCIAL' ) {
+                    
+                    //    $(this).closest('tr').find('td').css({"background-color":"rgb(37 90 185 / 68%)"});
+                    
+                          $(this).closest('tr').find('td').css({"color":"#decd18"});
+                    
+                          $(this).closest('tr').find('td').css({"font-weight":"bold"});
+                    
+                          $(this).closest('tr').find('td').css({"border":"1px solid #D6EAF8  !important"});
+                    
+                      }
+                    
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    computation p629-traer-ip (
+        itemName: P629_TRAER_IP
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery: SELECT owa_util.get_cgi_env('REMOTE_ADDR') FROM DUAL;
+        }
+    )
+
+)
+

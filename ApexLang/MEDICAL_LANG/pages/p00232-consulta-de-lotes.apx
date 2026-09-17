@@ -1,0 +1,771 @@
+page 232 (
+    name: Consulta de Lotes
+    alias: CONSULTA-DE-LOTES
+    title: Consulta de Lotes
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: var gTimer;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+                pointer-events: none;
+            }
+            
+            button {
+                width: 105px;
+                clear: left;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region lotes (
+        name: Lotes
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT LT.ID AS ID_LOTE_O,
+                       LT.NRO_LOTE,
+                       LT.ID_ARTICULO,
+                       LT.FEC_VENCIMIENTO,
+                       AR.COD_ARTICULO,
+                       AR.DESCRIPCION AS DESC_ARTICULO,
+                       AR.ID AS ID_ARTICULO_O
+                       
+                FROM STW_LOTES LT, STW_ARTICULOS AR
+                
+                WHERE LT.ID_ARTICULO = AR.ID
+                      AND LT.ID_EMPRESA = :P0_COD_EMPRESA
+                      AND (LOWER(AR.COD_ARTICULO)  LIKE '%' || LOWER(:P232_COD_ARTICULO) ||'%' OR :P232_COD_ARTICULO IS NULL)
+                      AND (LOWER(AR.DESCRIPCION) LIKE '%'|| LOWER(:P232_DESC_ARTICULO)  ||'%' OR :P232_DESC_ARTICULO IS NULL) 
+                      AND (LOWER(LT.NRO_LOTE) LIKE '%'|| LOWER(:P232_NRO_LOTE)  ||'%' OR :P232_NRO_LOTE IS NULL)
+                      AND (LT.FEC_VENCIMIENTO = :P232_FEC_VENC OR :P232_FEC_VENC IS NULL)
+                      --AND AR.ID_EMPRESA = LT.ID_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filtros
+            slot: subRegions
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--standardPadding
+            ]
+        }
+        toolbar {
+            show: false
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        heading {
+            fixedTo: region
+            fixedReportHeight: 330
+        }
+        advanced {
+            savedReportMappingIdentifier: 46300377355149336
+        }
+
+        savedReport 467941 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID_LOTE_O
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    width: 102
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @FEC_VENCIMIENTO
+                layout {
+                    width: 237
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    width: 116
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    width: 535
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO_O
+                layout {
+                    sequence: 7
+                }
+            )
+
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod. de Artículo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            security {
+                authorizationScheme: @derechos-consultar
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Artículo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            validation {
+                valueRequired: true
+                maxLength: 120
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+            security {
+                authorizationScheme: @derechos-consultar
+            }
+        )
+
+        column FEC_VENCIMIENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fecha de Vencimiento</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_VENCIMIENTO
+                dataType: date
+            }
+            security {
+                authorizationScheme: @derechos-consultar
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO_O (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_ARTICULO_O
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LOTE_O (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: ID_LOTE_O
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            heading {
+                heading: <p>Nro. de Lote</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+                maxLength: 30
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            security {
+                authorizationScheme: @derechos-consultar
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lotes
+        }
+    )
+
+    pageItem P232_COD_ARTICULO (
+        type: textField
+        label {
+            label: <p>Cod. Artículo</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @lotes
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P232_DESC_ARTICULO (
+        type: textField
+        label {
+            label: <p>Artículo: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @lotes
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P232_FEC_VENC (
+        type: datePicker
+        label {
+            label: <p>Fecha Vencimiento.: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            region: @lotes
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P232_NRO_LOTE (
+        type: textField
+        label {
+            label: <p>Nro. Lote: </p>
+            alignment: left
+        }
+        settings {
+            submitWhenEnterPressed: true
+        }
+        layout {
+            sequence: 10
+            region: @lotes
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 4
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button b232-actualizar (
+        buttonName: B232_ACTUALIZAR
+        label: Actualizar
+        layout {
+            sequence: 70
+            region: @lotes
+            slot: regionBody
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa fa-refresh
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button b232-buscar (
+        buttonName: B232_BUSCAR
+        label: Buscar
+        layout {
+            sequence: 20
+            region: @lotes
+            slot: regionBody
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-search
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    button b232-limpiar (
+        buttonName: B232_LIMPIAR
+        label: Limpiar
+        layout {
+            sequence: 50
+            region: @lotes
+            slot: regionBody
+            startNewRow: false
+            column: 10
+            columnSpan: 3
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa fa-remove
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction cambio-cod-art (
+        name: CAMBIO_COD_ART
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P232_COD_ARTICULO
+        }
+
+        action native-set-value (
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: P232_ID_LOTE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cambio-desc-art (
+        name: CAMBIO_DESC_ART
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P232_DESC_ARTICULO
+        }
+
+        action native-set-value (
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: P232_ID_LOTE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cambio-fec-venc (
+        name: CAMBIO_FEC_VENC
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P232_FEC_VENC
+        }
+
+        action native-set-value (
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: P232_ID_LOTE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cambio-nro-lote (
+        name: CAMBIO_NRO_LOTE
+        execution {
+            sequence: 10
+        }
+        when {
+            event: keyup
+            selectionType: items
+            items: P232_NRO_LOTE
+        }
+        clientSideCondition {
+            type: jsExpression
+            javaScriptExpression: this.browserEvent.keyCode!==13
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var lTrg=$(this.affectedElements);
+                    clearTimeout(gTimer);
+                    gTimer=setTimeout(function(){
+                     clearTimeout(gTimer);
+                     lTrg.trigger("apexrefresh");
+                    },900);
+                    ```
+            }
+            affectedElements {
+                selectionType: region
+                region: @lotes
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code-2 (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    clearTimeout(gTimer);
+                    $(this.affectedElements).trigger("apexrefresh");
+                    ```
+            }
+            affectedElements {
+                selectionType: region
+                region: @lotes
+            }
+            execution {
+                sequence: 10
+                fireWhenEventResultIs: false
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction filtros-buscar (
+        name: FILTROS_BUSCAR
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: button
+            button: @b232-buscar
+        }
+
+        action native-set-value (
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: [
+                    P232_NRO_LOTE
+                    P232_COD_ARTICULO
+                    P232_DESC_ARTICULO
+                    P232_FEC_VENC
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction limpiar-campos (
+        name: LIMPIAR_CAMPOS
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @b232-limpiar
+        }
+
+        action native-clear (
+            action: clear
+            affectedElements {
+                selectionType: items
+                items: [
+                    P232_NRO_LOTE
+                    P232_COD_ARTICULO
+                    P232_DESC_ARTICULO
+                    P232_FEC_VENC
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refresh-page (
+        name: REFRESH_PAGE
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @b232-actualizar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: items
+                items: [
+                    P232_NRO_LOTE
+                    P232_COD_ARTICULO
+                    P232_DESC_ARTICULO
+                    P232_FEC_VENC
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

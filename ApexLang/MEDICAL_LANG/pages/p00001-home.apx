@@ -1,0 +1,1633 @@
+page 1 (
+    name: Inicio
+    alias: HOME
+    title: Sistema Inventiva
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            .tarjeta{
+                background-color: #9189fd;
+                height: 230px;
+            }
+            .tarjeta2{
+                background-color: #ffbf79;
+                height: 230px;
+            }
+            .tarjeta3{
+                background-color: #f790c8;
+                height: 230px;
+            }
+            
+            .u-color{
+                background-color: #133561 !important;
+            }
+            
+            .a-CardView-icon, .a-CardView-icon.fa{
+                height: 40px !important;
+                width: 40px !important;
+            }
+            
+            h4{
+                line-height: 1 !important;
+            }
+            
+            .a-TMV-w-scroll {
+                overflow-x: hidden;
+                overflow-y: hidden;
+            
+            }
+            .tarjeta h2, .tarjeta2 h2, .tarjeta3 h2 {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient:vertical;
+            }
+            
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region agenda-crm (
+        name: Agenda CRM
+        type: calendar
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT AG.ID,
+                       AG.FECHA,
+                       AG.DISPLAY,
+                       PREPARA_URL_CARGA(P_ID_EMPRESA      => AG.ID_EMPRESA,
+                                         P_TIP_COMPROBANTE => AG.TIPO,
+                                         P_ID              => AG.ID) URL,
+                       AG.COLOR,
+                       AG.DESCRIPCION
+                  FROM AGENDAS AG
+                 WHERE AG.ID_EMPRESA = :P0_ID_EMPRESA
+                   AND (AG.COD_USUARIO = :APP_USER OR
+                        TRAE_COD_GRUPO_USUARIO(:P0_ID_EMPRESA, :APP_USER) IN ('DIR', 'ADMIN') OR
+                        TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER) MEMBER OF APEX_STRING.SPLIT_NUMBERS(AG.ID_INVOLUCTADOS, ':') OR
+                        TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER) MEMBER OF APEX_STRING.SPLIT_NUMBERS(AG.ID_MENCIONES, ':'))
+                   AND (AG.ID_RESPONSABLE = :P1_ID_RESPONSABLE OR :P1_ID_RESPONSABLE IS NULL)
+                   AND (AG.NRO_TAREA = :P1_NRO_TAREA OR :P1_NRO_TAREA IS NULL)
+                ```
+            pageItemsToSubmit: [
+                P1_ID_RESPONSABLE
+                P1_NRO_TAREA
+            ]
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        settings {
+            displayColumn: DISPLAY
+            startDateColumn: FECHA
+            pkColumn: ID
+            supplementalInfo: &DESCRIPCION.
+            additionalCalendarViews: [
+                list
+                navigation
+            ]
+            createLink: {
+                page: 809
+                items: {
+                    P809_FECHA: &APEX$NEW_START_DATE.
+                }
+                clearCache: Y
+            }
+            viewEditLink: {
+                type: url
+                url: &URL.
+            }
+            cssClass: COLOR
+        }
+    )
+
+    region calendario (
+        name: Calendario
+        type: calendar
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       COD_EVENTO,
+                       DESCRIPCION,
+                       FEC_INICIO,
+                       FEC_FIN,
+                       ID_USUARIO,
+                       TIPO_EVENTO,
+                       TITULO
+                  from BSW_AGENDA WHERE ID_USUARIO=(SELECT ID FROM BSW_USUARIOS WHERE UPPER(COD_USUARIO)=UPPER(:APP_USER))
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            cssClasses: u-normal-border
+            icon: fa-calendar-edit
+        }
+        advanced {
+            htmlDomId: Calendario
+            customAttributes: "STYLE=\"height:100%\" "
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+        settings {
+            displayColumn: TITULO
+            startDateColumn: FEC_INICIO
+            endDateColumn: FEC_FIN
+            pkColumn: ID
+            additionalCalendarViews: [
+                list
+                navigation
+            ]
+            createLink: {
+                page: 69
+                items: {
+                    P69_FEC_INICIO: &APEX$NEW_START_DATE.
+                    P69_FEC_FIN: &APEX$NEW_END_DATE.
+                }
+            }
+            viewEditLink: {
+                page: 69
+                items: {
+                    P69_ID: &ID.
+                }
+            }
+        }
+    )
+
+    region cambio-de-divisas (
+        name: Cambio de Divisas
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <script>
+                var xhttp = new XMLHttpRequest();
+                var texto;
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                       // Typical action to be performed when the document is ready:
+                        var textoHTML;
+                        var diccionario = xhttp.responseText;
+                        var cambioDolar=  JSON.parse(diccionario);
+                        var tiempo = cambioDolar['updated']
+                        var cambioDolarPY=  cambioDolar['dolarpy'];
+                        var cambioDolarPyBcpCompra = cambioDolarPY['bcp']['compra'];
+                        var cambioDolarPyBcpVenta = cambioDolarPY['bcp']['venta'];
+                
+                
+                        textoHTML=`<table style="border-spacing: 50px 0">
+                <tr>
+                <th>MONEDA</th>
+                <th>Compra</th>
+                <th>Venta</th>
+                </tr>
+                <tr>
+                <td> <img src="#APP_FILES#bandera-dolar.jpg" style="vertical-align: middle;">      DOLAR     </td>
+                <td>   ${cambioDolarPyBcpCompra}   </td>
+                <td>   ${cambioDolarPyBcpVenta}   </td>
+                </tr>
+                </table>
+                <h6> Fuente: Banco Central del Paraguay |   Actualizado el ${tiempo}</h6>   `
+                
+                
+                
+                
+                             
+                       document.getElementById("demo").innerHTML = textoHTML;
+                       
+                    }
+                
+                      
+                };
+                xhttp.open("GET", "https://dolar.melizeche.com/api/1.0/", true);
+                xhttp.send();
+                
+                
+                </script>
+                
+                <div id="demo" style="overflow-x:auto;" >           </div>
+                
+                ```
+        }
+        layout {
+            sequence: 130
+            slot: body
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    region cambios-chaco (
+        name: Cambios Chaco
+        type: staticContent
+        source {
+            htmlCode: <iframe width="400" height="300" src="http://www.cambioschaco.com.py/widgets/cotizacion/?lang=es" frameborder="0"></iframe>
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: item=value
+            item: P0_CASA_CAMBIO
+            value: C
+        }
+    )
+
+    region datos (
+        name: Datos
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+            cssClasses: u-normal-border
+        }
+        serverSideCondition {
+            type: never
+        }
+        comments {
+            comments: Medical no necesita esta parte, mas bien la informacion de cotizacion y tareas
+        }
+    )
+
+    region datos-cotizacion-tareas (
+        name: Datos Cotizacion/Tareas
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region inicio (
+        name: Inicio
+        type: cards
+        source {
+            location: localDatabase
+            tableName: VISUALIZACION_INICIAL_RES
+            whereClause: COD_USUARIO = :APP_USER
+        }
+        layout {
+            sequence: 80
+            parentRegion: @datos-cotizacion-tareas
+            slot: regionBody
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: never
+        }
+        card {
+            cssClasses: &COLOR!ATTR.
+        }
+        title {
+            column: TITULO
+        }
+        body {
+            advancedFormatting: true
+            htmlExpression: &HTML_BODY!RAW.
+        }
+        performance {
+            lazyLoading: true
+        }
+        messages {
+            whenNoDataFound: No hay datos de cotizaciones/seguimiento
+        }
+    )
+
+    region maxi-cambios (
+        name: Maxi Cambios
+        type: staticContent
+        source {
+            htmlCode: <iframe src="https://www.maxicambios.com.py//share" width="100%" height="100%"></iframe>
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                i-h640
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            htmlDomId: Maxi
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: item=value
+            item: P0_CASA_CAMBIO
+            value: M
+        }
+    )
+
+    region mejor-articulo (
+        name: Mejor Articulo
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT BUSCA_MEJOR_ARTICULO(:P0_COD_EMPRESA,TO_CHAR(SYSDATE,'yyyymm'),'C') AS MEJOR_ARTICULO 
+                FROM DUAL
+                
+                ```
+        }
+        layout {
+            sequence: 20
+            parentRegion: @datos
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--styleB
+            ]
+        }
+        card {
+            cssClasses: tarjeta2
+        }
+        title {
+            advancedFormatting: true
+            htmlExpression: <h4>Producto Estrella</h4>
+        }
+        subtitle {
+            advancedFormatting: true
+            htmlExpression: <h2>&MEJOR_ARTICULO.</h2>
+        }
+        iconAndBadge {
+            iconSource: iconClass
+            iconCssClasses: fa-star
+        }
+    )
+
+    region mejor-cliente (
+        name: Mejor Cliente
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery: SELECT BUSCA_MEJOR_CLIENTE(:P0_COD_EMPRESA,TO_CHAR(SYSDATE,'yyyymm'),'C') AS MEJOR_CLIENTE FROM DUAL;
+        }
+        layout {
+            sequence: 10
+            parentRegion: @datos
+            slot: regionBody
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--styleB
+            ]
+        }
+        card {
+            cssClasses: tarjeta
+        }
+        title {
+            advancedFormatting: true
+            htmlExpression: <h4>Mejor Cliente del Mes</h4>
+        }
+        subtitle {
+            advancedFormatting: true
+            htmlExpression: <H2>&MEJOR_CLIENTE.</h2>
+        }
+        iconAndBadge {
+            iconSource: iconClass
+            iconCssClasses: fa-dollar
+        }
+    )
+
+    region mejor-surcusal (
+        name: Mejor Surcusal
+        type: cards
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery: SELECT BUSCA_MEJOR_SUCURSAL(:P0_COD_EMPRESA,TO_CHAR(SYSDATE,'yyyymm'),'C') AS MEJOR_SUCURSAL FROM DUAL
+        }
+        layout {
+            sequence: 30
+            parentRegion: @datos
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: [
+                #DEFAULT#
+                t-CardsRegion--styleB
+            ]
+        }
+        card {
+            cssClasses: tarjeta3
+        }
+        title {
+            advancedFormatting: true
+            htmlExpression: <h4>Sucursal Estrella </h4>
+        }
+        subtitle {
+            advancedFormatting: true
+            htmlExpression: <h2>&MEJOR_SUCURSAL.</h2>
+        }
+        iconAndBadge {
+            iconSource: iconClass
+            iconCssClasses: fa-thumbs-o-up
+        }
+    )
+
+    region selector (
+        name: Selector
+        type: regionDisplaySelector
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        settings {
+            includeShowAll: false
+        }
+    )
+
+    region tareas (
+        name: Tareas
+        type: cards
+        source {
+            location: localDatabase
+            tableName: BSWV_TAREAS_PENDIENTES_GESTOR
+            whereClause:
+                ```sql
+                ID_EMPRESA = :P0_ID_EMPRESA AND
+                COD_USUARIO = :APP_USER
+                ```
+        }
+        layout {
+            sequence: 110
+            parentRegion: @datos-cotizacion-tareas
+            slot: regionBody
+        }
+        appearance {
+            template: @cards-container
+            templateOptions: #DEFAULT#
+        }
+        card {
+            cssClasses: &COLOR!ATTR.
+        }
+        title {
+            column: TITULO
+        }
+        body {
+            advancedFormatting: true
+            htmlExpression: &HTML_BODY!RAW.
+        }
+        performance {
+            lazyLoading: true
+        }
+        messages {
+            whenNoDataFound: No hay tareas pendientes
+        }
+    )
+
+    region tareas-vencidas (
+        name: Tareas Vencidas
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: CLWV_TAREAS_VENCIDAS
+            whereClause:
+                ```sql
+                ID_EMPRESA = :P0_ID_EMPRESA AND
+                COD_USUARIO_RESPONSABLE = :APP_USER
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 638
+                items: {
+                    P638_ID_COTIZA_ART: #ID_COTIZA_ART#
+                    P638_IND_VARIOS: N
+                    P638_ID_APROBACION_LIC: #ID_APROBACION_LIC#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            lazyLoading: true
+            maxRowsToProcess: 1000000
+        }
+        messages {
+            whenNoDataFound: No hay tareas vencidas
+        }
+        advanced {
+            savedReportMappingIdentifier: 35187522891864129
+        }
+
+        column CANTIDAD_PENDIENTE_OCC (
+            type: plainText
+            heading {
+                heading: Cant. Pendiente OCC
+                alignment: center
+            }
+            layout {
+                sequence: 350
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column CLIENTE (
+            type: hidden
+            heading {
+                heading: Cliente
+            }
+            layout {
+                sequence: 270
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cód. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COD_USUARIO_RESPONSABLE (
+            type: hidden
+            heading {
+                heading: Cod Usuario Responsable
+            }
+            layout {
+                sequence: 450
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column DEFINICION (
+            type: plainText
+            heading {
+                heading: Definicion
+                alignment: center
+            }
+            layout {
+                sequence: 410
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column ESTADO_OCC (
+            type: plainText
+            heading {
+                heading: Estado OCC
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column ESTADO_PRODUCTO (
+            type: plainText
+            heading {
+                heading: Estado Producto
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column FECHA_PLAZO (
+            type: plainText
+            heading {
+                heading: Fecha Plazo
+                alignment: center
+            }
+            layout {
+                sequence: 260
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column FEC_PROX_EVENTO (
+            type: plainText
+            heading {
+                heading: Fecha Prox. Evento
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_APROBACION_LIC (
+            type: hidden
+            heading {
+                heading: Id Aprobacion Lic
+            }
+            layout {
+                sequence: 320
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column ID_ARTICULO (
+            type: hidden
+            heading {
+                heading: Id Articulo
+            }
+            layout {
+                sequence: 230
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_COTIZA_ART (
+            type: hidden
+            heading {
+                heading: Id Cotiza Art
+            }
+            layout {
+                sequence: 200
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 440
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column ID_PEDIDO (
+            type: hidden
+            heading {
+                heading: Id Pedido
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: M
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: hidden
+            heading {
+                heading: Id Pedido Det
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column MARCA_ARTICULO (
+            type: plainText
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column NIVEL (
+            type: plainText
+            heading {
+                heading: Nivel
+                alignment: center
+            }
+            layout {
+                sequence: 340
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro. PED/LIC
+                alignment: center
+            }
+            layout {
+                sequence: 370
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column NRO_OCC (
+            type: plainText
+            heading {
+                heading: Nro. OCC
+                alignment: center
+            }
+            layout {
+                sequence: 290
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column NRO_OCP (
+            type: hidden
+            heading {
+                heading: Nro Ocp
+            }
+            layout {
+                sequence: 280
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column OBSERVACION (
+            type: plainText
+            heading {
+                heading: Obs. Tarea
+                alignment: center
+            }
+            layout {
+                sequence: 420
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column PRECIO_TOTAL (
+            type: plainText
+            heading {
+                heading: Precio Total
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: plainText
+            heading {
+                heading: Precio Unitario
+                alignment: center
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column PRESENTACION_ARTICULO (
+            type: plainText
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            layout {
+                sequence: 380
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column RESPONSABLE (
+            type: hidden
+            heading {
+                heading: Responsable
+            }
+            layout {
+                sequence: 430
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column STOCK (
+            type: plainText
+            heading {
+                heading: Stock
+                alignment: center
+            }
+            layout {
+                sequence: 460
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 300
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column UM_ARTICULO (
+            type: plainText
+            heading {
+                heading: U.M
+                alignment: center
+            }
+            layout {
+                sequence: 390
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Tareas Vencidas
+        }
+
+        savedReport 356029 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn CANTIDAD_PENDIENTE_OCC (
+                sequence: 19
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn DEFINICION (
+                sequence: 11
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 5
+            )
+
+            displayColumn ESTADO_OCC (
+                sequence: 18
+            )
+
+            displayColumn ESTADO_PRODUCTO (
+                sequence: 20
+            )
+
+            displayColumn FECHA_PLAZO (
+                sequence: 15
+            )
+
+            displayColumn FEC_PROX_EVENTO (
+                sequence: 14
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 8
+            )
+
+            displayColumn MARCA_ARTICULO (
+                sequence: 10
+            )
+
+            displayColumn NIVEL (
+                sequence: 9
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn NRO_OCC (
+                sequence: 3
+            )
+
+            displayColumn OBSERVACION (
+                sequence: 12
+            )
+
+            displayColumn PRECIO_TOTAL (
+                sequence: 17
+            )
+
+            displayColumn PRECIO_UNITARIO (
+                sequence: 16
+            )
+
+            displayColumn PRESENTACION_ARTICULO (
+                sequence: 6
+            )
+
+            displayColumn STOCK (
+                sequence: 13
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn UM_ARTICULO (
+                sequence: 7
+            )
+
+        )
+
+    )
+
+    region tiempo (
+        name: Tiempo
+        type: staticContent
+        source {
+            htmlCode: <iframe src="https://www.meteoblue.com/en/weather/widget/three?geoloc=detect&nocurrent=0&noforecast=0&days=4&tempunit=CELSIUS&windunit=KILOMETER_PER_HOUR&layout=image"  frameborder="0" scrolling="NO" allowtransparency="true" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox" style="width: 460px; height: 594px"></iframe><div><!-- DO NOT REMOVE THIS LINK --><a href="https://www.meteoblue.com/en/weather/week/index?utm_source=weather_widget&utm_medium=linkus&utm_content=three&utm_campaign=Weather%2BWidget" target="_blank" rel="noopener">meteoblue</a></div>
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+            cssClasses: u-normal-border
+        }
+        advanced {
+            customAttributes: "STYLE=\"height:100%\" "
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    pageItem P1_CUMPLE (
+        type: displayOnly
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @calendario
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: static
+            staticValue: "Buen día &APP_USER., bienvenido al sistema. "
+        }
+    )
+
+    pageItem P1_ID_RESPONSABLE (
+        type: popupLov
+        label {
+            label: <p>Responsable</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-usuarios
+            nullDisplayValue: --TODOS--
+        }
+        layout {
+            sequence: 10
+            region: @agenda-crm
+            slot: sortOrder
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: TRAE_COD_GRUPO_USUARIO(:P0_ID_EMPRESA, :APP_USER) IN ('DIR', 'ADMIN')
+        }
+    )
+
+    pageItem P1_NRO_TAREA (
+        type: numberField
+        label {
+            label: <p>Nro. Tarea:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @agenda-crm
+            slot: sortOrder
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P1_RESPUESTA (
+        type: hidden
+        layout {
+            sequence: 150
+            slot: body
+        }
+    )
+
+    button refresh-agenda (
+        buttonName: REFRESH_AGENDA
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @agenda-crm
+            slot: edit
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button whatsapp (
+        buttonName: WhatsAPP
+        label: Whatsapp
+        layout {
+            sequence: 140
+            slot: body
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    dynamicAction click-refres-agenda (
+        name: Click refres agenda
+        execution {
+            sequence: 40
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh-agenda
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @agenda-crm
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cumple (
+        name: Cumple
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select 
+                           'Feliz cumpleaños  '||NOMBRE||'!'
+                      from BSW_PERSONAS
+                     where TO_CHAR(FEC_NACIMIENTO,'mm')=to_char(sysdate, 'mm')
+                    and TO_CHAR(FEC_NACIMIENTO,'dd')=to_char(sysdate,'dd')
+                    ```
+            }
+            affectedElements {
+                selectionType: items
+                items: P1_CUMPLE
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @whatsapp
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                      declare
+                        l_clob      CLOB;     
+                        v_api_key   varchar2(200);
+                        v_cuenta_id number(10);
+                        v_recipiente varchar2(50);    
+                        v_tipo varchar2(20);
+                        v_mensaje varchar2(2000);
+                        url  varchar2(400);
+                    BEGIN
+                    
+                    
+                    v_api_key:='8e9a5fd1716b87565907233fa53607b8c1a86f5e';
+                    v_cuenta_id:=28;
+                    v_recipiente:='595983429149';
+                    v_tipo:='text';
+                    v_mensaje:='Bugeada tremenda';
+                    
+                     
+                    
+                           -- apex_json.initialize_clob_output();  
+                     --apex_json.open_object();  
+                     --apex_json.write('secret','8e9a5fd1716b87565907233fa53607b8c1a86f5e'); 
+                     --apex_json.write('account',28);
+                     --apex_json.write('recipient','595983429149');
+                     --apex_json.write('type','text');
+                     --apex_json.write('message','Hacer JSONS es divertido :)');
+                     --apex_json.close_all();
+                      --l_json:=apex_json.get_clob_output();
+                      --apex_json.free_output();
+                     -- dbms_output.put_line(l_json);
+                       
+                       url:='https://flow.cnid.com.py/api/send/whatsapp?secret='||utl_url.escape(v_api_key)||'&account='||utl_url.escape(v_cuenta_id)||'&recipient='||utl_url.escape(v_recipiente)||'&type='||utl_url.escape(v_tipo)||'&message='||utl_url.escape(v_mensaje);
+                    
+                      
+                     l_clob :=
+                        APEX_WEB_SERVICE.make_rest_request(
+                            p_url           => url,
+                            p_http_method   => 'POST');
+                            
+                            
+                        
+                        :P1_RESPUESTA:=l_clob;
+                            
+                    
+                    
+                    END;
+                    ```
+                itemsToReturn: P1_RESPUESTA
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var respuesta = JSON.parse($v('P1_RESPUESTA'));
+                    
+                    
+                    if (respuesta.status=403){
+                       apex.message.alert('Se alcanzo el limite diario de mensajes!');
+                    
+                    }
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-agenda (
+        name: Refrescar Agenda
+        execution {
+            sequence: 30
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: jsExpression
+            javaScriptExpression: window
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @agenda-crm
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh-2 (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @tareas-vencidas
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 718
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            target: {
+                page: 718
+                successMessage: false
+            }
+        }
+        serverSideCondition {
+            type: rowsReturned
+            sqlQuery:
+                ```sql
+                SELECT 1
+                  FROM RPW_REPARTIDORES R
+                  JOIN BSW_USUARIOS     U ON U.ID = R.ID_USUARIO
+                 WHERE U.COD_USUARIO = :APP_USER
+                   AND NVL(ACTIVO, 'S') = 'S'
+                ```
+        }
+    )
+
+)
+

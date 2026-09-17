@@ -1,0 +1,348 @@
+page 9999 (
+    name: Página de Conexión
+    alias: LOGIN
+    title: sistema_inventiva001: Conectar
+    appearance {
+        pageTemplate: @login
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        warnOnUnsavedChanges: false
+    }
+    css {
+        inline:
+            ```css
+            body{
+              background-image: url('#APP_FILES#Globo-aerostatico.jpg');
+              background-position: center;
+              background-repeat: no-repeat; 
+              background-size: cover;
+            }
+            ```
+    }
+    security {
+        authentication: public
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region sistema-inventiva (
+        name: Sistema Inventiva
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @login
+            templateOptions: #DEFAULT#
+        }
+        image {
+            fileUrl: #APP_FILES#inv_favicon.png
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    pageItem P9999_PASSWORD (
+        type: plugin/fosAdvancedPassword
+        label {
+            label: Contraseña
+            alignment: left
+        }
+        settings {
+            options: [
+                showCapsLockOn
+                submitWhenEnterPressed
+            ]
+        }
+        layout {
+            sequence: 20
+            region: @sistema-inventiva
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+            icon: fa-key
+            width: 40
+            valuePlaceholder: Contraseña
+        }
+        validation {
+            maxLength: 100
+        }
+    )
+
+    pageItem P9999_REMEMBER (
+        type: checkbox
+        label {
+            label: Recordar nombre de usuario
+            alignment: right
+        }
+        layout {
+            sequence: 30
+            region: @sistema-inventiva
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: apex_authentication.persistent_cookies_enabled
+        }
+    )
+
+    pageItem P9999_USERNAME (
+        type: textField
+        label {
+            label: Nombre de Usuario
+            alignment: left
+        }
+        settings {
+            trimSpaces: none
+            textCase: upper
+        }
+        layout {
+            sequence: 10
+            region: @sistema-inventiva
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+            icon: fa-user
+            width: 40
+            valuePlaceholder: Nombre de Usuario
+        }
+        validation {
+            maxLength: 100
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button login (
+        buttonName: LOGIN
+        label: Conectar
+        layout {
+            sequence: 40
+            region: @sistema-inventiva
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    process borrar-caché-de-páginas (
+        name: Borrar Caché de Páginas
+        type: clearSessionState
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 5146280828994239
+        }
+    )
+
+    process cargar-cambio (
+        name: Cargar Cambio
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                  SELECT S.IND_CASA_CAMBIOS
+                      INTO :P0_CASA_CAMBIO
+                        FROM BSW_EMPRESAS S WHERE
+                        S.ID=:P0_COD_EMPRESA ;
+                        exception
+                         when   no_data_found then  
+                        null;
+                        when  others then 
+                        null;
+                end;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 10900903909650832
+        }
+    )
+
+    process cargar-ejercicio (
+        name: Cargar Ejercicio
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                BEGIN
+                SELECT COD_EJERCICIO,FEC_INICIO,FEC_FINAL
+                INTO :P0_COD_EJERCICIO,:P0_FEC_INICIAL_EJERCICIO,:P0_FEC_FINAL_EJERCICIO
+                FROM COW_EJERCICIOS 
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA AND
+                COD_EJERCICIO=(SELECT MAX(COD_EJERCICIO) FROM COW_EJERCICIOS WHERE
+                ID_EMPRESA=:P0_COD_EMPRESA);
+                EXCEPTION
+                WHEN  OTHERS  THEN
+                NULL;
+                END;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 12849137033266035
+        }
+    )
+
+    process definir-cookie-de-nombre-de-usuario (
+        name: Definir Cookie de Nombre de Usuario
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                apex_authentication.send_login_username_cookie (
+                    p_username => UPPER(:P9999_USERNAME),
+                    p_consent  => :P9999_REMEMBER = 'Y' );
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 5145483510994239
+        }
+    )
+
+    process login (
+        name: Login
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                apex_authentication.login(
+                    p_username => :P9999_USERNAME,
+                    p_password => :P9999_PASSWORD );
+                    --Carga grupo del usuario 
+                    BEGIN
+                 SELECT ID_GRUPO
+                  INTO :P0_GRUPO_USUARIO
+                  FROM BSW_USUARIOS
+                 WHERE UPPER (COD_USUARIO) = UPPER (:P9999_USERNAME) and
+                 nvl(ESTADO,'X')='A';
+                 EXCEPTION
+                 WHEN NO_dATA_FOUND THEN
+                   RAISE_APPLICATION_eRROR(-20000,'NO SE HA ENCONTRADO EL USUARIO');
+                 END;
+                
+                
+                 -- CARGA COD_EMPRESA DEL USUARIO.
+                 begin
+                    select u.ID_empresa, 
+                           u.ID_sucursal, 
+                           upper(s.DESCRIPCION) desc_sucursal,
+                           upper(e.DESCRIPCION) desc_empresa,
+                           U.ID_EMPRESA AS ID_E,
+                           u.id_sucursal as id_s
+                         
+                
+                           
+                              
+                    into   :P0_COD_EMPRESA, 
+                           :P0_COD_SUCURSAL,   
+                           :P0_DESC_SUCURSAL, 
+                           :P0_DESC_EMPRESA,
+                           :P0_ID_EMPRESA,
+                           :P0_ID_SUCURSAL
+                       
+                         
+                
+                    from BSW_usuarios u, BSW_sucursales s, BSW_empresas e
+                    where upper(u.cod_usuario)    = (upper(:P9999_USERNAME))
+                        and u.ID_EMPRESA  = s.ID_empresa    
+                        and u.ID_SUCURSAL = s.ID
+                        and e.ID  = u.ID_empresa
+                      ; 
+                   
+                
+                 
+                
+                    Exception
+                      when others then 
+                        raise_application_error(-20999,'Error de autenticacion');
+                end;
+                
+                
+                
+                
+                 EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                raise_application_error(-20999,'Error al Auntenticar el Usuario!');
+                
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 5145023357994239
+        }
+    )
+
+    process login-timestamp (
+        name: Login Timestamp
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                    :P0_LOGIN_TIMESTAMP := TO_CHAR(SYSDATE,'DD-MM-YYYY HH24:MI:SS'); 
+                end;
+                
+                ```
+        }
+        execution {
+            sequence: 70
+        }
+        advanced {
+            executionMappingIdentifier: 16860006382639615
+        }
+    )
+
+    process obtener-cookie-de-nombre-de-usuario (
+        name: Obtener Cookie de Nombre de Usuario
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                :P9999_USERNAME := apex_authentication.get_login_username_cookie;
+                :P9999_REMEMBER := case when :P9999_USERNAME is not null then 'Y' end;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 5145867718994239
+        }
+    )
+
+)
+

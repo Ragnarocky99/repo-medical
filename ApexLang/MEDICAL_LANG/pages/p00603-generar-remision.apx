@@ -1,0 +1,597 @@
+page 603 (
+    name: Generar Remision
+    alias: GENERAR-REMISION
+    title: Generando Envio...
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        height: 300
+        maxWidth: 800
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region previsualizacion (
+        name: Previsualizacion
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT            
+                           C.NRO_COMPROBANTE,
+                           C.ID_SUCURSAL,
+                           TRUNC(C.FEC_COMPROBANTE) FEC_COMPROBANTE,
+                           D.ID_ARTICULO,
+                           D.CANTIDAD_APROBADA,
+                           D.CANTIDAD_A_ENTREGAR,
+                           D.DESC_ARTICULO,
+                           D.NRO_OCC,
+                           C.ID_CLIENTE,
+                           E.CANT_DISPON STOCK
+                    FROM  VTW_PEDIDOS_CABECERA C,
+                          CMW_COTIZA_ARTICULOS D,
+                          STW_ARTICULOS        A,
+                          STW_EXISTENCIA_ART   E
+                    WHERE C.ID             = D.ID_PEDIDO
+                    AND   C.ID_EMPRESA     = D.ID_EMPRESA
+                    AND   D.ID_ARTICULO    = A.ID
+                    AND   E.ID_ARTICULO(+) = A.ID
+                    AND   E.ID_SUCURSAL(+) = C.ID_SUCURSAL
+                    AND NVL(D.CANTIDAD_A_ENTREGAR,0) > 0
+                    AND   D.NRO_OCC     = :P603_NRO_OCC
+                    AND nvl(c.autoriza_stock,'N') = 'S'
+                    AND (nvl(D.CANTIDAD,0)-nvl(D.Cant_Anulada,0)) != 0
+                    AND C.ID_SUCURSAL = :P0_ID_SUCURSAL
+                    AND (NVL(E.CANT_DISPON, 0) > 0 OR W_BUSCA_PERMISO(:P0_ID_EMPRESA, 135, TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER),'FACTURA_STOCK_NEGATIVO') = 'S')
+                    AND C.Id not in (14100, 13860, 14781, 14460, 14768, 14801, 15970, 16010, 17320, 17313, 17314, 17319, 18973, 17315, 17316,24672,16490,17351);
+                ```
+            pageItemsToSubmit: P603_NRO_OCC
+        }
+        layout {
+            sequence: 70
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        toolbar {
+            show: false
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 46211970106905905
+        }
+
+        savedReport 463735 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @STOCK
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_APROBADA
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_A_ENTREGAR
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    sequence: 15
+                }
+            )
+
+        )
+
+        column CANTIDAD_APROBADA (
+            type: numberField
+            heading {
+                heading: <p>Cantidad Aprobada</p>
+                alignment: end
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_APROBADA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANTIDAD_A_ENTREGAR (
+            type: numberField
+            heading {
+                heading: <p>Cantidad A Entregar</p>
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD_A_ENTREGAR
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Desc Articulo</p>
+            }
+            layout {
+                sequence: 130
+            }
+            validation {
+                maxLength: 600
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fec Comprobante</p>
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+        )
+
+        column ID_ARTICULO (
+            type: selectList
+            heading {
+                heading: <p>Articulo</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_CLIENTE (
+            type: selectList
+            heading {
+                heading: <p>Cliente</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: selectList
+            heading {
+                heading: <p>Sucursal</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Nro Pedido</p>
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: <p>Nro Occ</p>
+            }
+            layout {
+                sequence: 140
+            }
+            validation {
+                maxLength: 60
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column STOCK (
+            type: numberField
+            heading {
+                heading: <p>Stock</p>
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: STOCK
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Previsualizacion
+        }
+    )
+
+    pageItem P603_ID_PEDIDO (
+        type: hidden
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P603_MENSAJE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P603_NRO_OCC (
+        type: textField
+        label {
+            label: <p>Nro OCC</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P603_SER_COMPROBANTE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    button confirmar (
+        buttonName: Confirmar
+        label: Confirmar
+        layout {
+            sequence: 80
+            slot: contentBody
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction generacion (
+        name: Generacion
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @confirmar
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message:
+                    ```html
+                    Generacion realizada con exito
+                    
+                    ```
+                style: success
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNull
+                item: P603_MENSAJE
+            }
+        )
+
+        action native-alert-2 (
+            action: alert
+            settings {
+                title: ATENCION
+                message: &P603_MENSAJE.
+                style: danger
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P603_MENSAJE
+            }
+        )
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    DECLARE
+                    VID_SOLICITUD_ENVIO NUMBER(10)      := APEX_UTIL.GET_SESSION_STATE('P_ID_SOLICITUD_ENVIO');
+                    V_MENSAJE           VARCHAR(1000);
+                    vSerRemision        INV.BSW_SERIES_COMPROB.SER_COMPROBANTE%TYPE := APEX_UTIL.GET_SESSION_STATE('P485_SER_REM'); --Added by RP 23/01/2024: El cliente quería seleccionar la serie del talonario
+                    BEGIN
+                        APEX_UTIL.SET_SESSION_STATE('P_ID_REMISION',NULL);
+                        --RAISE_APPLICATION_ERROR(-20000,'SERIE: ' || vSerRemision);
+                        --GENERAR_REMISION_SOL(VID_SOLICITUD_ENVIO,:APP_USER,V_MENSAJE,vSerRemision);
+                        GENERAR_REMISION_SOL_REVISADO(VID_SOLICITUD_ENVIO,:APP_USER,V_MENSAJE,:P603_SER_COMPROBANTE, :P603_NRO_OCC);
+                        
+                        IF    V_MENSAJE IS NOT NULL THEN
+                            :P603_MENSAJE:=V_MENSAJE;
+                        ELSIF V_MENSAJE IS NULL THEN 
+                            NULL;
+                            --APEX_UTIL.SET_SESSION_STATE('P_ID_REMISION',VID_REMISION);
+                        END IF;
+                    END;
+                    ```
+                itemsToSubmit: P603_SER_COMPROBANTE
+                itemsToReturn: P603_MENSAJE
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    showErrorAsAlert
+                    showSpinnerWithModalOverlayMask
+                    showSpinnerOnRegion
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p603-mensaje (
+        itemName: P603_MENSAJE
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: expression
+            plsqlExpression: NULL;
+        }
+    )
+
+)
+

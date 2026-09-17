@@ -1,0 +1,742 @@
+page 833 (
+    name: Anulacion de Comprobantes (Interno)
+    alias: ANULACION-DE-COMPROBANTES-INTERNO
+    title: Anulacion de Comprobantes (Interno)
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region comprobantes (
+        name: Comprobantes
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            tableName: FEWV_COMPROBANTES
+            whereClause:
+                ```sql
+                ID_EMPRESA = :P0_ID_EMPRESA AND
+                FECHA BETWEEN :P833_FEC_INI AND :P833_FEC_FIN AND
+                (SERIE = :P833_SERIE OR :P833_SERIE IS NULL) AND
+                (NUMERO = :P833_NUMERO OR :P833_NUMERO IS NULL) AND
+                (SERIE||'-'||LPAD(NUMERO, 7, '0') = :P833_NRO_COMPROBANTE OR :P833_NRO_COMPROBANTE IS NULL)
+                ```
+            orderByClause: FECHA DESC, TIPO, SERIE, NUMERO DESC
+            pageItemsToSubmit: [
+                P833_FEC_INI
+                P833_FEC_FIN
+                P833_SERIE
+                P833_NUMERO
+                P833_NRO_COMPROBANTE
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: fullWidthContent
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        editAuthorization {
+            update: @derechos-actualizar-2
+        }
+        componentAppearance {
+            selectFirstRow: false
+            fixedRowHeight: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 71879121486216513
+        }
+
+        savedReport 728521 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @FECHA
+                layout {
+                    width: 100.266
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    width: 88.266
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @SERIE
+                layout {
+                    width: 109.273
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NUMERO
+                layout {
+                    width: 98.297
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CLIENTE
+                layout {
+                    width: 419.297
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_FE
+                layout {
+                    width: 100.273
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ANULADO
+                layout {
+                    width: 75.336
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_REGISTRO
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 11
+                }
+            )
+
+        )
+
+        column ANULADO (
+            type: checkbox
+            heading {
+                heading: <p>Anulado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ANULADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            settings {
+                enableMultiSelect: false
+            }
+            layout {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column CLIENTE (
+            type: textField
+            heading {
+                heading: <p>Cliente</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: CLIENTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column ESTADO_FE (
+            type: textField
+            heading {
+                heading: <p>Estado F.E</p>
+                alignment: center
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 9
+            }
+            source {
+                databaseColumn: ESTADO_FE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FECHA (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FECHA
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID
+                dataType: varchar2
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_REGISTRO (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_REGISTRO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUMERO (
+            type: numberField
+            heading {
+                heading: <p>Numero</p>
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: NUMERO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SERIE (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SERIE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIPO (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 5
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Comprobantes
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @comprobantes
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P833_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P833_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P833_NRO_COMPROBANTE (
+        type: numberField
+        label {
+            label: <p>Nro. Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: 00X-00X-00000XXX
+        }
+    )
+
+    pageItem P833_NUMERO (
+        type: numberField
+        label {
+            label: <p>Numero:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: XXX
+        }
+    )
+
+    pageItem P833_SERIE (
+        type: textField
+        label {
+            label: <p>Serie:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+            valuePlaceholder: 00X-00X
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction grilla-modo-edicion (
+        name: Grilla modo edicion
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                        grid.model.setOption("editable", true);
+                        grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-grilla (
+        name: Refrescar Grilla
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @refresh
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @comprobantes
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process comprobantes-save-interactive-grid-data (
+        name: Comprobantes - Save Interactive Grid Data
+        type: executeCode
+        editableRegion: @comprobantes
+        source {
+            plsqlCode:
+                ```plsql
+                IF :ANULADO = 'S' THEN
+                    CASE :TIPO
+                        WHEN 'REM' THEN
+                            UPDATE STW_ENTSAL_CAB
+                               SET ESTADO = 'A'
+                             WHERE ID = :ID_REGISTRO;
+                            
+                            UPDATE STW_ENTSAL_DET D
+                               SET D.ESTADO = 'A'
+                             WHERE D.ID_ENTSAL_CAB = :ID_REGISTRO
+                               AND D.ID_APROBACION_LIC IS NOT NULL;
+                        ELSE
+                            UPDATE VTW_COMPROBANTES_CABECERA
+                               SET ESTADO = 'A'
+                             WHERE ID = :ID_REGISTRO;
+                    END CASE;
+                END IF;
+                
+                IF :ANULADO = 'N' THEN
+                    CASE :TIPO
+                        WHEN 'REM' THEN
+                            UPDATE STW_ENTSAL_CAB
+                               SET ESTADO = 'N'
+                             WHERE ID = :ID_REGISTRO;
+                        UPDATE STW_ENTSAL_DET D
+                               SET D.ESTADO = 'N'
+                             WHERE D.ID_ENTSAL_CAB = :ID_REGISTRO
+                               AND D.ID_APROBACION_LIC IS NOT NULL;
+                        ELSE
+                            UPDATE VTW_COMPROBANTES_CABECERA
+                               SET ESTADO = 'P'
+                             WHERE ID = :ID_REGISTRO;
+                    END CASE;
+                END IF;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 71880345296216525
+        }
+    )
+
+)
+

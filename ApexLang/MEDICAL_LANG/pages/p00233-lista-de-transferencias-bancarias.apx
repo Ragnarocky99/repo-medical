@@ -1,0 +1,903 @@
+page 233 (
+    name: Lista de Transferencias Bancarias
+    alias: LISTA-DE-TRANSFERENCIAS-BANCARIAS
+    title: Lista de Transferencias Bancarias
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region lista-de-transferencias-bancarias (
+        name: Lista de Transferencias Bancarias
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useRegionTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region lista-de-transferencias-bancarias-2 (
+        name: Lista de Transferencias Bancarias
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select D.ID,
+                       D.ID_EMPRESA,
+                       D.TIP_COMPROBANTE,
+                       D.SER_COMPROBANTE,
+                       D.NRO_COMPROBANTE,
+                       D.REFERENCIA,
+                       D.FEC_COMPROBANTE,
+                       D.ID_SUCURSAL,
+                       D.ID_PER_JURIDICA,
+                       D.ID_CUENTA,
+                       D.ID_MONEDA,
+                       D.TIP_CAMBIO,
+                       D.ID_TIPO_TRANS,
+                       D.ID_SUB_TIPO_TRANS,
+                       REPLACE(D.ASIENTOS,'*') ASIENTOS,
+                       (SELECT C.ID
+                        FROM COW_DIARIO_CABECERAS_PROV C
+                        WHERE C.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(D.ASIENTOS,'*'),'dep'))
+                          AND C.ID_EJERCICIO= TRAE_ID_EJERCICIO(D.FEC_COMPROBANTE)
+                          AND C.ID_EMPRESA  = D.ID_EMPRESA) ASIENTO_ID,
+                       D.ID_CUENTA_ENT,
+                       D.ID_PER_JURIDICA_ENT,
+                       D.ID_MONEDA_ENT,
+                       D.TIP_CAMBIO_ENT,
+                       D.NRO_OPERACION_BANCO,
+                       D.FEC_ALTA,
+                       D.FEC_MODIF,
+                       D.IND_IMPORTACION,
+                       D.ID_PROVEEDOR,
+                       D.ID_USUARIO_ALTA,
+                       D.ID_USUARIO_MODIF,
+                       D.FEC_BANCO,
+                       D.ID_CENTRO_COSTO,
+                       D.NRO_PLANILLA_FF,
+                       D.NRO_PLANILLA_ENT,
+                       D.REF_COMPROBANTE,
+                       D.IMPORTE,
+                
+                       C.ID AS ID_CHEQUE
+                  from CCW_DEBCRED_BANCARIOS D 
+                  LEFT JOIN CPW_VALORES_CAJAS C ON  C.ID_DEBCRED=D.ID
+                  WHERE D.ID_EMPRESA = :P0_COD_EMPRESA                            
+                  AND D.ID_SUCURSAL = :P0_COD_SUCURSAL                             
+                  AND D.TIP_COMPROBANTE = 'TRB'
+                
+                  ORDER BY D.FEC_COMPROBANTE DESC, D.NRO_COMPROBANTE DESC
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 199
+                items: {
+                    P199_ID: #ID#
+                }
+            }
+            linkIcon: <span aria-label="Edit"><span class="fa fa-edit" aria-hidden="true" title="Edit"></span></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 47482155957794951
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 162
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTO_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column ASIENTO_ID (
+            type: hidden
+            heading {
+                heading: Asiento Id
+            }
+            layout {
+                sequence: 402
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AX
+            }
+        )
+
+        column FEC_ALTA (
+            type: hidden
+            heading {
+                heading: Fec Alta
+            }
+            layout {
+                sequence: 212
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column FEC_BANCO (
+            type: hidden
+            heading {
+                heading: Fec Banco
+            }
+            layout {
+                sequence: 272
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column FEC_MODIF (
+            type: hidden
+            heading {
+                heading: Fec Modif
+            }
+            layout {
+                sequence: 222
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Centro Costo
+                alignment: center
+            }
+            lov {
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 102
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column ID_CHEQUE (
+            type: plainText
+            heading {
+                heading: Id Cheque
+                alignment: center
+            }
+            layout {
+                sequence: 392
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AW
+            }
+        )
+
+        column ID_CUENTA (
+            type: plainText
+            heading {
+                heading: Nro Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 312
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column ID_CUENTA_ENT (
+            type: plainText
+            heading {
+                heading: Nro Cuenta Ent
+                alignment: center
+            }
+            layout {
+                sequence: 62
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column ID_EMPRESA (
+            type: plainText
+            heading {
+                heading: Id Empresa
+                alignment: center
+            }
+            layout {
+                sequence: 282
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 322
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column ID_MONEDA_ENT (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda Entrada
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 82
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column ID_PER_JURIDICA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Banco
+                alignment: center
+            }
+            lov {
+                lov: @lv-bancos
+            }
+            layout {
+                sequence: 302
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column ID_PER_JURIDICA_ENT (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Banco Entrada
+                alignment: center
+            }
+            lov {
+                lov: @lv-bancos
+            }
+            layout {
+                sequence: 72
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainText
+            heading {
+                heading: Id Proveedor
+                alignment: center
+            }
+            layout {
+                sequence: 352
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column ID_SUB_TIPO_TRANS (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sub Tipo Transferencia
+                alignment: center
+            }
+            lov {
+                lov: @lv-subtipos-trans
+            }
+            layout {
+                sequence: 342
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 292
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column ID_TIPO_TRANS (
+            type: plainText
+            heading {
+                heading: Tipo Trans
+                alignment: center
+            }
+            layout {
+                sequence: 332
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column ID_USUARIO_ALTA (
+            type: plainText
+            heading {
+                heading: Id Usuario Alta
+                alignment: center
+            }
+            layout {
+                sequence: 362
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column ID_USUARIO_MODIF (
+            type: plainText
+            heading {
+                heading: Id Usuario Modif
+                alignment: center
+            }
+            layout {
+                sequence: 372
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column IMPORTE (
+            type: plainText
+            heading {
+                heading: Importe
+                alignment: end
+            }
+            layout {
+                sequence: 412
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AY
+            }
+        )
+
+        column IND_IMPORTACION (
+            type: hidden
+            heading {
+                heading: Ind Importacion
+            }
+            layout {
+                sequence: 232
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_OPERACION_BANCO (
+            type: hidden
+            heading {
+                heading: Nro Operacion Banco
+            }
+            layout {
+                sequence: 202
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column NRO_PLANILLA_ENT (
+            type: plainText
+            heading {
+                heading: Nro Planilla Entrada
+                alignment: center
+            }
+            layout {
+                sequence: 122
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        column NRO_PLANILLA_FF (
+            type: plainText
+            heading {
+                heading: Nro Planilla
+                alignment: center
+            }
+            layout {
+                sequence: 22
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Comentario
+                alignment: center
+            }
+            layout {
+                sequence: 6
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column REF_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Ref Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 382
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Serie Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 4
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Cambio
+                alignment: center
+            }
+            layout {
+                sequence: 12
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column TIP_CAMBIO_ENT (
+            type: plainText
+            heading {
+                heading: Cambio Entrada
+                alignment: center
+            }
+            layout {
+                sequence: 92
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 3
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lista de Transferencias Bancarias
+        }
+
+        savedReport 474974 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 20
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 5
+            )
+
+            displayColumn ID_CENTRO_COSTO (
+                sequence: 17
+            )
+
+            displayColumn ID_CUENTA (
+                sequence: 6
+            )
+
+            displayColumn ID_CUENTA_ENT (
+                sequence: 12
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 7
+            )
+
+            displayColumn ID_MONEDA_ENT (
+                sequence: 14
+            )
+
+            displayColumn ID_PER_JURIDICA (
+                sequence: 8
+            )
+
+            displayColumn ID_PER_JURIDICA_ENT (
+                sequence: 13
+            )
+
+            displayColumn ID_SUB_TIPO_TRANS (
+                sequence: 18
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 19
+            )
+
+            displayColumn IMPORTE (
+                sequence: 10
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn NRO_PLANILLA_ENT (
+                sequence: 16
+            )
+
+            displayColumn NRO_PLANILLA_FF (
+                sequence: 11
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 4
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 9
+            )
+
+            displayColumn TIP_CAMBIO_ENT (
+                sequence: 15
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            sort (
+                column: NRO_COMPROBANTE
+                sort {
+                    sequence: 1
+                }
+            )
+
+        )
+
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @lista-de-transferencias-bancarias-2
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 199
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: item=value
+            item: P0_ID_SUCURSAL
+            value: 1
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+)
+

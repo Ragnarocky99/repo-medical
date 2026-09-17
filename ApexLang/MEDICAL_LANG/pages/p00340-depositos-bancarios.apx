@@ -1,0 +1,719 @@
+page 340 (
+    name: Depositos Bancarios
+    alias: DEPOSITOS-BANCARIOS
+    title: Depositos Bancarios
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region depósitos (
+        name: Depositos
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT vc.id,
+                       vc.id_empresa,
+                       vc.descripcion,
+                       vc.tip_comprobante,
+                       vc.ser_comprobante,
+                       vc.nro_comprobante,
+                       vc.fec_comprobante,
+                       vc.id_per_juridica,
+                       vc.nro_cuenta,
+                       vc.tot_credito,
+                       vc.id_cuenta,
+                       vc.referencia,
+                       vc.asientos,
+                       dc.id AS asiento_id,
+                       vc.cod_usuario_aud,
+                       vc.fec_alta
+                FROM   ccw_mov_valores_cab vc
+                JOIN   cow_ejercicios ej
+                       ON ej.cod_ejercicio = TO_CHAR(vc.fec_comprobante, 'yyyy')
+                LEFT JOIN cow_diario_cabeceras_prov DC
+                       ON dc.num_asiento = vc.asientos
+                      AND dc.id_ejercicio = ej.id
+                    WHERE vc.fec_comprobante between :P340_FEC_INI and :P340_FEC_FIN
+                      AND (vc.nro_comprobante = :P340_NRO_COMPROBANTE or :P340_NRO_COMPROBANTE is null)
+                      AND (vc.referencia = :P340_REFERENCIA or :P340_REFERENCIA is null)
+                ORDER BY vc.fec_comprobante DESC,
+                         vc.nro_comprobante DESC;
+                ```
+            pageItemsToSubmit: [
+                P340_FEC_INI
+                P340_FEC_FIN
+                P340_REFERENCIA
+                P340_NRO_COMPROBANTE
+            ]
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 341
+                items: {
+                    P341_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            lazyLoading: true
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            reportsSelectList: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 15456663411899410
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTO_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FH
+            }
+        )
+
+        column ASIENTO_ID (
+            type: hidden
+            heading {
+                heading: Asiento Id
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: FD
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Creado Por
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FI
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripción
+                alignment: center
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FB
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Alta
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: dd/MM/yyyy HH24:MI
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: FJ
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: EH
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CUENTA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cuenta Contable
+                alignment: center
+            }
+            lov {
+                lov: @lv-cuentas-contables-asentable
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: FA
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_PER_JURIDICA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Banco
+                alignment: center
+            }
+            lov {
+                lov: @lv-bancos
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro. Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column NRO_CUENTA (
+            type: plainText
+            heading {
+                heading: Nro. de Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: BK
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Nro. Boleta
+                alignment: center
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: FG
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column TOT_CREDITO (
+            type: plainText
+            heading {
+                heading: Total Crédito
+                alignment: center
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: EJ
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Depósitos
+        }
+
+        savedReport 155588 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 9
+            )
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 10
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 11
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn ID_PER_JURIDICA (
+                sequence: 5
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn NRO_CUENTA (
+                sequence: 7
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 6
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn TOT_CREDITO (
+                sequence: 8
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @depósitos
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P340_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P340_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P340_NRO_COMPROBANTE (
+        type: numberField
+        label {
+            label: <p>Nro. Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P340_REFERENCIA (
+        type: textField
+        label {
+            label: <p>Nro. Boleta:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button b430-crear (
+        buttonName: B430_CREAR
+        label: Crear
+        layout {
+            sequence: 10
+            region: @depósitos
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 341
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: triggerAction
+        }
+
+        triggerAction refrescar-reporte (
+            name: Refrescar Reporte
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @depósitos
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar Paginacion
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @depósitos
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction asiento-doble-click (
+        name: ASIENTO_DOBLE_CLICK
+        execution {
+            sequence: 10
+        }
+        when {
+            event: dblclick
+            selectionType: jQuerySelector
+            jquerySelector: .a-GV-row
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var r=$(this.triggeringElement);
+                    r.find("table.apexir_WORKSHEET_DATA td").dblclick(function(){
+                     var l=$(this);
+                     $s("apexir_CURRENT_SEARCH_COLUMN",l.attr("asientos")); // comment out this line if you like search from all columns
+                     $s("apexir_SEARCH",l.text());
+                     r.trigger("apexrefresh");
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

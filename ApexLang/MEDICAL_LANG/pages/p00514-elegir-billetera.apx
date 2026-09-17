@@ -1,0 +1,383 @@
+page 514 (
+    name: Elegir Billetera
+    alias: ELEGIR-BILLETERA
+    title: Elegir Billetera
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+            font-family: "Arial", serif;
+            font-weight: bold;
+            font-size:11.5px;
+            color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region parametros (
+        name: Parametros
+        type: staticContent
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P514_BILLETERA (
+        type: selectList
+        label {
+            label: <p>Billetera</p>
+            alignment: left
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery: SELECT DESCRIPCION , COD_BILLETERA FROM CCW_BILLETERAS_POS
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        default {
+            type: static
+            staticValue: ZIM
+        }
+    )
+
+    pageItem P514_IP_POS (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @parametros
+            slot: regionBody
+        }
+    )
+
+    pageItem P514_MENSAJE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @parametros
+            slot: regionBody
+        }
+    )
+
+    pageItem P514_MONTO_POS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @parametros
+            slot: regionBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P514_MONTO_POS_DISPLAY (
+        type: numberField
+        label {
+            label: <p>Monto</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        default {
+            type: expression
+            plsqlExpression: :P514_MONTO_POS
+        }
+    )
+
+    pageItem P514_NRO_MOV_CAJ (
+        type: hidden
+        layout {
+            sequence: 50
+            region: @parametros
+            slot: regionBody
+        }
+    )
+
+    pageItem P514_TELEFONO (
+        type: textField
+        label {
+            label: <p>Teléfono</p>
+            alignment: left
+        }
+        settings {
+            subtype: phone
+        }
+        layout {
+            sequence: 20
+            region: @parametros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button aceptar (
+        buttonName: Aceptar
+        label: Aceptar
+        layout {
+            sequence: 10
+            region: @parametros
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button cancelar (
+        buttonName: Cancelar
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @parametros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction cancelar-modal (
+        name: Cancelar Modal
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancelar
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction llamar-pos (
+        name: Llamar POS
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @aceptar
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: &P514_MENSAJE.
+                style: information
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    DECLARE
+                      V_NRO_BOLETA          VARCHAR2(12);
+                      V_MENSAJE             VARCHAR2(200);
+                      V_SUBTIPO_TRANS       VARCHAR2(30);
+                      V_VUELTO              NUMBER(12);
+                      V_NRO_MOV_CAJ         NUMBER(8);
+                      TMP_BOLETA CONSTANT   VARCHAR2(30):='BOLETA_POS';
+                    BEGIN
+                      BEGIN
+                        SELECT SUBTIPO_TRANS
+                          INTO V_SUBTIPO_TRANS
+                          FROM BSW_SUBTIPOS_TRANS
+                         WHERE ID = :P75_ID_SUB_TIPO_TRANS;
+                      EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                          NULL;
+                        WHEN OTHERS THEN
+                          NULL;
+                      END;
+                    
+                      BEGIN
+                        SELECT MAX(NRO_MOV_CAJ) + 1
+                          INTO V_NRO_MOV_CAJ
+                          FROM CCW_MOVIMIENTOS_CAJAS
+                         WHERE ID_EMPRESA = :P0_ID_EMPRESA
+                           AND ID_SUCURSAL = :P0_ID_SUCURSAL;
+                           EXCEPTION
+                           WHEN OTHERS THEN
+                           RAISE_APPLICATION_ERROR(-20000,'Error al traer el numero de caja');
+                      END;
+                    
+                      IF TO_NUMBER(REPLACE(:P510_MONTO_POS,'.','')) <0 THEN
+                      RAISE_APPLICATION_ERROR(-20000,'Monto Invalido');
+                      END IF;
+                    
+                        VENTA_BILLETERA_POS(NVL(:P514_NRO_MOV_CAJ, V_NRO_MOV_CAJ),
+                                          REPLACE(:P514_MONTO_POS, '.', ''),
+                                          :P514_BILLETERA,
+                                          :P514_TELEFONO,
+                                          :P514_IP_POS,
+                                          V_NRO_BOLETA,
+                                          V_MENSAJE);
+                                          
+                         :P514_MENSAJE:=V_MENSAJE;
+                    
+                              IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_BOLETA) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_BOLETA);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_BOLETA);
+                    
+                      APEX_COLLECTION.ADD_MEMBER(p_collection_name => TMP_BOLETA,
+                                                 p_c001            => V_NRO_BOLETA);
+                    
+                    
+                    
+                      APEX_UTIL.SET_SESSION_STATE('P75_BANDERA_POS', 'N');
+                      
+                    END;
+                    
+                    ```
+                itemsToSubmit: [
+                    P514_MONTO_POS
+                    P514_NRO_MOV_CAJ
+                    P514_BILLETERA
+                    P514_TELEFONO
+                    P514_IP_POS
+                ]
+                itemsToReturn: P514_MENSAJE
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    showErrorAsAlert
+                    showSpinnerProcessingIcon
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p514-monto-pos (
+        itemName: P514_MONTO_POS
+        execution {
+            sequence: 10
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                nombre varchar2(255):='MONTO_POS';
+                V_MONTO  NUMBER(9);
+                BEGIN
+                Select NVL(c001,0)
+                into V_MONTO
+                From APEX_COLLECTIONS
+                Where COLLECTION_NAME = 'MONTO_POS'
+                AND SEQ_ID = 1;
+                
+                APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => 'MONTO_POS');
+                return V_MONTO;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20000,sqlerrm);
+                
+                RETURN 0;
+                WHEN OTHERS THEN
+                RETURN 0;
+                END;
+                ```
+        }
+    )
+
+)
+

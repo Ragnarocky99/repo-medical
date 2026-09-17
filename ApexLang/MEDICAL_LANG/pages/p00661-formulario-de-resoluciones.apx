@@ -1,0 +1,2232 @@
+page 661 (
+    name: Formulario de Resoluciones
+    alias: FORMULARIO-DE-RESOLUCIONES
+    title: Formulario de Resoluciones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            (function($) {
+            
+                function update(model) {
+                    var salKey = model.getFieldKey("MONTO_TOTAL"),
+                        total = 0;
+            
+                    console.log(">> starting sum SAL column")
+                    model.forEach(function(record, index, id) {
+                        var sal = parseFloat(record[salKey]), 
+                            meta = model.getRecordMetadata(id);
+            
+                        if (!isNaN(sal) && !meta.deleted && !meta.agg) {
+                            total += sal;
+                        }
+                    });
+                    console.log(">> setting sum SAL column to " + total)
+                    $s("P661_TOTAL", total);
+                }
+            
+                $(function() {
+                   
+                    $("#Detalles").on("interactivegridviewmodelcreate", function(event, ui) {
+                        var sid,
+                            model = ui.model;
+            
+                        if ( ui.viewId === "grid" ) {
+                            sid = model.subscribe( {
+                                onChange: function(type, change) {
+                                    console.log(">> model changed ", type, change);
+                                    if ( type === "set" ) {
+                                         if (change.field === "MONTO_TOTAL" ) {
+                                            update( model );
+                                        }
+                                    } else if (type !== "move" && type !== "metaChange") {
+                                      update( model );
+                                    }
+                                },
+                                progressView: $("#P23_TOTAL") 
+                            } );
+                             update( model );           
+                            model.fetchAll(function() {});
+                        }
+                    });
+            
+                });
+            
+            })(apex.jQuery);
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:12.5px;
+                color:#3f46bb;
+            }
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .cambio{
+                    vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+            }
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: 13.5px;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            canvas#image-preview{  
+            text-align: center;  
+            margin-left: 100px;  
+            margin-top: 30px;  
+            border: 1px solid black; 
+             width: 240px !important;
+            }
+            
+            label {
+              margin-left: 1px;
+              align-self: flex-start; /* Align labels to the start of the container */
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalles-resolucion (
+        name: Detalles Resolucion
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_RESO_CAB,
+                       NRO_ITEM,
+                       ID_ARTICULO,
+                       (select descripcion  from stw_articulos where id = id_articulo) desc_articulo,
+                       (select cod_articulo from stw_articulos where id = id_articulo) cod_articulo,
+                       ID_UNIDAD_MEDIDA,
+                       CANT_MIN,
+                       CANT_MAX,
+                       PRECIO_UNITARIO,
+                       MONTO_TOTAL,
+                       ID_PROVEEDOR,
+                       COSTO_FOB
+                  from LCW_RESOLUCIONES_DET
+                  where ID_RESO_CAB = :P661_ID
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        performance {
+            lazyLoading: true
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+            ]
+        }
+        enableUsersTo {
+            savePublicReport: true
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    calculaTotal();
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                                    calculaTotal();
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                                    calculaTotal();
+                            };
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                                    calculaTotal();
+                            };                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 402059968662959448
+        }
+
+        savedReport 612054 (
+            visibility: primary
+            name: Principal
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @DESC_ARTICULO
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @COD_ARTICULO
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_RESO_CAB
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MIN
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @CANT_MAX
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_TOTAL
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @COSTO_FOB
+                layout {
+                    show: false
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @PRECIO_UNITARIO
+                layout {
+                    width: 112
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    frozen: true
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_PROVEEDOR
+                layout {
+                    width: 149
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @NRO_ITEM
+                layout {
+                    frozen: true
+                    width: 111
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 103
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: @NRO_ITEM
+                sort {
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANT_MAX (
+            type: numberField
+            heading {
+                heading: <p>Cantidad Máxima</p>
+                alignment: center
+            }
+            layout {
+                sequence: 430
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANT_MAX
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 1
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_MIN (
+            type: numberField
+            heading {
+                heading: <p>Cantidad Minima </p>
+                alignment: center
+            }
+            layout {
+                sequence: 420
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: CANT_MIN
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 1
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_ARTICULO (
+            type: textField
+            heading {
+                heading: <p>Cod Articulo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 470
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 20
+            }
+            source {
+                databaseColumn: COD_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COSTO_FOB (
+            type: numberField
+            heading {
+                heading: <p>Costo Fob</p>
+                alignment: center
+            }
+            layout {
+                sequence: 450
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: COSTO_FOB
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: textarea
+            heading {
+                heading: <p>Desc Articulo</p>
+            }
+            layout {
+                sequence: 460
+            }
+            validation {
+                maxLength: 400
+            }
+            source {
+                databaseColumn: DESC_ARTICULO
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: <p>Código Artículo</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                manualEntry: true
+                fetchOnSearch: true
+                popupWidth: 950
+                popupHeight: 550
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos-pedido
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 20
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            advanced {
+                htmlDomId: ID_ARTI
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: selectList
+            heading {
+                heading: <p>Proveedor</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: ID_PROVEEDOR
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_RESO_CAB (
+            type: hidden
+            layout {
+                sequence: 410
+            }
+            source {
+                databaseColumn: ID_RESO_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: selectList
+            heading {
+                heading: <p>Unidad Medida</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-unidades-medida
+                displayExtraValues: false
+                displayNullValue: false
+            }
+            layout {
+                sequence: 240
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column MONTO_TOTAL (
+            type: numberField
+            heading {
+                heading: <p>Monto Total</p>
+                alignment: center
+            }
+            layout {
+                sequence: 440
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: MONTO_TOTAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            advanced {
+                htmlDomId: MONTO_TOTAL
+            }
+        )
+
+        column NRO_ITEM (
+            type: textField
+            heading {
+                heading: <p>Nro Item</p>
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 8
+            }
+            source {
+                databaseColumn: NRO_ITEM
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: numberField
+            heading {
+                heading: <p>Precio Unitario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 400
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: PRECIO_UNITARIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+            advanced {
+                htmlDomId: PRECIO_UNITARIO
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: cotizacion de compras
+        }
+    )
+
+    region formulario-de-resoluciones (
+        name: Formulario de Resoluciones
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       --NRO_ORDEN,
+                       NRO_RESOLUCION,
+                       FEC_RESOLUCION,
+                       NRO_LICITACION,
+                       --NRO_POLIZA,
+                       --FEC_POLIZA_INI,
+                       --FEC_POLIZA_FIN,
+                       --TOT_RESOLUCION,
+                       ID_MONEDA,
+                       TIP_CAMBIO,
+                       DECIMALES,
+                       COD_USUARIO,
+                       FEC_ALTA,
+                       ANULADO,
+                       FEC_ANULACION,
+                       COD_USU_ANU,
+                       ID_CLIENTE,
+                       --NRO_ORDEN_OF,
+                       --NRO_OFERTA_OF,
+                       FEC_FIRMA,
+                       FEC_NOTIFICACION,
+                       NRO_OFERTA,
+                       --ID_OFERTA,
+                       ID_SUCURSAL --id_licitacion
+                  from LCW_RESOLUCIONES_CAB
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--stacked
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+
+    pageItem P661_ANULADO (
+        type: checkbox
+        label {
+            label: <p>Anulado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 50
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: ANULADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P661_COD_USUARIO (
+        type: displayOnly
+        label {
+            label: <p>Creador Por:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 160
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: is-readonly
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: COD_USUARIO
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P661_COD_USU_ANU (
+        type: textField
+        label {
+            label: <p>Usuario Anulacion</p>
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            slot: body
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: COD_USU_ANU
+            dataType: varchar2
+        }
+    )
+
+    pageItem P661_DECIMALES (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 300
+            region: @formulario-de-resoluciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: DECIMALES
+            dataType: number
+        }
+    )
+
+    pageItem P661_FEC_ALTA (
+        type: displayOnly
+        label {
+            label: <p>En la fecha:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 170
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: is-readonly
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: FEC_ALTA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P661_FEC_ANULACION (
+        type: datePicker
+        label {
+            label: <p>Fec Anulacion</p>
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            slot: body
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: FEC_ANULACION
+            dataType: date
+        }
+    )
+
+    pageItem P661_FEC_FIRMA (
+        type: datePicker
+        label {
+            label: <p>Fec Firma</p>
+            alignment: left
+        }
+        layout {
+            sequence: 290
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: FEC_FIRMA
+            dataType: date
+        }
+    )
+
+    pageItem P661_FEC_NOTIFICACION (
+        type: datePicker
+        label {
+            label: <p>Fec Notificacion</p>
+            alignment: left
+        }
+        layout {
+            sequence: 240
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: FEC_NOTIFICACION
+            dataType: date
+        }
+    )
+
+    pageItem P661_FEC_RESOLUCION (
+        type: datePicker
+        label {
+            label: <p>Fec Resolucion</p>
+            alignment: left
+        }
+        layout {
+            sequence: 220
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: FEC_RESOLUCION
+            dataType: date
+        }
+    )
+
+    pageItem P661_ID (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @formulario-de-resoluciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P661_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+        }
+        layout {
+            sequence: 230
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: ID_CLIENTE
+            dataType: number
+        }
+    )
+
+    pageItem P661_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 190
+            region: @formulario-de-resoluciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_EMPRESA
+        }
+    )
+
+    pageItem P661_ID_MONEDA (
+        type: selectList
+        label {
+            label: <p>Moneda</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-monedas
+        }
+        layout {
+            sequence: 250
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: ID_MONEDA
+            dataType: number
+        }
+    )
+
+    pageItem P661_ID_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 380
+            region: @formulario-de-resoluciones
+            slot: regionBody
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: item
+            item: P0_ID_SUCURSAL
+        }
+    )
+
+    pageItem P661_NRO_LICITACION (
+        type: textField
+        label {
+            label: <p>Nro Licitacion</p>
+            alignment: left
+        }
+        layout {
+            sequence: 270
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: NRO_LICITACION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P661_NRO_OFERTA (
+        type: textField
+        label {
+            label: <p>Nro Oferta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 280
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 15
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: NRO_OFERTA
+            dataType: varchar2
+        }
+    )
+
+    pageItem P661_NRO_RESOLUCION (
+        type: textField
+        label {
+            label: <p>Nro Resolucion</p>
+            alignment: left
+        }
+        layout {
+            sequence: 210
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 15
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: NRO_RESOLUCION
+            dataType: varchar2
+        }
+    )
+
+    pageItem P661_TIP_CAMBIO (
+        type: numberField
+        label {
+            label: <p>Cambio</p>
+            alignment: left
+        }
+        layout {
+            sequence: 260
+            region: @formulario-de-resoluciones
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+        }
+        source {
+            formRegion: @formulario-de-resoluciones
+            column: TIP_CAMBIO
+            dataType: number
+        }
+    )
+
+    pageItem P661_TOTAL (
+        type: textField
+        label {
+            label: <p>TOTAL</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            slot: body
+            alignment: left
+            column: 9
+            columnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            cssClasses: is-readonly
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        default {
+            type: static
+            staticValue: 0
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 10
+            region: @formulario-de-resoluciones
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 659
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @formulario-de-resoluciones
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: Desea crear la resolución?
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P661_ID
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Eliminar
+        layout {
+            sequence: 20
+            region: @formulario-de-resoluciones
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P661_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @formulario-de-resoluciones
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P661_ID
+        }
+    )
+
+    dynamicAction abrir-lv (
+        name: Abrir LV
+        execution {
+            sequence: 100
+        }
+        when {
+            event: dblclick
+            selectionType: columns
+            interactiveGrid: @detalles-resolucion
+            columns: COD_ARTICULO
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#ID_ARTI_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction anula-resolucion (
+        name: Anula Resolucion
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: region
+            region: @detalles-resolucion
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action autoriza-ctacte-fec (
+            name: AUTORIZA_CTACTE_FEC
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vfec VARCHAR2(20);
+                    BEGIN
+                        IF :P661_ANULADO = 'S' THEN 
+                            --IF :P661_ID is null THEN
+                                vfec := SYSDATE/*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/;
+                            --ELSE
+                             --   vfec := NULL;
+                            --END IF;
+                        ELSE
+                            vfec:= NULL;
+                        END IF;
+                    
+                        RETURN vfec;
+                    END;
+                    ```
+                itemsToSubmit: P661_ANULADO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_FEC_ANULACION
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                componentType: item
+                item: P661_ANULADO
+                value: S
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery: select /*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/sysdate from dual;
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: AUTORIZA_CTACTE_FEC
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+    )
+
+    dynamicAction buscar-articulo (
+        name: Buscar articulo
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles-resolucion
+            columns: COD_ARTICULO
+        }
+
+        action set-id (
+            name: Set ID
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    --Cargan los datos del articulo
+                    BEGIN
+                    
+                    SELECT A.ID
+                    INTO :ID_ARTICULO
+                    FROM STW_ARTICULOS A
+                    LEFT JOIN STW_BARRAS B ON A.ID=B.ID_ARTICULO
+                    WHERE
+                    (COD_ARTICULO=:COD_ARTICULO OR B.COD_BARRA=:COD_ARTICULO) AND
+                    A.ID_EMPRESA=:P0_COD_EMPRESA AND
+                    ROWNUM=1;
+                    --raise_application_error(-20000,:COD_ARTICULO);
+                    END;
+                    
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'No se encontro el articulo');
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de articulos'  || sqlerrm);
+                    
+                    
+                    --select id from stw_articulos
+                    --where cod_articulo = :COD_ARTICULO
+                    --AND ID_EMPRESA = :P0_ID_EMPRESA
+                    ```
+                itemsToSubmit: COD_ARTICULO
+                itemsToReturn: ID_ARTICULO
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cálculo-del-total (
+        name: Cálculo del Total
+        execution {
+            sequence: 30
+        }
+        when {
+            event: keyup
+            selectionType: columns
+            interactiveGrid: @detalles-resolucion
+            columns: [
+                CANT_MAX
+                PRECIO_UNITARIO
+            ]
+        }
+        clientSideCondition {
+            type: itemColumnIsNotNull
+            column: PRECIO_UNITARIO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: replace(:PRECIO_UNITARIO,'.','') * :CANT_MAX
+                itemsToSubmit: [
+                    CANT_MAX
+                    PRECIO_UNITARIO
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO_TOTAL
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction habilitar-grilla (
+        name: Habilitar grilla
+        execution {
+            sequence: 110
+        }
+        when {
+            event: ready
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction new (
+        name: New
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P661_ANULADO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vfec VARCHAR2(20);
+                    BEGIN
+                        IF :P661_ANULADO = 'S' THEN 
+                            --IF :P661_ID is null THEN
+                                vfec := SYSDATE/*TO_CHAR(SYSDATE,'DD/MM/YYYY HH:MM:SS')*/;
+                            --ELSE
+                             --   vfec := NULL;
+                            --END IF;
+                        ELSE
+                            vfec:= NULL;
+                        END IF;
+                    
+                        RETURN vfec;
+                    END;
+                    ```
+                itemsToSubmit: P661_ANULADO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_FEC_ANULACION
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    DECLARE
+                        vuser VARCHAR2(20);
+                    BEGIN
+                        IF :P661_ANULADO = 'S' THEN 
+                            --IF :P661_ID is null THEN
+                                vuser := :APP_USER;
+                            --ELSE
+                             --   vuser := NULL;
+                            --END IF;
+                        ELSE
+                            vuser:= NULL;
+                        END IF;
+                    
+                        RETURN vuser;
+                    END;
+                    ```
+                itemsToSubmit: P661_ANULADO
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_COD_USU_ANU
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction new-2 (
+        name: New_1
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: P661_TOTAL
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression:
+                    ```plsql
+                    :P661_TOTAL
+                    
+                    ```
+                itemsToSubmit: P661_TOTAL
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_TOT_RESOLUCION
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction ocultar-botón-guardado (
+        name: Ocultar botón guardado
+        execution {
+            sequence: 80
+        }
+        when {
+            event: ready
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: button
+                button: @save
+            }
+            execution {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: rowsReturned
+                sqlQuery:
+                    ```sql
+                    select 1 from lcw_resoluciones_cab
+                    where ID = :P661_ID
+                    and ANULADO = 'S'
+                    ```
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambio (
+        name: Setear Cambio
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P661_ID_MONEDA
+        }
+        comments {
+            comments: "Setea el cambio de la moneda seleccionada  de la factura "
+        }
+
+        action cambio (
+            name: Cambio
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:P661_ID_MONEDA,SYSDATE,'C','V');
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el cambio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: P661_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action decimales (
+            name: Decimales
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM 
+                    BSW_MONEDAS WHERE
+                    ID=:P661_ID_MONEDA
+                    ```
+                itemsToSubmit: P661_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_DECIMALES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-cambio-2 (
+        name: Setear Cambio
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P661_ID_MONEDA
+        }
+        comments {
+            comments: "Setea el cambio de la moneda seleccionada  de la factura "
+        }
+
+        action cambio (
+            name: Cambio
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:P661_ID_MONEDA,SYSDATE,'C','V');
+                    EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al encontrar el cambio de la moneda');
+                    END;
+                    ```
+                itemsToSubmit: P661_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action decimales (
+            name: Decimales
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DECIMALES FROM 
+                    BSW_MONEDAS WHERE
+                    ID=:P661_ID_MONEDA
+                    ```
+                itemsToSubmit: P661_ID_MONEDA
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_DECIMALES
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-total (
+        name: Setear total
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles-resolucion
+            columns: MONTO_TOTAL
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var model = apex.region("Detalles").widget().interactiveGrid("getViews", "grid").model;
+                    var n_amt, n_totamt = 0;
+                    col_amt = model.getFieldKey("MONTO_TOTAL");
+                    model.forEach(function(igrow) {
+                        n_amt = parseInt(igrow[col_amt], 10);
+                        if (!isNaN(n_amt)) {
+                            n_totamt += n_amt;
+                        }
+                    });
+                    apex.item("P661_TOTAL").setValue(n_totamt);
+                    ```
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_TOTAL
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :MONTO_TOTAL
+                itemsToSubmit: MONTO_TOTAL
+            }
+            affectedElements {
+                selectionType: items
+                items: P661_TOTAL
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction seteo-de-valores (
+        name: Seteo de Valores 😑
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalles-resolucion
+            columns: ID_ARTICULO
+        }
+        clientSideCondition {
+            type: itemColumnIsNotNull
+            column: ID_ARTICULO
+        }
+
+        action set-codigo (
+            name: Set Codigo
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    SELECT COD_ARTICULO
+                    into :cod_articulo
+                    FROM STW_ARTICULOS
+                    WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                    AND ID=:ID_ARTICULO;
+                    ```
+                itemsToSubmit: ID_ARTICULO
+                itemsToReturn: COD_ARTICULO
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action set-descripción (
+            name: Set Descripción
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select A.descripcion
+                    from stw_articulos A
+                    where A.ID = :ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DESC_ARTICULO
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action set-proveedor (
+            name: Set Proveedor
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select A.id_proveedor_dflt
+                    from stw_articulos A
+                    where A.ID = :ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_PROVEEDOR
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+        action set-um (
+            name: Set UM
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select A.id_unidad_medida
+                    from stw_articulos A
+                    where A.ID = :ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_UNIDAD_MEDIDA
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    computation p661-total (
+        itemName: P661_TOTAL
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select sum(nvl(monto_total,0)) from lcw_resoluciones_det
+                where id_reso_cab = :P661_ID
+                ```
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+    process initialize-form-formulario-de-resoluciones (
+        name: Initialize form Formulario de Resoluciones
+        type: formInitialization
+        formRegion: @formulario-de-resoluciones
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 74641302207313156
+        }
+    )
+
+    process process-form-formulario-de-resoluciones (
+        name: Process form Formulario de Resoluciones
+        type: formAutoRowProcessing
+        formRegion: @formulario-de-resoluciones
+        target {
+            targetType: tableView
+            tableName: LCW_RESOLUCIONES_CAB
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 74641776145313157
+        }
+    )
+
+    process save-form-data (
+        name: Save Form data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalles-resolucion
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                
+                
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                             insert into LCW_RESOLUCIONES_DET(
+                               ID_RESO_CAB,
+                               NRO_ITEM,
+                               ID_ARTICULO,
+                               ID_UNIDAD_MEDIDA,
+                               CANT_MIN,
+                               CANT_MAX,
+                               PRECIO_UNITARIO,
+                               MONTO_TOTAL,
+                               ID_PROVEEDOR,
+                               COSTO_FOB
+                             )
+                             
+                              values(      
+                                   :P661_ID,--:ID_RESO_CAB,
+                                   :NRO_ITEM,
+                                   :ID_ARTICULO,
+                                   :ID_UNIDAD_MEDIDA,
+                                   :CANT_MIN,
+                                   :CANT_MAX,
+                                   :PRECIO_UNITARIO,
+                                   :MONTO_TOTAL,
+                                   :ID_PROVEEDOR,
+                                   :COSTO_FOB
+                             );
+                            
+                            
+                            when 'U' then
+                                update LCW_RESOLUCIONES_DET D
+                                set 
+                                    ID_RESO_CAB = :ID_RESO_CAB,
+                                    NRO_ITEM = :NRO_ITEM,
+                                    ID_ARTICULO = :ID_ARTICULO,
+                                    ID_UNIDAD_MEDIDA = :ID_UNIDAD_MEDIDA,
+                                    CANT_MIN = :CANT_MIN,
+                                    CANT_MAX = :CANT_MAX,
+                                    PRECIO_UNITARIO = :PRECIO_UNITARIO,
+                                    MONTO_TOTAL = :MONTO_TOTAL,
+                                    ID_PROVEEDOR = :ID_PROVEEDOR,
+                                    COSTO_FOB = :COSTO_FOB
+                
+                                 where D.id = :ID;
+                
+                             when 'D' then
+                             delete LCW_RESOLUCIONES_DET D
+                             WHERE D.ID = :ID;
+                
+                               
+                    end case;
+                                         
+                
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 74139453447006839
+        }
+    )
+
+    branch (
+        execution {
+            sequence: 1
+        }
+        behavior {
+            target: {
+                page: 659
+            }
+        }
+    )
+
+)
+

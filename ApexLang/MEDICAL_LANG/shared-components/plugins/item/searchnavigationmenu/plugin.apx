@@ -1,0 +1,117 @@
+plugin searchnavigationmenu (
+    name: SearchNavigationMenu
+    staticId: SI.ABAKUS.SEARCHNAVIGATIONMENU
+    type: item
+    component {
+        supports: pageItems
+        standardAttributes: [
+            elementAttrs
+            placeholderAttr
+        ]
+    }
+    source {
+        plsqlCode:
+            ```plsql
+            -- GLOBAL
+            subtype gt_string is varchar2(32767);
+            
+            function render (
+                p_item                in apex_plugin.t_page_item,
+                p_plugin              in apex_plugin.t_plugin,
+                p_value               in varchar2,
+                p_is_readonly         in boolean,
+                p_is_printer_friendly in boolean )
+                return apex_plugin.t_page_item_render_result
+                is
+               l_result                  apex_plugin.t_page_item_render_result;
+               
+              l_placeholder        gt_string := p_item.placeholder;
+              l_item_id            gt_string := p_item.name;
+              l_item_css           gt_string := p_item.element_css_classes;
+            
+              l_skey               gt_string := p_item.attribute_01;
+              l_css_icon           gt_string := p_item.attribute_02;
+              l_options            gt_string := p_item.attribute_03;  
+              l_style              gt_string := p_item.attribute_04;
+             
+              l_css_code      gt_string;
+              l_onload_code   gt_string;   
+            begin
+            
+                ----- Set CSS -----------
+                l_css_code := l_style; 
+                
+                if l_css_icon is null then 
+                    l_css_code := l_css_code||'.srch_nav input{padding: 3px 2px 3px 3px;}';
+                end if; 
+            
+                apex_css.add(l_css_code);
+            
+                ----- Close / Open navigation menu
+                l_onload_code:= l_onload_code||'$("#t_Button_navControl").on("click", function(){showHideSearchBar("'||l_item_id||'");});';
+                
+                --Add element on page
+                l_onload_code:= l_onload_code||'$("#t_TreeNav").prepend("<div id=\"'||l_item_id||'\" class=\"srch_nav '||l_item_css||'\">"+                       
+                                    "<input class=\"srch_input\" type=\"text\" placeholder=\"'||l_placeholder||'\" value=\"\"/>"+';
+                if l_css_icon is not null then                        
+                    l_onload_code:= l_onload_code||'"<span class=\"srch_icon\"><i class=\"fa '||l_css_icon||'\"></i></span></div>");';
+                else
+                    l_onload_code:= l_onload_code||'"</div>");';
+                end if;
+              
+              --Load settings
+                l_onload_code:= l_onload_code||'LoadSearchNavMenu("'||l_item_id||'",'||CASE WHEN l_options IS NOT NULL THEN l_options ELSE 'null' END||',"'
+                                                                                  || apex_plugin.get_ajax_identifier ||'","'||l_skey||'","'||p_value||'");';
+            
+               apex_javascript.add_onload_code(l_onload_code);
+            
+              --
+              l_result.is_navigable := TRUE;
+              --
+              RETURN(l_result);
+            
+            end;
+            
+            function render (
+                p_item   in apex_plugin.t_page_item,
+                p_plugin in apex_plugin.t_plugin )
+                return apex_plugin.t_page_item_ajax_result
+                IS
+                l_result apex_plugin.t_page_item_ajax_result;
+                err_num NUMBER;
+                err_msg VARCHAR2(1000);
+            begin
+                apex_debug.info('Save to session state item:%s value:%s', p_item.name, apex_application.g_x01);
+                apex_util.set_session_state(p_item.name, apex_application.g_x01);
+                commit;
+                htp.p('{"state":"OK"}');
+               RETURN (l_result);
+            exception
+                when others then
+                    err_num := SQLCODE;
+                    err_msg := SUBSTR(SQLERRM, 1, 1000);
+                    htp.p('{"state":"error", "SQLCODE":"'||err_num||'", "SQLERRM":"'||err_msg||'"}');
+                    raise;
+            end;
+            ```
+    }
+    callbacks {
+        apiInterface: function
+        renderProcedureName: render
+        ajaxProcedureName: render
+    }
+    advanced {
+        substituteAttributeValues: true
+    }
+    css {
+        fileUrls: #PLUGIN_FILES#searchNavMenu.css
+    }
+    javaScript {
+        fileUrls: #PLUGIN_FILES#searchNavMenu.js
+    }
+    information {
+        version: 2.1
+        aboutUrl: https://github.com/grlicaa/SearchNavigationMenu
+    }
+)
+

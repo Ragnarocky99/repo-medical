@@ -1,0 +1,863 @@
+page 223 (
+    name: Carga de Habilitaciones Desglose
+    alias: CARGA-DE-HABILITACIONES-DESGLOSE
+    title: Carga de Habilitaciones Desglose
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            (function($) {
+            
+                function update(model) {
+                    var montoKey = model.getFieldKey("MONTO");
+                    //var cambioSaldoKey = model.getFieldKey("TIP_CAMBIO");
+                    total = 0;
+                    //total_importe = 0;
+            
+                    console.log(">> empieza calculo")
+                    model.forEach(function(record, index, id) {
+                        var monto = parseInt(record[montoKey].replace(/\./g,''));
+                        //var cambio_saldo = parseFloat(record[cambioSaldoKey].replace(/\./g,''));
+                            meta = model.getRecordMetadata(id);
+            
+                        if (!isNaN(monto) && !meta.deleted && !meta.agg) {
+                            total += monto;
+                            //total_importe += monto_cuota*cambio_saldo;
+                        }
+                    });
+                    
+                    console.log(">> setting sum MONTO_CUOTA column to " + total)
+                    $s("P223_TOTAL_DESGLOSE", total);
+            
+                    //
+                    //var cambio_cobro = parseFloat(apex.item( "P170_TIP_CAMBIO" ).getValue().replace(',', '.'));
+                    //total_importe = total_importe/cambio_cobro;
+                    //apex.item( "P170_TOTAL" ).setValue(total);
+                    //apex.item( "P170_IMPORTE" ).setValue(total_importe);
+                    //$s("P170_TOTAL", total);
+                    //$s("P170_IMPORTE", total_importe);
+                    //$s("P170_IMPORTE", total_importe.toString());
+                }
+            
+                $(function() {
+                   
+                    $("#det").on("interactivegridviewmodelcreate", function(event, ui) {
+                        var sid,
+                            model = ui.model;
+            
+                        if ( ui.viewId === "grid" ) {
+                            sid = model.subscribe( {
+                                onChange: function(type, change) {
+                                    console.log(">> model changed ", type, change);
+                                    if ( type === "set" ) {
+                                         if (change.field === "MONTO" ) {
+                                            update( model );
+                                        }
+                                    } else if (type !== "move" && type !== "metaChange") {
+                                      update( model );
+                                    }
+                                },
+                                progressView: $("#P223_TOTAL_DESGLOSE")
+                            } );
+                             update( model );           
+                            model.fetchAll(function() {});
+                        }
+                    });
+                });
+            })(apex.jQuery);
+            ```
+        executeWhenPageLoads: document.getElementById("P223_TOTAL_DESGLOSE").readOnly = true;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+                pointer-events: none;
+            }
+            
+            .solo-mostrar{
+                background-color:#eeeeee;
+                width: 121px;
+                height: 23px;
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            
+            .timbrado{
+                background-color:#eeeeee;
+                width: 100px;
+                height: 23px;
+                vertical-align: bottom;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+            }
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .totalesp{
+                font-weight: bold;
+                font-size: large;
+            }
+            .a-GV-rowLabel{display:none;}
+            
+            .Numeros{
+                font-weight: bold;
+            }
+            .Numeros1{
+                font-weight: bold;
+                background-color: #f4f9f2;
+            }
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #f13c0f;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-de-habilitaciones-desglose (
+        name: Carga de Habilitaciones Desglose
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_HABILITACION,
+                       ID_SUBTIPO_TRANS,
+                       TIPO,
+                       CANTIDAD,
+                       MONTO,
+                       COD_USUARIO_AUD,
+                       OBSERVACION,
+                       VALOR
+                  from CCW_HABILITACIONES_DESGLOSE 
+                  where id_habilitacion = :P223_ID_HABILITACION
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: det
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        pagination {
+            showTotalCount: false
+        }
+        toolbar {
+            show: false
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        heading {
+            fixedTo: none
+        }
+        advanced {
+            savedReportMappingIdentifier: 30079328629935650
+        }
+
+        savedReport 300798 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_HABILITACION
+                layout {
+                    show: false
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUBTIPO_TRANS
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @MONTO
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @VALOR
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD (
+            type: numberField
+            heading {
+                heading: <p>Cantidad</p>
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: CCW_HABILITA_DESGLOSE_SEQ_ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_COD_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_HABILITACION (
+            type: textField
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_HABILITACION
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_SUBTIPO_TRANS (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID_SUBTIPO_TRANS
+                dataType: number
+            }
+            default {
+                type: static
+                staticValue: 538
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            comments {
+                comments: Valor por defecto = 538 (ID_SUBTIPO_TRANS de Efectivo)
+            }
+        )
+
+        column MONTO (
+            type: numberField
+            heading {
+                heading: <p>Monto</p>
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO
+                dataType: number
+            }
+            default {
+                type: item
+                item: P223_MONTO
+            }
+            columnFilter {
+                lovType: none
+            }
+            comments {
+                comments: https://stackoverflow.com/questions/72284269/how-to-multiply-two-fields-in-a-form-in-oracle-apex
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO (
+            type: popupLov
+            heading {
+                heading: <p>Tipo</p>
+            }
+            settings {
+                displayAs: modalDialog
+            }
+            lov {
+                type: sharedComponent
+                lov: @ccw-tipos-billete-id
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column VALOR (
+            type: numberField
+            heading {
+                heading: <p>Valor</p>
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: VALOR
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Carga de Habilitaciones Desglose
+        }
+    )
+
+    region new (
+        name: New
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: dialogFooter
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P223_ID_HABILITACION (
+        type: hidden
+        layout {
+            sequence: 30
+            region: @carga-de-habilitaciones-desglose
+            slot: regionBody
+        }
+    )
+
+    pageItem P223_MONTO (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @carga-de-habilitaciones-desglose
+            slot: regionBody
+        }
+    )
+
+    pageItem P223_TOTAL_DESGLOSE (
+        type: numberField
+        label {
+            label: <p class="totales">Total:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+            alignment: left
+            column: 8
+            columnSpan: 5
+            labelColumnSpan: 2
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                margin-top-none
+                margin-bottom-none
+            ]
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: [
+                cambio
+                totalesp
+            ]
+            postText: <p class="totales">Gs</p>
+        }
+    )
+
+    button guardar (
+        buttonName: Guardar
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @new
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+    )
+
+    dynamicAction calcular-total-cambio-en-cantidad (
+        name: Calcular total (cambio en Cantidad)
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @carga-de-habilitaciones-desglose
+            columns: CANTIDAD
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: to_number(replace(:VALOR, '.','')) * :CANTIDAD
+                itemsToSubmit: [
+                    VALOR
+                    CANTIDAD
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction calcular-total-cambio-en-valor (
+        name: Calcular total (cambio en Valor)
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @carga-de-habilitaciones-desglose
+            columns: [
+                CANTIDAD
+                VALOR
+            ]
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: to_number(replace(:VALOR, '.','')) * :CANTIDAD
+                itemsToSubmit: [
+                    VALOR
+                    CANTIDAD
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: MONTO
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction identificar-tipo (
+        name: Identificar Tipo
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @carga-de-habilitaciones-desglose
+            columns: TIPO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select valor
+                    from ccw_tipos_billete
+                    where id = :tipo
+                    
+                    ```
+                itemsToSubmit: TIPO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: VALOR
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :P223_ID_HABILITACION
+                itemsToSubmit: ID_HABILITACION
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_HABILITACION
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    computation p223-id-habilitacion (
+        itemName: P223_ID_HABILITACION
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                select HB.id
+                from ccw_habilitaciones HB
+                where HB.fec_cierre is null
+                  AND HB.ID_USUARIO = TRAE_ID_USUARIO(P_EMPRESA =>  :P0_ID_EMPRESA
+                                                     ,P_COD_USUARIO => :APP_USER)
+                ```
+        }
+    )
+
+    process carga-de-habilitaciones-desglose-save-interactive-grid-data (
+        name: Carga de Habilitaciones Desglose - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @carga-de-habilitaciones-desglose
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 31350904794905330
+        }
+    )
+
+    process cargar-desglose-a-detalle (
+        name: Cargar Desglose a Detalle
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE 
+                SUBTIPO_ESTADO NUMBER(10,0);
+                
+                BEGIN
+                
+                    SELECT COUNT(ID_SUBTIPO_TRANS)
+                    INTO  SUBTIPO_ESTADO
+                    FROM  CCW_HABILITACIONES_DETALLE
+                    WHERE ID_HABILITACION = :P223_ID_HABILITACION;
+                
+                    IF SUBTIPO_ESTADO = 0 THEN
+                    INSERT INTO CCW_HABILITACIONES_DETALLE (ID_EMPRESA,
+                                                            ID_HABILITACION,
+                                                            ID_SUBTIPO_TRANS,
+                                                            ID_MONEDA,
+                                                            MONTO_REAL,
+                                                            COD_USUARIO_AUD) 
+                                                     VALUES(:P0_COD_EMPRESA,
+                                                            :P223_ID_HABILITACION,
+                                                            538, ---EFECTIVO
+                                                            32,  ---GUARANIES,
+                                                            to_number(replace(:P223_TOTAL_DESGLOSE, '.','')),
+                                                            :APP_USER);
+                
+                    ELSE
+                    UPDATE CCW_HABILITACIONES_DETALLE
+                    SET    MONTO_REAL       = to_number(replace(:P223_TOTAL_DESGLOSE, '.',''))
+                    WHERE  ID_EMPRESA       = :P0_COD_EMPRESA
+                    AND    ID_HABILITACION  = :P223_ID_HABILITACION
+                    AND    COD_USUARIO_AUD  = :APP_USER
+                    AND    ID_MONEDA        = 32
+                    AND    ID_SUBTIPO_TRANS = 538;
+                    END IF;
+                
+                END;
+                
+                
+                
+                    
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 30839883510674942
+        }
+        serverSideCondition {
+            whenButtonPressed: @guardar
+        }
+    )
+
+    branch (
+        name: Go To Page 210
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 210
+            }
+        }
+    )
+
+)
+

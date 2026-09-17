@@ -1,0 +1,132 @@
+page 606 (
+    name: Generar Recepción
+    alias: GENERAR-RECEPCIÓN
+    title: Generar Recepción
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P606_ID_ENTSAL (
+        type: hidden
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+    )
+
+    pageItem P606_ID_REMISION (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P606_MENSAJE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    dynamicAction generar-recepcion (
+        name: GENERAR RECEPCION
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: &P606_MENSAJE.
+                style: danger
+            }
+            execution {
+                sequence: 20
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P606_MENSAJE
+            }
+        )
+
+        action native-alert-2 (
+            action: alert
+            settings {
+                message: Operacion realizada con exito.
+                style: success
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 40
+            }
+        )
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    DECLARE
+                    V_MENSAJE  VARCHAR2(1000);
+                    VID_ENTSAL NUMBER(10);
+                    BEGIN
+                    
+                    
+                    GENERAR_RECEPCION(:P606_ID_REMISION,:APP_USER,V_MENSAJE,VID_ENTSAL);
+                    
+                        IF :V_MENSAJE IS NOT NULL THEN
+                        :P606_MENSAJE:=V_MENSAJE;
+                        END IF;
+                    
+                    
+                    END;
+                    ```
+                itemsToSubmit: P606_ID_REMISION
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    showErrorAsAlert
+                    showSpinnerProcessingIcon
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

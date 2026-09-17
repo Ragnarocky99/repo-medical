@@ -1,0 +1,856 @@
+page 464 (
+    name: Facturas de Compras
+    alias: FACTURAS-DE-COMPRAS
+    title: Facturas de Compras
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+        warnOnUnsavedChanges: false
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region facturas-de-compras (
+        name: Facturas de compras
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT cm.id,
+                       cm.fec_comprobante,
+                       cm.tip_comprobante,
+                       cm.ser_comprobante,
+                       cm.nro_comprobante,
+                       cm.referencia,
+                       cm.id_proveedor,
+                       cm.nom_proveedor,
+                       cm.id_condicion_compra,
+                       cm.tot_comprobante,
+                       cm.id_moneda,
+                       CASE cm.estado
+                        WHEN 'P' THEN 'Pendiente'
+                        WHEN 'C' THEN 'Confirmado'
+                        ELSE '-'
+                       END estado,
+                       cm.asientos,
+                       dc.id asiento_id,
+                       '' as link,
+                       cm.id_proveedor_ref,
+                       cm.tip_comprobante_ref,
+                       cm.ser_comprobante_ref,
+                       cm.nro_comprobante_ref,
+                       cm.fec_estado,
+                       cm.observacion,
+                       cm.cod_usuario_aud,
+                       cm.fec_alta
+                 FROM  cmw_compras_cabecera cm
+                 JOIN  cow_ejercicios       ej
+                       ON ej.cod_ejercicio = to_char(cm.fec_comprobante, 'yyyy')
+                 LEFT JOIN cow_diario_cabeceras_prov dc
+                        ON dc.num_asiento  = cm.asientos
+                       AND dc.id_ejercicio = ej.id
+                WHERE  cm.id_empresa   = :P0_ID_EMPRESA
+                  AND cm.id_sucursal = :P0_ID_SUCURSAL
+                  AND cm.fec_comprobante BETWEEN :P464_FEC_INI AND :P464_FEC_FIN
+                  AND (cm.id_proveedor = :P464_PROVEEDOR OR :P464_PROVEEDOR IS NULL)
+                ORDER BY cm.fec_comprobante DESC,
+                         cm.nro_comprobante DESC
+                ```
+            pageItemsToSubmit: [
+                P464_FEC_INI
+                P464_FEC_FIN
+                P464_PROVEEDOR
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        security {
+            authorizationScheme: @derechos-consultar
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 155
+                items: {
+                    P155_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+            authorizationScheme: @derechos-actualizar-2
+        }
+        pagination {
+            type: rowRangesXToYOfZ
+            displayPosition: topAndBottomRight
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 58952586952321809
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTO_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: M
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column ASIENTO_ID (
+            type: hidden
+            heading {
+                heading: Asiento Id
+            }
+            layout {
+                sequence: 170
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+            security {
+                escapeSpecialChars: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Creado Por
+                alignment: center
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+                alignment: center
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Alta
+                alignment: center
+            }
+            layout {
+                sequence: 260
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: dd/MM/yyyy HH24:MI
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column FEC_ESTADO (
+            type: plainText
+            heading {
+                heading: Fec. Estado
+                alignment: center
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: T
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CONDICION_COMPRA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Condicion Compra
+                alignment: center
+            }
+            lov {
+                lov: @lv-condiciones-compra
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: hidden
+            heading {
+                heading: Id Proveedor
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_PROVEEDOR_REF (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Proveedor
+                alignment: center
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 190
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column LINK (
+            type: link
+            heading {
+                heading: Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 180
+            }
+            link {
+                target: {
+                    page: 699
+                    items: {
+                        P699_ID_COMPROBANTE: #ID#
+                    }
+                }
+                linkText: Referencia
+                linkAttributes: class="t-Button t-Button--hot"
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column NOM_PROVEEDOR (
+            type: hidden
+            heading {
+                heading: Proveedor
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro. Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column NRO_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Nro. Comprobante Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column OBSERVACION (
+            type: plainText
+            heading {
+                heading: Observacion
+                alignment: center
+            }
+            layout {
+                sequence: 240
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: U
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Referencia
+                alignment: center
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Serie
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column SER_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Serie Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column TIP_COMPROBANTE_REF (
+            type: plainText
+            heading {
+                heading: Tipo Ref.
+                alignment: center
+            }
+            layout {
+                sequence: 200
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Total
+                alignment: center
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Facturas de compras
+        }
+
+        savedReport 597406 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 13
+            )
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 15
+            )
+
+            displayColumn ESTADO (
+                sequence: 10
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 16
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 1
+            )
+
+            displayColumn FEC_ESTADO (
+                sequence: 11
+            )
+
+            displayColumn ID_CONDICION_COMPRA (
+                sequence: 7
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 8
+            )
+
+            displayColumn ID_PROVEEDOR_REF (
+                sequence: 6
+            )
+
+            displayColumn LINK (
+                sequence: 14
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn OBSERVACION (
+                sequence: 12
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 5
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn TOT_COMPROBANTE (
+                sequence: 9
+            )
+
+        )
+
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @facturas-de-compras
+            slot: regionBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+    )
+
+    pageItem P464_FEC_FIN (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: LAST_DAY(SYSDATE)
+        }
+    )
+
+    pageItem P464_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Periodo Comprobante:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: expression
+            plsqlExpression: TRUNC(SYSDATE, 'MM')
+        }
+    )
+
+    pageItem P464_PROVEEDOR (
+        type: popupLov
+        label {
+            label: <p>Proveedor:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-proveedores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 4
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    button crear (
+        buttonName: CREAR
+        label: Crear
+        layout {
+            sequence: 10
+            region: @facturas-de-compras
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 155
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button refresh (
+        buttonName: REFRESH
+        label: Refrescar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: triggerAction
+        }
+
+        triggerAction refrescar-reporte (
+            name: Refrescar Reporte
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @facturas-de-compras
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction agregar-paginacion (
+        name: Agregar paginacion
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action plugin-ir-pagination (
+            action: plugin/addPaginationToIr
+            settings {
+                labelOfTotalNumbers: Total number of rows:
+                titleOfFirstPage: First page
+                titleOfLastPage: Last page
+            }
+            affectedElements {
+                selectionType: region
+                region: @facturas-de-compras
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

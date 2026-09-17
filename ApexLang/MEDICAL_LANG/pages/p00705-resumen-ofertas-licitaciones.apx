@@ -1,0 +1,1050 @@
+page 705 (
+    name: Resumen Ofertas-Licitaciones
+    alias: RESUMEN-OFERTAS-LICITACIONES
+    title: Resumen Ofertas-Licitaciones
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    region resumen-ofertas-licitaciones (
+        name: Resumen Ofertas-Licitaciones
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT 
+                    od.id,
+                    oc.nro_oferta, 
+                    oc.nro_licitacion,
+                    od.nro_item,
+                    od.id_unidad_medida,
+                    od.id_presentacion,
+                    ld.tip_contrato,
+                    od.cant_min,
+                    od.cant_max,
+                    od.id_marca,
+                    od.pais_procedencia,
+                    ar.cod_articulo,
+                    ar.cod_origen_art,
+                    ar.descripcion,
+                    od.cod_articulo_ref,
+                    od.desc_articulo_ref,
+                    od.cantidad_sistema,
+                    --nvl(vpc.nro_pedido,'No encontrado') as nro_pedido,
+                    nvl(vpc.cantidad_en_pedido,0) as cantidad_en_pedido,
+                    oc.id_cliente,
+                    od.id_moneda,
+                    od.id_proveedor,
+                    od.costo_unitario_local,
+                    od.costo_total_local,
+                    od.costo_total_gs/od.cantidad_sistema as costo_unitario_gs,
+                    od.costo_total_gs,
+                    decode(od.ind_conviene,'S','fa fa-check u-success-text','N','fa fa-remove u-danger-text') Adjudicado,
+                    decode(od.ind_se_oferta,'S','fa fa-check u-success-text','N','fa fa-remove u-danger-text') Ofertado,
+                    --Cálculos y Referencias
+                    NVL(fd.cantidad_facturada, 0) AS cantidad_facturada,
+                    --NVL(fd.facturado_en, 'No encontrado') AS facturado_en,
+                    NVL(rd.cantidad_remisionada, 0) AS cantidad_remisionada,
+                    --NVL(rd.remisionado_en, 'No encontrado') AS remisionado_en,
+                    NVL(pd.cantidad_comprada, 0) AS cantidad_ocp
+                    --NVL(pd.comprado_en, 'No encontrado') AS comprado_en
+                FROM lcw_ofertas_det od
+                JOIN stw_articulos   ar ON ar.id = od.id_articulo
+                JOIN lcw_ofertas_cab oc ON oc.id = od.id_oferta_cab
+                JOIN lcw_licitaciones_det ld on od.id_licitacion_det = ld.id
+                LEFT JOIN (
+                    SELECT 
+                        fd.id_oferta_lic, 
+                        SUM(fd.cantidad) AS cantidad_facturada
+                        
+                    FROM vtw_comprobantes_detalle fd
+                    LEFT JOIN vtw_comprobantes_cabecera fc ON fc.id = fd.id_comprobante_cabecera
+                    GROUP BY fd.id_oferta_lic
+                ) fd ON od.id = fd.id_oferta_lic
+                LEFT JOIN (
+                    SELECT 
+                        rd.id_oferta_lic, 
+                        SUM(rd.cantidad) AS cantidad_remisionada
+                    FROM stw_entsal_det rd
+                    LEFT JOIN stw_entsal_cab rc ON rc.id = rd.id_entsal_cab
+                    GROUP BY rd.id_oferta_lic
+                ) rd ON od.id = rd.id_oferta_lic
+                LEFT JOIN (
+                    SELECT 
+                        pd.id_oferta_lic, 
+                        SUM(pd.cantidad) AS cantidad_comprada
+                    FROM cmw_pedidos_detalle pd
+                    LEFT JOIN cmw_pedidos_cabecera pc ON pc.id = pd.id_pedido_cab
+                    GROUP BY pd.id_oferta_lic
+                ) pd ON od.id = pd.id_oferta_lic
+                LEFT JOIN (
+                    SELECT 
+                        VPD.ID_OFERTA_LIC,
+                        sum(nvl(vpd.cantidad,0)) as cantidad_en_pedido
+                    FROM VTW_PEDIDOS_CABECERA VPC
+                    JOIN VTW_PEDIDOS_DETALLE  VPD ON VPD.ID_PEDIDO_CABecera = vPc.ID   
+                    GROUP BY VPD.ID_OFERTA_LIC
+                ) VPC ON  OD.ID = VPC.ID_OFERTA_LIC
+                WHERE OC.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND (OC.ID_CLIENTE  = :P705_ID_CLIENTE  OR :P705_ID_CLIENTE  IS NULL)
+                  AND (OD.ID_ARTICULO = :P705_ID_ARTICULO OR :P705_ID_ARTICULO IS NULL)
+                  AND (OC.NRO_OFERTA  = :P705_NRO_OFERTA  OR :P705_NRO_OFERTA  IS NULL)
+                  AND (OD.IND_CONVIENE = :P705_IND_ADJUDICADO OR :P705_IND_ADJUDICADO IS NULL)
+                  AND (OD.IND_SE_OFERTA = :P705_IND_OFERTADO OR :P705_IND_OFERTADO IS NULL)
+                ---WHERE od.id_oferta_cab = 174
+                /*GROUP BY 
+                    oc.nro_oferta, 
+                    ar.cod_articulo,
+                    ar.descripcion,
+                    od.cod_articulo_ref,
+                    od.desc_articulo_ref,
+                    od.cantidad_sistema,
+                    fd.cantidad_facturada,
+                    fd.facturado_en,
+                    rd.cantidad_remisionada,
+                    rd.remisionado_en,
+                    pd.cantidad_comprada,
+                    pd.comprado_en,
+                    oc.id_cliente,
+                    ar.cod_origen_art,
+                    od.ind_conviene,
+                    vpc.nro_pedido;
+                */
+                ```
+            pageItemsToSubmit: [
+                P705_ID_CLIENTE
+                P705_ID_ARTICULO
+                P705_NRO_OFERTA
+                P705_IND_ADJUDICADO
+                P705_IND_OFERTADO
+            ]
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        advanced {
+            savedReportMappingIdentifier: 17845824750375340
+        }
+
+        column ADJUDICADO (
+            type: plainText
+            heading {
+                heading: Adjudicado
+                alignment: center
+            }
+            layout {
+                sequence: 62
+                columnAlignment: center
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#ADJUDICADO#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: Q
+            }
+        )
+
+        column CANTIDAD_EN_PEDIDO (
+            type: link
+            heading {
+                heading: Cantidad En Pedido
+                alignment: end
+            }
+            layout {
+                sequence: 162
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 702
+                    items: {
+                        P702_ID_OFERTA_LIC: #ID#
+                    }
+                }
+                linkText: #CANTIDAD_EN_PEDIDO#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AB
+            }
+        )
+
+        column CANTIDAD_FACTURADA (
+            type: link
+            heading {
+                heading: Cantidad Facturada
+                alignment: end
+            }
+            layout {
+                sequence: 132
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 711
+                    items: {
+                        P711_ID_OFERTA_LIC: #ID#
+                    }
+                }
+                linkText: #CANTIDAD_FACTURADA#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Y
+            }
+        )
+
+        column CANTIDAD_OCP (
+            type: link
+            heading {
+                heading: Cantidad Ocp
+                alignment: end
+            }
+            layout {
+                sequence: 152
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 713
+                    items: {
+                        P713_ID_OFERTA_LIC: #ID#
+                    }
+                }
+                linkText: #CANTIDAD_OCP#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AA
+            }
+        )
+
+        column CANTIDAD_REMISIONADA (
+            type: link
+            heading {
+                heading: Cantidad Remisionada
+                alignment: end
+            }
+            layout {
+                sequence: 142
+                columnAlignment: end
+            }
+            link {
+                target: {
+                    page: 704
+                    items: {
+                        P704_ID_OFERTA_LIC: #ID#
+                    }
+                }
+                linkText: #CANTIDAD_REMISIONADA#
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: Z
+            }
+        )
+
+        column CANTIDAD_SISTEMA (
+            type: plainText
+            heading {
+                heading: Cantidad Sistema
+                alignment: end
+            }
+            layout {
+                sequence: 72
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: R
+            }
+        )
+
+        column CANT_MAX (
+            type: plainText
+            heading {
+                heading: Cant Max
+                alignment: end
+            }
+            layout {
+                sequence: 272
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column CANT_MIN (
+            type: plainText
+            heading {
+                heading: Cant Min
+                alignment: end
+            }
+            layout {
+                sequence: 262
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod Articulo
+            }
+            layout {
+                sequence: 2
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column COD_ARTICULO_REF (
+            type: plainText
+            heading {
+                heading: Cod Articulo Catálogo
+            }
+            layout {
+                sequence: 4
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: plainText
+            heading {
+                heading: Cod Fabricante
+            }
+            layout {
+                sequence: 52
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column COSTO_TOTAL_GS (
+            type: plainText
+            heading {
+                heading: Costo Total Gs
+                alignment: center
+            }
+            layout {
+                sequence: 212
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AG
+            }
+        )
+
+        column COSTO_TOTAL_LOCAL (
+            type: plainText
+            heading {
+                heading: Costo Total Local
+                alignment: end
+            }
+            layout {
+                sequence: 112
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: W
+            }
+        )
+
+        column COSTO_UNITARIO_GS (
+            type: plainText
+            heading {
+                heading: Costo Unitario Gs
+                alignment: end
+            }
+            layout {
+                sequence: 302
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column COSTO_UNITARIO_LOCAL (
+            type: plainText
+            heading {
+                heading: Costo Unitario Local
+                alignment: end
+            }
+            layout {
+                sequence: 102
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: V
+            }
+        )
+
+        column DESCRIPCION (
+            type: plainText
+            heading {
+                heading: Descripcion
+            }
+            layout {
+                sequence: 3
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column DESC_ARTICULO_REF (
+            type: plainText
+            heading {
+                heading: Desc Articulo Catálogo
+            }
+            layout {
+                sequence: 5
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: Id
+            }
+            layout {
+                sequence: 172
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AC
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 32
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: N
+            }
+        )
+
+        column ID_MARCA (
+            type: plainText
+            heading {
+                heading: Id Marca
+                alignment: end
+            }
+            layout {
+                sequence: 282
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: end
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 192
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AE
+            }
+        )
+
+        column ID_PRESENTACION (
+            type: plainText
+            heading {
+                heading: Id Presentacion
+                alignment: end
+            }
+            layout {
+                sequence: 242
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AJ
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Proveedor
+                alignment: end
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 202
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AF
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainText
+            heading {
+                heading: Id Unidad Medida
+                alignment: end
+            }
+            layout {
+                sequence: 232
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column NRO_ITEM (
+            type: plainText
+            heading {
+                heading: Nro Item
+            }
+            layout {
+                sequence: 222
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AH
+            }
+        )
+
+        column NRO_LICITACION (
+            type: plainText
+            heading {
+                heading: Nro Licitacion
+            }
+            layout {
+                sequence: 122
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: X
+            }
+        )
+
+        column NRO_OFERTA (
+            type: plainText
+            heading {
+                heading: Nro Oferta
+            }
+            layout {
+                sequence: 82
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column OFERTADO (
+            type: plainText
+            heading {
+                heading: Ofertado
+            }
+            layout {
+                sequence: 182
+            }
+            columnFormatting {
+                htmlExpression:
+                    ```html
+                    <div class="dm-IRR-icon">
+                    	<span class="#OFERTADO#" ></span>
+                    	<span class="dm-IRR-iconLabel"></span>
+                    </div>
+                    ```
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column PAIS_PROCEDENCIA (
+            type: plainText
+            heading {
+                heading: Pais Procedencia
+            }
+            layout {
+                sequence: 292
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column TIP_CONTRATO (
+            type: plainText
+            heading {
+                heading: Tip Contrato
+            }
+            layout {
+                sequence: 252
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AK
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Resumen Ofertas-Licitaciones
+        }
+
+        savedReport 178575 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ADJUDICADO (
+                sequence: 17
+            )
+
+            displayColumn CANTIDAD_EN_PEDIDO (
+                sequence: 20
+            )
+
+            displayColumn CANTIDAD_FACTURADA (
+                sequence: 18
+            )
+
+            displayColumn CANTIDAD_OCP (
+                sequence: 21
+            )
+
+            displayColumn CANTIDAD_REMISIONADA (
+                sequence: 19
+            )
+
+            displayColumn CANTIDAD_SISTEMA (
+                sequence: 8
+            )
+
+            displayColumn COD_ARTICULO (
+                sequence: 3
+            )
+
+            displayColumn COD_ARTICULO_REF (
+                sequence: 6
+            )
+
+            displayColumn COD_ORIGEN_ART (
+                sequence: 4
+            )
+
+            displayColumn COSTO_TOTAL_GS (
+                sequence: 13
+            )
+
+            displayColumn COSTO_TOTAL_LOCAL (
+                sequence: 10
+            )
+
+            displayColumn COSTO_UNITARIO_GS (
+                sequence: 12
+            )
+
+            displayColumn COSTO_UNITARIO_LOCAL (
+                sequence: 9
+            )
+
+            displayColumn DESCRIPCION (
+                sequence: 5
+            )
+
+            displayColumn DESC_ARTICULO_REF (
+                sequence: 7
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 14
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 11
+            )
+
+            displayColumn ID_PROVEEDOR (
+                sequence: 15
+            )
+
+            displayColumn NRO_LICITACION (
+                sequence: 2
+            )
+
+            displayColumn NRO_OFERTA (
+                sequence: 1
+            )
+
+            displayColumn OFERTADO (
+                sequence: 16
+            )
+
+            aggregate (
+                column: COSTO_TOTAL_GS
+            )
+
+        )
+
+    )
+
+    pageItem P705_ID_ARTICULO (
+        type: popupLov
+        label {
+            label: <p>Articulo</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-articulos-pedido
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P705_ID_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P705_IND_ADJUDICADO (
+        type: radioGroup
+        label {
+            label: <p>Adjudicado</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Adjudicado;S,No Adjudicado;N
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P705_IND_OFERTADO (
+        type: radioGroup
+        label {
+            label: <p>Ofertado</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Ofertado;S,No Ofertado;N
+            nullDisplayValue: Todos
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P705_NRO_OFERTA (
+        type: numberField
+        label {
+            label: <p>Nro Oferta</p>
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: [
+                P705_ID_CLIENTE
+                P705_ID_ARTICULO
+                P705_NRO_OFERTA
+                P705_IND_ADJUDICADO
+                P705_IND_OFERTADO
+            ]
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @resumen-ofertas-licitaciones
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

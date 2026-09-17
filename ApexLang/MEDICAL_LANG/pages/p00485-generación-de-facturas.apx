@@ -1,0 +1,3008 @@
+page 485 (
+    name: Generación de Facturas
+    alias: GENERACIÓN-DE-FACTURAS
+    title: Generación de Facturas
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .totalespp{
+                font-weight: bold;
+                font-size: large;
+                   color: #365ee4;
+              background-color: #d7d7d7;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #585151;
+            }
+            
+            .fact{
+                font-weight: bold;
+                font-size: large;
+                   color: #5c5c5c;
+              background-color: #f0f0f0;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #526fac;
+            }
+            
+            
+            .a-danger{
+                background-color: #f44336;
+            }
+            
+            .totales{
+                text-align: center;
+                font-size: medium;
+            }
+            .comprobante{
+              pointer-events: none;
+              color: #000000;
+              background-color: #e0e0e0;
+              box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.075);
+              border-style:solid;
+              border-color: #a8a8a8;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region pedido-detalle (
+        name: Pedido Detalle
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select CAB.ID,
+                       CAB.ID_PEDIDO_REF,
+                       CAB.TIP_COMPROBANTE,
+                       SER.SER_TIMBRADO,
+                       CAB.NRO_COMPROBANTE,
+                       CAB.FEC_COMPROBANTE
+                  from VTW_COMPROBANTES_CABECERA CAB
+                  JOIN BSW_SERIES_COMPROB SER ON SER.ID = ID_SERIE_COMP
+                  ---WHERE NRO_OCC <> 0
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @pedidos
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 41712596554995314
+        }
+
+        savedReport 427215 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @SER_TIMBRADO
+                layout {
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_REF
+                layout {
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @Ver
+                layout {
+                    sequence: 21
+                }
+            )
+
+        )
+
+        column FEC_COMPROBANTE (
+            type: datePicker
+            heading {
+                heading: <p>Fecha</p>
+                alternativeLabel: Fecha
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO_REF (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: ID_PEDIDO_REF
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: numberField
+            heading {
+                heading: <p>Numero</p>
+                alignment: end
+                alternativeLabel: Numero
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_TIMBRADO (
+            type: textField
+            heading {
+                heading: <p>Serie</p>
+            }
+            layout {
+                sequence: 40
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_TIMBRADO
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: textField
+            heading {
+                heading: <p>Tipo</p>
+                alternativeLabel: Tipo
+            }
+            layout {
+                sequence: 30
+            }
+            validation {
+                valueRequired: true
+                maxLength: 5
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column Ver (
+            type: link
+            heading {
+                heading: <p>Ver</p>
+                alternativeLabel: Ver
+            }
+            layout {
+                sequence: 70
+            }
+            link {
+                target: {
+                    page: 135
+                    items: {
+                        P135_ID: &ID.
+                    }
+                }
+                linkText: <img src="#IMAGE_PREFIX#app_ui/img/icons/apex-edit-view.png" class="apex-edit-view" alt="">
+            }
+            source {
+                type: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Pedido Detalle
+        }
+    )
+
+    region pedidos (
+        name: Pedidos
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select P.ID,
+                       P.ID_EMPRESA,
+                       P.ID_SUCURSAL,
+                       NVL(P.ESTADO,'P') AS ESTADO,
+                       NVL(P.ESTADO_FAC,'P') AS ESTADO_FAC,
+                       P.TIP_COMPROBANTE,
+                       P.SER_COMPROBANTE,
+                       P.NRO_COMPROBANTE,
+                       P.FEC_COMPROBANTE,
+                       P.ID_CLIENTE,
+                       P.ID_VENDEDOR,
+                       P.ID_MONEDA,
+                       P.TIP_CAMBIO,
+                       P.CAMBIO_MONEDA_PRECIO,
+                       P.ID_CONDICION_VENTA,
+                       P.ID_LISTA_PRECIO,
+                       P.TOT_COMPROBANTE,
+                       P.DESCUENTO,
+                       'COBRO',
+                       'REMISION',
+                       /*E.SER_ENT_SAL||'-'||LPAD(E.NUM_ENT_SAL,7,'0')*/NULL AS REFERENCIA_REMISION,
+                       /*E.ID*/NULL AS ID_REMISION,---,
+                    ---CO.ID_ARTICULO,
+                    ---CO.CANTIDAD,
+                     (SELECT LISTAGG( DISTINCT CA.NRO_OCC,'|')
+                        FROM CMW_COTIZA_ARTICULOS CA
+                       WHERE ID_PEDIDO = P.ID
+                         AND OBTENER_ESTADO_OCC_CRM(CA.ID, CA.ID_ARTICULO, CA.ID_PEDIDO, CA.ID_PEDIDO_DET) != 'Anulado'
+                     ) as NRO_OCC,
+                     ESTADO_FAC_PED(P.ID) AS ESTADO_FACTURACION,
+                     CASE ESTADO_FAC_PED(P.ID) 
+                     WHEN 'Facturado Parcialmente' then 'yellow'
+                     WHEN 'Facturado Total' THEN 'green'
+                     WHEN 'Pendiente a Facturar' THEN 'red'
+                     END AS ESTADO_FAC_COLOR,
+                     ESTADO_REM_PED(P.ID) AS ESTADO_REMISION,
+                     CASE ESTADO_REM_PED(P.ID) 
+                     WHEN 'Remisión Parcial' then 'yellow'
+                     WHEN 'Remisión Total' THEN 'green'
+                     WHEN 'Pendiente a Remisionar' THEN 'red'
+                     END AS ESTADO_REM_COLOR,
+                     APEX_UTIL.PREPARE_URL(
+                        p_url => 'f?p='|| v('APP_ID') ||':603:'||v('APP_SESSION')||'::NO::P603_SERIE_COMPROBANTE,P603_ID_PEDIDO:' || :P485_SER_COMPROBANTE || ',' || P.ID,
+                        p_checksum_type => 'SESSION') AS GENERA_REMISION_URL
+                
+                  from VTW_PEDIDOS_CABECERA P
+                  LEFT JOIN STW_ENTSAL_CAB E   ON P.ID=E.ID_PEDIDO---,CMW_COTIZA_ARTICULOS CO 
+                  WHERE P.ID_EMPRESA=:P0_ID_EMPRESA
+                  AND (P.ID_CLIENTE=:P485_CLIENTE OR :P485_CLIENTE IS NULL)
+                  AND (P.ID_VENDEDOR=:P485_VENDEDOR OR :P485_VENDEDOR IS NULL)
+                  --AND (P.ID_SUCURSAL=:P485_SUCURSAL OR :P485_SUCURSAL IS NULL)
+                  AND P.ID_SUCURSAL = :P0_ID_SUCURSAL
+                  AND (P.NRO_COMPROBANTE=:P485_NRO_COMPROBANTE OR :P485_NRO_COMPROBANTE IS NULL)
+                  AND (P.FEC_COMPROBANTE BETWEEN TO_DATE(:P485_FEC_COMPROBANTE_DESDE,'DD/MM/YYYY')
+                  AND TO_DATE(:P485_FEC_COMPROBANTE_HASTA,'DD/MM/YYYY'))
+                  --AND ((NVL(ESTADO_FAC,'P') = :P485_ESTADO or NVL(P.ESTADO,'P')=:P485_ESTADO  or :P485_ESTADO is null ))
+                  AND (ESTADO_FAC_PED(P.ID) = :P485_ESTADO or ESTADO_FAC_PED(P.ID)=:P485_ESTADO  or :P485_ESTADO is null )
+                  /*or(NVL(ESTADO_FAC,'P') = 'F' and (C.id_mov_caj is null and :P485_ESTADO= 'PC') 
+                  or(C.id_mov_caj is not null and :P485_ESTADO= 'C')))*/
+                  AND (:P485_NRO_OCC IS NULL OR :P485_NRO_OCC IN (SELECT NRO_OCC FROM CMW_COTIZA_ARTICULOS CA WHERE CA.ID_PEDIDO = P.ID))
+                  AND AUTORIZA_STOCK='S'
+                  AND AUTORIZA_CTACTE='S'
+                  AND P.AUTORIZA_FACTURA = 'S'
+                  AND (ESTADO_FAC_PED(P.ID)!='Facturado Total')
+                  AND P.ID IN (
+                      SELECT CO.ID_PEDIDO
+                        FROM CMWV_COTIZACIONES CO
+                       WHERE CO.ID_PEDIDO = P.ID
+                         AND CO.ESTADO_OCC = 'Pendiente'
+                         AND CO.CANTIDAD_APROBADA - CO.CANT_ANULADA > 0
+                         AND CO.CANT_RESERVADA > 0
+                  )
+                --   AND EXISTS (
+                --       SELECT 1
+                --         FROM VTW_PEDIDOS_DETALLE D
+                --        WHERE D.ID_PEDIDO_CABECERA = P.ID
+                --          AND EXISTENCIA_ACTUAL(P_ID_SUCURSAL => P.ID_SUCURSAL,
+                --                                P_ID_ARTICULO => D.ID_ARTICULO,
+                --                                P_ID_EMPRESA => :P0_ID_EMPRESA,
+                --                                P_IND_CONSOLIDADO => 'N') > 0
+                --   )
+                 
+                  --and (P.ID NOT IN (14100, 13860, 14781, 14460, 14768, 14801, 15970, 16010, 17320, 17313, 17314, 17319, 18973, 17315, 17316,24672,16490,17351))
+                  -- Los pedidos de arriba son muy viejos, y era urgente solucionarlo, verguenza.
+                 --- AND CO.ID_EMPRESA = P.ID_EMPRESA
+                 --- AND CO.ID_PEDIDO = P.ID
+                 
+                 GROUP BY P.ID,
+                       P.ID_EMPRESA,
+                       P.ID_SUCURSAL,
+                       NVL(P.ESTADO,'P'),
+                       NVL(P.ESTADO_FAC,'P') ,
+                       P.TIP_COMPROBANTE,
+                       P.SER_COMPROBANTE,
+                       P.NRO_COMPROBANTE,
+                       P.FEC_COMPROBANTE,
+                       P.ID_CLIENTE,
+                       P.ID_VENDEDOR,
+                       P.ID_MONEDA,
+                       P.TIP_CAMBIO,
+                       P.CAMBIO_MONEDA_PRECIO,
+                       P.ID_CONDICION_VENTA,
+                       P.ID_LISTA_PRECIO,
+                       P.TOT_COMPROBANTE,
+                       P.DESCUENTO,
+                       'COBRO',
+                       'REMISION',
+                       /*E.ID*/NULL,---,
+                    ---CO.ID_ARTICULO,
+                    ---CO.CANTIDAD,
+                     ESTADO_FAC_PED(P.ID),
+                     CASE ESTADO_FAC_PED(P.ID) 
+                     WHEN 'Facturado Parcialmente' then 'yellow'
+                     WHEN 'Facturado Total' THEN 'green'
+                     WHEN 'Pendiente a Facturar' THEN 'red'
+                     END ,
+                     APEX_UTIL.PREPARE_URL(
+                        p_url => 'f?p='|| v('APP_ID') ||':603:'||v('APP_SESSION')||'::NO::P603_SERIE_COMPROBANTE,P603_ID_PEDIDO:' || :P485_SER_COMPROBANTE || ',' || P.ID,
+                        p_checksum_type => 'SESSION') 
+                ```
+            pageItemsToSubmit: [
+                P485_VENDEDOR
+                P485_FEC_COMPROBANTE_DESDE
+                P485_FEC_COMPROBANTE_HASTA
+                P485_SUCURSAL
+                P485_CLIENTE
+                P485_NRO_COMPROBANTE
+                P485_ESTADO
+                P485_NRO_OCC
+                P485_SER_COMPROBANTE
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            htmlDomId: detalles
+            regionDisplaySelector: true
+        }
+        edit {
+            enabled: true
+        }
+        pagination {
+            type: page
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 60253531883847638
+        }
+
+        savedReport 612194 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @'REMISION'
+                layout {
+                    width: 81.3906
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @REFERENCIA_REMISION
+                layout {
+                    show: false
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_REMISION
+                layout {
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    width: 164
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_FACTURACION
+                layout {
+                    width: 130.625
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_FAC_COLOR
+                layout {
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @GENERA_REMISION_URL
+                layout {
+                    show: false
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_REMISION
+                layout {
+                    width: 114.844
+                    sequence: 27
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_REM_COLOR
+                layout {
+                    sequence: 28
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @TIP_COMPROBANTE
+                layout {
+                    show: false
+                    width: 53
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @SER_COMPROBANTE
+                layout {
+                    show: false
+                    width: 46
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @NRO_COMPROBANTE
+                layout {
+                    width: 64
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUCURSAL
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @FEC_COMPROBANTE
+                layout {
+                    width: 78
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    width: 165.375
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_VENDEDOR
+                layout {
+                    show: false
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_CONDICION_VENTA
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_LISTA_PRECIO
+                layout {
+                    width: 97
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 111
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COMPROBANTE
+                layout {
+                    show: false
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @CAMBIO_MONEDA_PRECIO
+                layout {
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO_FAC
+                layout {
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @DESCUENTO
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @'COBRO'
+                layout {
+                    width: 54
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @ESTADO
+                layout {
+                    sequence: 17
+                }
+            )
+
+            sort (
+                column: @NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    nulls: first
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column 'COBRO' (
+            type: link
+            heading {
+                heading: <p>Factura</p>
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 481
+                    items: {
+                        P481_ID_PEDIDO: &ID.
+                        P481_ESTADO: &ESTADO_FAC.
+                        P481_ID_CLIENTE: &ID_CLIENTE.
+                        P481_TIP_COMPROBANTE_REF: &TIP_COMPROBANTE.
+                        P481_SER_COMPROBANTE_REF: &SER_COMPROBANTE.
+                        P481_NRO_COMPROBANTE_REF: &NRO_COMPROBANTE.
+                        P481_ID_SUCURSAL: &ID_SUCURSAL.
+                        P481_ID_CONDICION_VENTA: &ID_CONDICION_VENTA.
+                        P481_ID_MONEDA: &ID_MONEDA.
+                        P481_NRO_OCC: &P485_NRO_OCC.
+                    }
+                    anchor: &P485_SER_COMPROBANTE.
+                }
+                linkText: <img src="#APP_FILES#dollar-coin-money_icon-icons.com_56177.ico" class="apex-edit-view" alt="">
+            }
+            source {
+                databaseColumn: 'COBRO'
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            security {
+                authorizationScheme: @derechos-insertar-2
+                escapeSpecialChars: false
+            }
+        )
+
+        column 'REMISION' (
+            type: link
+            heading {
+                heading: <P>Remisión</p>
+                alignment: center
+            }
+            layout {
+                sequence: 270
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 603
+                    items: {
+                        P_ID_SOLICITUD_ENVIO: &ID.
+                        P603_SER_COMPROBANTE: &P485_SER_COMPROBANTE.
+                        P603_NRO_OCC: &P485_NRO_OCC.
+                    }
+                    clearCache: Y
+                    action: clearRegions
+                }
+                linkText: <span class="fa fa-send" aria-hidden="true"></span>
+            }
+            source {
+                databaseColumn: 'REMISION'
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            security {
+                authorizationScheme: @derechos-insertar-2
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            settings {
+                enableMultiSelect: false
+            }
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CAMBIO_MONEDA_PRECIO (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: CAMBIO_MONEDA_PRECIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCUENTO (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: DESCUENTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO (
+            type: hidden
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: ESTADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO_FAC (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: ESTADO_FAC
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO_FACTURACION (
+            type: htmlExpression
+            heading {
+                heading: <p>Estado Facturación</p>
+                alternativeLabel: Estado Facturación
+            }
+            settings {
+                htmlExpression: <font color="&ESTADO_FAC_COLOR.">&ESTADO_FACTURACION.</font>
+            }
+            layout {
+                sequence: 310
+            }
+            source {
+                databaseColumn: ESTADO_FACTURACION
+                dataType: varchar2
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ESTADO_FAC_COLOR (
+            type: hidden
+            layout {
+                sequence: 320
+            }
+            source {
+                databaseColumn: ESTADO_FAC_COLOR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ESTADO_REMISION (
+            type: htmlExpression
+            heading {
+                heading: <p>Estado Remision</p>
+                alternativeLabel: Estado Remisión
+            }
+            settings {
+                htmlExpression: <font color="&ESTADO_REM_COLOR.">&ESTADO_REMISION.</font>
+            }
+            layout {
+                sequence: 340
+            }
+            source {
+                databaseColumn: ESTADO_REMISION
+                dataType: varchar2
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ESTADO_REM_COLOR (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 350
+            }
+            source {
+                databaseColumn: ESTADO_REM_COLOR
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <p>Fecha</p>
+                alternativeLabel: Fecha
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: FEC_COMPROBANTE
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column GENERA_REMISION_URL (
+            type: textarea
+            heading {
+                heading: Genera Remision Url
+            }
+            layout {
+                sequence: 330
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: GENERA_REMISION_URL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+                hide: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: displayOnly
+            heading {
+                heading: <p>Cliente</p>
+                alternativeLabel: Cliente
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_CONDICION_VENTA (
+            type: displayOnly
+            heading {
+                heading: <p>Plazo</p>
+                alternativeLabel: Plazo
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-condiciones-venta
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_CONDICION_VENTA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LISTA_PRECIO (
+            type: displayOnly
+            heading {
+                heading: <p>Lista Precio</p>
+                alternativeLabel: Lista Precio
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-listas-precios
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: ID_LISTA_PRECIO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_MONEDA (
+            type: displayOnly
+            heading {
+                heading: <p>Moneda</p>
+                alternativeLabel: Moneda
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_REMISION (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: ID_REMISION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: displayOnly
+            heading {
+                heading: <p>Sucursal</p>
+                alternativeLabel: Sucursal
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID_SUCURSAL
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_VENDEDOR (
+            type: displayOnly
+            heading {
+                heading: <p>Vendedor</p>
+                alternativeLabel: Vendedor
+            }
+            settings {
+                basedOn: lov
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-vendedores
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_VENDEDOR
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <p>Nro</p>
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: NRO_COMPROBANTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column NRO_OCC (
+            type: textarea
+            heading {
+                heading: <p>Nro OCC</p>
+                alternativeLabel: Nro OCC
+            }
+            layout {
+                sequence: 300
+            }
+            validation {
+                maxLength: 4000
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column REFERENCIA_REMISION (
+            type: link
+            heading {
+                heading: <p>Referencia Remisión</p>
+                alignment: center
+            }
+            layout {
+                sequence: 280
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 245
+                    items: {
+                        P245_ID: &ID_REMISION.
+                    }
+                }
+                linkText: &REFERENCIA_REMISION.
+                linkAttributes: " target=\"_blank\""
+            }
+            source {
+                databaseColumn: REFERENCIA_REMISION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <p>Serie</p>
+                alternativeLabel: Serie
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: SER_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+                alternativeLabel: Tipo
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: TIP_COMPROBANTE
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column TOT_COMPROBANTE (
+            type: displayOnly
+            heading {
+                heading: <p>Total</p>
+                alternativeLabel: Total
+            }
+            layout {
+                sequence: 160
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: TOT_COMPROBANTE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Pedidos
+        }
+    )
+
+    region remision (
+        name: Remision
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT  CAB.ID,
+                        CAB.TIP_ENT_SAL,
+                        CAB.SER_ENT_SAL,
+                        CAB.NUM_ENT_SAL,
+                        CAB.FEC_ENT_SAL,
+                        CAB.ID_PEDIDO
+                FROM    STW_ENTSAL_CAB CAB,
+                        BSW_SERIES_COMPROB SER
+                WHERE   SER.ID = CAB.ID_SERIE_COMP
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        masterDetail {
+            masterRegion: @pedidos
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 57742878519774822
+        }
+
+        savedReport 646015 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @TIP_ENT_SAL
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @SER_ENT_SAL
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @NUM_ENT_SAL
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ENT_SAL
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @VER
+                layout {
+                    sequence: 7
+                }
+            )
+
+        )
+
+        column FEC_ENT_SAL (
+            type: displayOnly
+            heading {
+                heading: <p>Fecha</p>
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: FEC_ENT_SAL
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_PEDIDO (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID_PEDIDO
+                dataType: number
+            }
+            masterDetail {
+                masterColumn: @ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NUM_ENT_SAL (
+            type: displayOnly
+            heading {
+                heading: <p>Número</p>
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: NUM_ENT_SAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column SER_ENT_SAL (
+            type: displayOnly
+            heading {
+                heading: <p>Serie</p>
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: SER_ENT_SAL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TIP_ENT_SAL (
+            type: displayOnly
+            heading {
+                heading: <p>Tipo</p>
+                alignment: center
+            }
+            layout {
+                sequence: 20
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: TIP_ENT_SAL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column VER (
+            type: link
+            heading {
+                heading: <p>Ver</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 245
+                    items: {
+                        P245_ID: &ID.
+                    }
+                }
+                linkText: <img src="#IMAGE_PREFIX#app_ui/img/icons/apex-edit-view.png" class="apex-edit-view" alt="">
+            }
+            source {
+                type: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Remision
+        }
+    )
+
+    pageItem P485_CLIENTE (
+        type: popupLov
+        label {
+            label: <p>Cliente:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 950
+            popupHeight: 950
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-clientes
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P485_ESTADO (
+        type: selectList
+        label {
+            label: <p>Estado:</p>
+            alignment: left
+        }
+        lov {
+            type: staticValues
+            staticValues: STATIC:Pendiente a Facturar;Pendiente a Facturar,Facturado total;Facturado Total,Anulado;A,Facturado Parcialmente;Facturado Parcialmente
+            displayExtraValues: false
+            nullDisplayValue: TODOS
+        }
+        layout {
+            sequence: 120
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 8
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P485_FEC_COMPROBANTE_DESDE (
+        type: datePicker
+        label {
+            label: <p>Fecha</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/'||to_char(sysdate,'MM')||'/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    pageItem P485_FEC_COMPROBANTE_HASTA (
+        type: datePicker
+        label {
+            alignment: left
+        }
+        layout {
+            sequence: 100
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 2
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                
+                select last_day(trunc(sysdate)) from dual
+                ```
+        }
+    )
+
+    pageItem P485_ID_SERIE (
+        type: hidden
+        layout {
+            sequence: 80
+            slot: body
+        }
+    )
+
+    pageItem P485_IND_GENERADO (
+        type: hidden
+        layout {
+            sequence: 90
+            slot: body
+        }
+        default {
+            type: static
+            staticValue: N
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P485_JS_URL (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+    )
+
+    pageItem P485_LV_TALONARIOS (
+        type: popupLov
+        label {
+            label: Lv Talonarios
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 950
+            popupHeight: 950
+            additionalOutputs: SER_COMPROBANTE:P485_SER_COMPROBANTE,SER_TIMBRADO:P485_SER_TIMBRADO
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-talonarios-generacion-fac
+        }
+        layout {
+            sequence: 70
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P485_NRO_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Pedido:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 1
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P485_NRO_COMPROBANTE_REF (
+        type: textField
+        label {
+            label: Nro Comprobante Ref
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            region: @pedidos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P485_NRO_OCC (
+        type: textFieldWithAutocomplete
+        label {
+            label: <p>Nro OCC:<p>
+            alignment: left
+        }
+        settings {
+            infiniteScroll: false
+            maxValuesInList: 7
+        }
+        search {
+            minChars: 1
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT(SPLIT(NRO_OCC, '|'))
+                  FROM VTWV_GENERACION_FACTURAS T
+                ```
+        }
+        layout {
+            sequence: 130
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P485_SER_COMPROBANTE (
+        type: textField
+        label {
+            label: <p>Talonarios:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @pedidos
+            slot: regionBody
+            alignment: left
+            columnSpan: 2
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+        source {
+            used: always
+        }
+    )
+
+    pageItem P485_SER_TIMBRADO (
+        type: textField
+        label {
+            label: Ser Timbrado
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @pedidos
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 1
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P485_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 50
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P485_TOT_COMPROBANTE (
+        type: numberField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 0
+        }
+        appearance {
+            template: @hidden
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G990D00
+            width: 30
+        }
+        advanced {
+            cssClasses: comprobante
+            warnOnUnsavedChanges: ignore
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P485_VENDEDOR (
+        type: popupLov
+        label {
+            label: <p>Vendedor:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vendedores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 110
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 5
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    button buscar (
+        buttonName: BUSCAR
+        label: Buscar
+        layout {
+            sequence: 70
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            column: 11
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+                t-Button--stretch
+            ]
+            icon: fa-search
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button limpiar (
+        buttonName: LIMPIAR
+        label: Limpiar
+        layout {
+            sequence: 60
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+            columnSpan: 1
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--iconLeft
+                t-Button--stretch
+            ]
+            icon: fa-eraser
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button talonario (
+        buttonName: Talonario
+        label: Talonario
+        layout {
+            sequence: 80
+            region: @filtros
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--success
+                t-Button--simple
+                t-Button--iconLeft
+                t-Button--stretch
+            ]
+            icon: fa-number-0-o
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction abrir-lv (
+        name: Abrir LV
+        execution {
+            sequence: 30
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @talonario
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: $('#P485_LV_TALONARIOS_lov_btn').click();
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction borrar-selecciones (
+        name: Borrar Selecciones
+        execution {
+            sequence: 110
+        }
+        when {
+            event: region/interactiveGrid/interactivegridselectionchange
+            selectionType: region
+            region: @pedidos
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                    l_collection_name VARCHAR2(100):= 'ARTICULOS_SELECCIONADOS';
+                    
+                    BEGIN
+                        IF 
+                          apex_collection.collection_exists(p_collection_name => l_collection_name) THEN
+                        apex_collection.delete_collection(l_collection_name);
+                      END IF;
+                    END;  
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cambiar-sesion (
+        name: Cambiar Sesion
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P485_LV_TALONARIOS
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode: "  DBMS_LOCK.sleep(seconds => 0.1);"
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-execute-plsql-code-2 (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      TMP_SERIE CONSTANT VARCHAR2(255) := WWV_FLOW.G_INSTANCE;     -- WWV_FLOW.G_INSTANCE is your user session number and will keep the collections per user session
+                    BEGIN
+                      IF APEX_COLLECTION.COLLECTION_EXISTS(p_collection_name => TMP_SERIE) THEN
+                        APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => TMP_SERIE);
+                      END IF;
+                      APEX_COLLECTION.CREATE_COLLECTION(p_collection_name => TMP_SERIE);
+                      APEX_COLLECTION.ADD_MEMBER(
+                        p_collection_name => TMP_SERIE,
+                        p_c001 => :P485_LV_TALONARIOS,
+                        p_c002 => :P485_SER_COMPROBANTE
+                         );
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P485_LV_TALONARIOS
+                    P485_SER_COMPROBANTE
+                ]
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @pedidos
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cargar-total (
+        name: Cargar Total
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P485_NRO_COMPROBANTE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    begin
+                    IF :P485_NRO_COMPROBANTE IS NOT NULL THEN
+                    SELECT TOT_COMPROBANTE
+                    INTO :P485_TOT_COMPROBANTE
+                    FROM VTW_PEDIDOS_CABECERA
+                    WHERE TIP_COMPROBANTE='PED'
+                    AND  SER_COMPROBANTE='A'
+                    AND  NRO_COMPROBANTE=:P485_NRO_COMPROBANTE;
+                    END IF;
+                    EXCEPTION 
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'No se encontro el pedido');
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error al recuperar el pedido'||sqlerrm);
+                    end;
+                    ```
+                itemsToSubmit: P485_NRO_COMPROBANTE
+                itemsToReturn: P485_TOT_COMPROBANTE
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: items
+            items: P485_FEC_COMPROBANTE_HASTA
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P485_FEC_COMPROBANTE_HASTA) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P485_FEC_COMPROBANTE_HASTA,'/','');
+                            conv_fecha := substr(:P485_FEC_COMPROBANTE_HASTA,1,2)||'/'||
+                                                      substr(:P485_FEC_COMPROBANTE_HASTA,3,2)||'/'||
+                                                      lpad(substr(:P485_FEC_COMPROBANTE_HASTA,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P485_FEC_COMPROBANTE_HASTA := conv_fecha;
+                    
+                           ELSIF (length(:P485_FEC_COMPROBANTE_HASTA) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P485_FEC_COMPROBANTE_HASTA) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P485_FEC_COMPROBANTE_HASTA
+                itemsToReturn: P485_FEC_COMPROBANTE_HASTA
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 80
+        }
+        when {
+            selectionType: items
+            items: P485_FEC_COMPROBANTE_DESDE
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P485_FEC_COMPROBANTE_DESDE) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P485_FEC_COMPROBANTE_DESDE,'/','');
+                            conv_fecha := substr(:P485_FEC_COMPROBANTE_DESDE,1,2)||'/'||
+                                                      substr(:P485_FEC_COMPROBANTE_DESDE,3,2)||'/'||
+                                                      lpad(substr(:P485_FEC_COMPROBANTE_DESDE,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P485_FEC_COMPROBANTE_DESDE := conv_fecha;
+                            ELSIF (length(:P485_FEC_COMPROBANTE_DESDE) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P485_FEC_COMPROBANTE_DESDE) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P485_FEC_COMPROBANTE_DESDE
+                itemsToReturn: P485_FEC_COMPROBANTE_DESDE
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction inicializar (
+        name: Inicializar
+        execution {
+            sequence: 130
+        }
+        when {
+            event: ready
+        }
+    )
+
+    dynamicAction ocultar-talonarios-lov (
+        name: Ocultar Talonarios LOV
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    --Borra el apex collection si hay alguno actual
+                    declare
+                    nombre varchar2(255):=WWV_FLOW.G_INSTANCE;
+                    begin
+                    APEX_COLLECTION.DELETE_COLLECTION(p_collection_name => nombre);
+                    EXCEPTION 
+                    WHEN OTHERS THEN
+                    NULL;
+                    end;
+                    ```
+            }
+            execution {
+                sequence: 30
+            }
+        )
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: P485_LV_TALONARIOS
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction reaccion-grilla (
+        name: Reaccion Grilla
+        execution {
+            sequence: 120
+        }
+        when {
+            event: click
+            selectionType: columns
+            interactiveGrid: @pedido-detalle
+            columns: FACTURAR
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var $widget = apex.region("Articulos").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                        $grid.setEditMode(true);
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction refrescar (
+        name: Refrescar
+        execution {
+            sequence: 70
+        }
+        when {
+            event: apexafterclosecanceldialog
+            selectionType: region
+            region: @pedidos
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @pedidos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-detalle (
+        name: Refrescar detalle
+        execution {
+            sequence: 150
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @pedido-detalle
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @pedido-detalle
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-pedido (
+        name: Refrescar Pedido
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @buscar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @pedidos
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction refrescar-remision (
+        name: Refrescar Remision
+        execution {
+            sequence: 210
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @remision
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @remision
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction remision-state (
+        name: remision state
+        execution {
+            sequence: 180
+        }
+        when {
+            event: click
+            selectionType: columns
+            interactiveGrid: @pedidos
+            columns: 'REMISION'
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var valorReferencia = apex.region("detalles").widget().interactiveGrid('getSelectedRecords')[0]['REFERENCIA'];
+                    
+                    if (valorReferencia != null && valorReferencia.trim() !== '') {
+                        $('#remision_icon').hide(); // o deshabilita el botón si es un botón
+                    } else {
+                        $('#remision_icon').show(); // o habilita el botón si es un botón
+                    }
+                    
+                    ```
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action obtiene-url-por-fila (
+            name: obtiene url por fila
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    //var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                    
+                    //"myGrid1" should be the static id of the IG region
+                    var widget          = apex.region("detalles").widget();
+                    var grid            = widget.interactiveGrid("getViews","grid");  
+                    var model           = grid.model;
+                    var selectedRecords = grid.getSelectedRecords();
+                    
+                    for (idx = 0; idx < selectedRecords.length; idx++) {
+                    
+                        record = model.getRecord(selectedRecords[idx][1]);
+                        //console.log("record " + record);
+                    
+                        let value1 = model.getValue(record,"GENERA_REMISION_URL");
+                        console.log(value1);
+                    
+                        apex.item("P485_JS_URL").setValue(value1);
+                    
+                        //javascript: window.location.href = model.getValue(record,"GENERA_REMISION_URL");
+                    }
+                    ```
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction selection-change-pedido (
+        name: selection change pedido
+        execution {
+            sequence: 200
+        }
+        when {
+            event: region/interactiveGrid/interactivegridselectionchange
+            selectionType: region
+            region: @pedidos
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    //var model= apex.region("Detalles").widget().interactiveGrid("getCurrentView").model;
+                    
+                    //"myGrid1" should be the static id of the IG region
+                    var widget          = apex.region("detalles").widget();
+                    var grid            = widget.interactiveGrid("getViews","grid");  
+                    var model           = grid.model;
+                    var selectedRecords = grid.getSelectedRecords();
+                    
+                    for (idx = 0; idx < selectedRecords.length; idx++) {
+                    
+                        record = model.getRecord(selectedRecords[idx][1]);
+                        //console.log("record " + record);
+                    
+                        let value1 = model.getValue(record,"GENERA_REMISION_URL");
+                        console.log(value1);
+                    
+                        apex.item("P485_JS_URL").setValue(value1);
+                    
+                        //javascript: window.location.href = model.getValue(record,"GENERA_REMISION_URL");
+                    }
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction setear-valor-de-sesion (
+        name: Setear Valor de Sesion
+        execution {
+            sequence: 190
+        }
+        when {
+            selectionType: items
+            items: P485_NRO_OCC
+        }
+        comments {
+            comments:
+                ```
+                Seteo el estado de sesion esto me permite usar el valor en varias paginas sin hacer tanto kilombo
+                
+                ```
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    BEGIN
+                    APEX_UTIL.SET_SESSION_STATE('P_NRO_OCC_GEN',:P485_NRO_OCC);
+                    END;
+                    ```
+                itemsToSubmit: P485_NRO_OCC
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @pedidos
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation new (
+        name: New
+        execution {
+            sequence: 10
+        }
+        validation {
+            plsqlExpression: :CANTIDAD_A_ENTREGAR <= :CANTIDAD_PENDIENTE
+        }
+        error {
+            errorMessage: La cantidad a entregar no puede ser mayor que la cantidad pendiente!!
+        }
+    )
+
+    validation new-2 (
+        name: New_1
+        execution {
+            sequence: 20
+        }
+        validation {
+            plsqlExpression: :CANTIDAD_PENDIENTE < :CATNTIDAD_ENTREGADA
+        }
+        error {
+            errorMessage: #COLUMN_HEADER# must have a value.
+        }
+    )
+
+    validation new-3 (
+        name: New_2
+        execution {
+            sequence: 30
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                DECLARE
+                  l_cantidad_a_entregar NUMBER := :CANTIDAD_A_ENTREGAR; -- Reemplaza PXX_CANTIDAD_A_ENTREGAR con el nombre de tu item de cantidad a entregar.
+                  l_cantidad_pendiente NUMBER := :CANTIDAD_PENDIENTE; -- Reemplaza PXX_CANTIDAD_PENDIENTE con el nombre de tu item de cantidad pendiente.
+                BEGIN
+                  IF l_cantidad_a_entregar > l_cantidad_pendiente THEN
+                    RETURN FALSE; -- La validación fallará si la cantidad a entregar es mayor que la cantidad pendiente.
+                  ELSE
+                    RETURN TRUE; -- La validación es exitosa si la cantidad a entregar es menor o igual a la cantidad pendiente.
+                  END IF;
+                END;
+                ```
+        }
+        error {
+            errorMessage: La cantidad a entregar no puede ser mayor a la cantidad pendiente!!
+        }
+    )
+
+    process borrar-coleccion (
+        name: Borrar Coleccion
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                l_collection_name VARCHAR2(100):= 'ARTICULOS_SELECCIONADOS';
+                
+                BEGIN
+                    IF 
+                      apex_collection.collection_exists(p_collection_name => l_collection_name) THEN
+                    apex_collection.delete_collection(l_collection_name);
+                  END IF;
+                END;  
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 28504834921839111
+        }
+    )
+
+    process limpiar-pantalla (
+        name: Limpiar Pantalla
+        type: clearSessionState
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 61284147667492606
+        }
+        serverSideCondition {
+            whenButtonPressed: @limpiar
+        }
+    )
+
+    process pedidos-save-interactive-grid-data (
+        name: Pedidos - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @pedidos
+        target {
+            targetType: tableView
+            tableName: VTW_PEDIDOS_CABECERA
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 61285579704492620
+        }
+    )
+
+)
+

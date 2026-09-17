@@ -1,0 +1,704 @@
+page 209 (
+    name: Lista de Debitos y Creditos Bancarios
+    alias: LISTA-DE-DEBITOS-Y-CREDITOS-BANCARIOS
+    title: Lista de Debitos y Creditos Bancarios
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region lista-de-debitos-y-creditos-bancarios (
+        name: Lista de Debitos y Creditos Bancarios
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select C.ID,
+                       C.ID_EMPRESA,
+                       C.TIP_COMPROBANTE,
+                       C.SER_COMPROBANTE,
+                       C.NRO_COMPROBANTE,
+                       C.REFERENCIA,
+                       C.FEC_COMPROBANTE,
+                       C.ID_SUCURSAL,
+                       C.ID_PER_JURIDICA,
+                       C.ID_CUENTA,
+                       C.ID_MONEDA,
+                       C.TIP_CAMBIO,
+                       C.ID_TIPO_TRANS,
+                       C.ID_SUB_TIPO_TRANS,
+                       C.CONCEPTO,
+                       C.IMPORTE,
+                       C.ASIENTOS,
+                       C.IND_IMPORTACION,
+                       C.ID_PROVEEDOR,
+                       C.ID_CENTRO_COSTO,
+                       C.REF_COMPROBANTE,
+                       CASE C.IND_CONCILIADO
+                         WHEN 'S' THEN 'CONCILIADO'
+                         ELSE 'PENDIENTE'
+                       END AS ESTADO_CONCILIACION,
+                        
+                       (SELECT D.ID
+                        FROM COW_DIARIO_CABECERAS_PROV D
+                        WHERE D.NUM_ASIENTO = TO_NUMBER(REPLACE(REPLACE(C.ASIENTOS,'*'),'deb'))
+                          AND D.ID_EJERCICIO= TRAE_ID_EJERCICIO(C.FEC_COMPROBANTE)
+                          AND D.ID_EMPRESA  = C.ID_EMPRESA) ASIENTO_ID
+                  from CCW_DEBCRED_BANCARIOS C
+                  where ID_EMPRESA = :P0_COD_EMPRESA
+                  --AND ID_SUCURSAL = :P0_COD_SUCURSAL
+                  AND TIP_COMPROBANTE != 'TRB'
+                
+                 ORDER BY C.FEC_COMPROBANTE DESC
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 236
+                items: {
+                    P236_ID: #ID#
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        messages {
+            whenNoDataFound: No data found.
+            whenMoreDataFound: The maximum row count for this report is #MAX_ROW_COUNT# rows.  Please apply a filter to reduce the number of records in your query.
+        }
+        actionsMenu {
+            subscription: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 48898147382164598
+        }
+
+        column ASIENTOS (
+            type: link
+            heading {
+                heading: Asientos
+                alignment: center
+            }
+            layout {
+                sequence: 68
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 235
+                    items: {
+                        P235_ID: #ASIENTO_ID#
+                    }
+                }
+                linkText: #ASIENTOS#
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: S
+            }
+        )
+
+        column ASIENTO_ID (
+            type: plainText
+            heading {
+                heading: Asiento Id
+                alignment: end
+            }
+            layout {
+                sequence: 298
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AU
+            }
+        )
+
+        column CONCEPTO (
+            type: plainText
+            heading {
+                heading: Concepto
+                alignment: center
+            }
+            layout {
+                sequence: 15
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: O
+            }
+        )
+
+        column ESTADO_CONCILIACION (
+            type: plainText
+            heading {
+                heading: Estado Conciliacion
+            }
+            layout {
+                sequence: 308
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AV
+            }
+        )
+
+        column FEC_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 7
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column ID (
+            type: hidden
+            heading {
+                heading: ID
+            }
+            layout {
+                sequence: 0
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CENTRO_COSTO (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Centro de Costo
+                alignment: center
+            }
+            lov {
+                lov: @lv-centro-costo
+            }
+            layout {
+                sequence: 35
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AI
+            }
+        )
+
+        column ID_CUENTA (
+            type: plainText
+            heading {
+                heading: Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 248
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AP
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 218
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AM
+            }
+        )
+
+        column ID_MONEDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Moneda
+                alignment: center
+            }
+            lov {
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 258
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AQ
+            }
+        )
+
+        column ID_PER_JURIDICA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Banco
+                alignment: center
+            }
+            lov {
+                lov: @lv-bancos
+            }
+            layout {
+                sequence: 238
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AO
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Proveedor
+                alignment: center
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 288
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AT
+            }
+        )
+
+        column ID_SUB_TIPO_TRANS (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sub Tipo Transferencia
+                alignment: center
+            }
+            lov {
+                lov: @lv-subtipos-trans
+            }
+            layout {
+                sequence: 278
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AS
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Sucursal
+                alignment: center
+            }
+            lov {
+                lov: @lv-sucursales
+            }
+            layout {
+                sequence: 228
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AN
+            }
+        )
+
+        column ID_TIPO_TRANS (
+            type: hidden
+            heading {
+                heading: Tipo Transferencia
+            }
+            layout {
+                sequence: 268
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AR
+            }
+        )
+
+        column IMPORTE (
+            type: plainText
+            heading {
+                heading: Importe
+                alignment: center
+            }
+            layout {
+                sequence: 16
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: P
+            }
+        )
+
+        column IND_IMPORTACION (
+            type: hidden
+            heading {
+                heading: Ind Importacion
+            }
+            layout {
+                sequence: 158
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: AD
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 5
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column REFERENCIA (
+            type: plainText
+            heading {
+                heading: Comentario
+                alignment: center
+            }
+            layout {
+                sequence: 6
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column REF_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Ref. Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 38
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: AL
+            }
+        )
+
+        column SER_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Serie Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 4
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: plainText
+            heading {
+                heading: Cambio
+                alignment: center
+            }
+            layout {
+                sequence: 12
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: L
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tipo Comprobante
+                alignment: center
+            }
+            layout {
+                sequence: 3
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Lista de Debitos y Creditos Bancarios
+        }
+
+        savedReport 489138 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn ASIENTOS (
+                sequence: 18
+            )
+
+            displayColumn CONCEPTO (
+                sequence: 13
+            )
+
+            displayColumn ESTADO_CONCILIACION (
+                sequence: 7
+            )
+
+            displayColumn FEC_COMPROBANTE (
+                sequence: 6
+            )
+
+            displayColumn ID_CENTRO_COSTO (
+                sequence: 16
+            )
+
+            displayColumn ID_CUENTA (
+                sequence: 8
+            )
+
+            displayColumn ID_MONEDA (
+                sequence: 9
+            )
+
+            displayColumn ID_PER_JURIDICA (
+                sequence: 10
+            )
+
+            displayColumn ID_PROVEEDOR (
+                sequence: 15
+            )
+
+            displayColumn ID_SUB_TIPO_TRANS (
+                sequence: 12
+            )
+
+            displayColumn ID_SUCURSAL (
+                sequence: 17
+            )
+
+            displayColumn IMPORTE (
+                sequence: 14
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 3
+            )
+
+            displayColumn REFERENCIA (
+                sequence: 4
+            )
+
+            displayColumn REF_COMPROBANTE (
+                sequence: 5
+            )
+
+            displayColumn SER_COMPROBANTE (
+                sequence: 2
+            )
+
+            displayColumn TIP_CAMBIO (
+                sequence: 11
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+            sort (
+                column: FEC_COMPROBANTE
+                sort {
+                    direction: desc
+                    sequence: 1
+                }
+            )
+
+            sort (
+                column: NRO_COMPROBANTE
+                sort {
+                    direction: desc
+                    sequence: 2
+                }
+            )
+
+            sort (
+                column: TIP_COMPROBANTE
+                sort {
+                    direction: desc
+                    sequence: 3
+                }
+            )
+
+        )
+
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Crear
+        layout {
+            sequence: 10
+            region: @lista-de-debitos-y-creditos-bancarios
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-plus
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 236
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+)
+

@@ -1,0 +1,715 @@
+page 649 (
+    name: Remisiones para factura
+    alias: REMISIONES-PARA-FACTURA
+    title: Remisiones para factura
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: dialogHeader
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        serverSideCondition {
+            type: never
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region remisiones-para-factura (
+        name: Remisiones para factura
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select a.id, a.num_ent_sal, a.SER_ENT_SAL, P.NOMBRE, a.TOT_COSTO, A.ID_CLIENTE,A.NRO_OCC
+                from stw_entsal_cab A,
+                     BSW_PERSONAS   P,
+                     CCW_CLIENTES   C
+                where tip_ent_sal = 'REM'
+                  and a.ID_CLIENTE = C.ID(+)
+                  AND C.ID_PERSONA = P.ID(+)
+                  AND (a.ID,a.ser_ent_sal,a.num_ent_sal) NOT IN (select D.ID_REMISION, D.SER_REF_REM, D.NRO_REF_REM
+                                                                   from VTW_COMPROBANTES_DETALLE D
+                                                                  WHERE D.CANTIDAD_REMISIONADA IS NOT NULL)
+                  /*and (a.tip_ent_sal,a.ser_ent_sal,a.num_ent_sal) not in (select c.tip_comprobante_ref,c.ser_comprobante_ref,c.nro_comprobante_ref
+                                                                                from vtw_comprobantes_cabecera c
+                                                                               where c.tip_comprobante_ref = 'REM')*/
+                
+                  --and a.id_cliente = :P135_ID_CLIENTE---:pagina.id_cliente
+                  /*and not exists (select 1
+                                  from vtw_comprobantes_cabecera_rem
+                                  where id_comprobante_ref = a.id)*/
+                  and a.id_cliente = :P649_ID_CLIENTE
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        edit {
+            enabled: true
+            allowedOperations: update
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 52007617789002418
+        }
+
+        savedReport 520081 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @NUM_ENT_SAL
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @SER_ENT_SAL
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @NOMBRE
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @TOT_COSTO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @AUTORIZAR
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ID_CLIENTE
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @NRO_OCC
+                layout {
+                    sequence: 7
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column AUTORIZAR (
+            type: checkbox
+            heading {
+                heading: Seleccionar
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 100
+                columnAlignment: center
+            }
+            source {
+                type: none
+            }
+        )
+
+        column ID (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_CLIENTE (
+            type: hidden
+            settings {
+                valueProtected: false
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: ID_CLIENTE
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column NOMBRE (
+            type: textField
+            heading {
+                heading: Nombre
+            }
+            layout {
+                sequence: 70
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: NOMBRE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NRO_OCC (
+            type: textField
+            heading {
+                heading: Nro Occ
+                alignment: center
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: NRO_OCC
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column NUM_ENT_SAL (
+            type: popupLov
+            heading {
+                heading: Num Ent Sal
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-stw-remision
+            }
+            layout {
+                sequence: 40
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: NUM_ENT_SAL
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column SER_ENT_SAL (
+            type: textField
+            heading {
+                heading: Ser Ent Sal
+            }
+            layout {
+                sequence: 60
+            }
+            validation {
+                maxLength: 7
+            }
+            source {
+                databaseColumn: SER_ENT_SAL
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column TOT_COSTO (
+            type: numberField
+            heading {
+                heading: Tot Costo
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: TOT_COSTO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Remisiones para factura
+        }
+    )
+
+    pageItem P649_ID_CLIENTE (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @remisiones-para-factura
+            slot: regionBody
+        }
+        default {
+            type: expression
+            plsqlExpression: :P_ID_CLIENTE_REM
+        }
+    )
+
+    pageItem P649_ID_FACTURA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+    )
+
+    pageItem P649_JSON_DETALLE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+    )
+
+    button cargar (
+        buttonName: CARGAR
+        label: Cargar
+        layout {
+            sequence: 50
+            region: @remisiones-para-factura
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--simple
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction cargar-seleccionados (
+        name: Cargar Seleccionados
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: jsExpression
+            javaScriptExpression: window
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                      l_cursor SYS_REFCURSOR;
+                      json_detalle CLOB;
+                    BEGIN
+                    
+                      OPEN l_cursor FOR
+                    select A.COD_ARTICULO,
+                           D.ID_ARTICULO,
+                           D.CANTIDAD,
+                           D.COSTO_C_IVA,
+                           0 MONTO_TOTAL,  -----
+                           0 TOTAL_IVA,----
+                           0 PORC_DESCUENTO, -----
+                           D.ID_IVA,
+                           D.ID_LOTE,
+                           D.TOTAL_COSTO,
+                           D.DESC_ARTICULO,
+                           C.NRO_OCC,
+                           D.CANTIDAD CANTIDAD_REMISIONADA,
+                           D.ID_PEDIDO_DETALLE,
+                           C.ID,
+                           C.SER_ENT_SAL,
+                           C.NUM_ENT_SAL
+                    
+                      from STW_ENTSAL_CAB C,
+                           STW_ENTSAL_DET D,
+                           STW_ARTICULOS A
+                    where  C.ID = D.ID_ENTSAL_CAB 
+                      AND  D.ID_ENTSAL_CAB = :ID
+                      AND  D.ID_ARTICULO = A.ID;
+                    
+                      APEX_JSON.initialize_clob_output;
+                    
+                      APEX_JSON.open_object;
+                      APEX_JSON.write('DETALLE', l_cursor);
+                      APEX_JSON.close_object;
+                    
+                      JSON_DETALLE:=APEX_JSON.GET_CLOB_OUTPUT;
+                    
+                      :P649_JSON_DETALLE:=JSON_DETALLE;
+                      EXCEPTION
+                      WHEN OTHERS THEN  
+                      NULL;
+                    
+                    END;
+                    ```
+                itemsToSubmit: P649_ID_FACTURA
+                itemsToReturn: P649_JSON_DETALLE
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var orden =0;
+                    var json_detalle = JSON.parse($v('P649_JSON_DETALLE'));
+                    
+                    
+                    
+                    
+                    //console.log(json_detalle);
+                    if ((Object.keys(json_detalle.DETALLE).length)!=0){
+                    
+                    
+                    for(let i=0;i<json_detalle.DETALLE.length;i++){
+                    
+                    
+                    //Con este codigo podemos insertar una nueva fila en el detalle de comprobantes 
+                    
+                    var $widget = apex.region("Detalles").widget();
+                    var $grid = $widget.interactiveGrid("getViews", "grid");
+                    var $model = $grid.model;
+                         $grid.setEditMode(true);
+                    //insert new record on a model
+                    var newRecordId = $model.insertNewRecord();
+                    
+                    //continuation of above code
+                    //get the new record
+                    
+                    var $newRecord = $model.getRecord(newRecordId);
+                    
+                    if((json_detalle.DETALLE[i].COD_ARTICULO!=null)){
+                    $model.setValue($newRecord, "COD_ARTICULO",(json_detalle.DETALLE[i].COD_ARTICULO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_ARTICULO!=null)){
+                    $model.setValue($newRecord, "ID_ARTICULO",(json_detalle.DETALLE[i].ID_ARTICULO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].CANTIDAD!=null)){
+                    $model.setValue($newRecord, "CANTIDAD",(json_detalle.DETALLE[i].CANTIDAD).toString());
+                    }
+                    if((json_detalle.DETALLE[i].COSTO_C_IVA!=null)){
+                    $model.setValue($newRecord, "PRECIO_UNITARIO",(json_detalle.DETALLE[i].COSTO_C_IVA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].MONTO_TOTAL!=null)){
+                    $model.setValue($newRecord, "MONTO_TOTAL",(json_detalle.DETALLE[i].MONTO_TOTAL).toString());
+                    }
+                    if((json_detalle.DETALLE[i].TOTAL_IVA!=null)){
+                    $model.setValue($newRecord, "TOTAL_IVA",(json_detalle.DETALLE[i].TOTAL_IVA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].PORC_DESCUENTO!=null)){
+                    $model.setValue($newRecord, "PORC_DESCUENTO",(json_detalle.DETALLE[i].PORC_DESCUENTO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_IVA!=null)){
+                    $model.setValue($newRecord, "IVA",(json_detalle.DETALLE[i].ID_IVA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_LOTE!=null)){
+                    $model.setValue($newRecord, "ID_LOTE",(json_detalle.DETALLE[i].ID_LOTE).toString());
+                    }
+                    if((json_detalle.DETALLE[i].TOTAL_COSTO!=null)){
+                    $model.setValue($newRecord, "MONTO_TOTAL_C_IVA",(json_detalle.DETALLE[i].TOTAL_COSTO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].DESC_ARTICULO!=null)){
+                    $model.setValue($newRecord, "DESC_ARTICULO",(json_detalle.DETALLE[i].DESC_ARTICULO).toString());
+                    }
+                    if((json_detalle.DETALLE[i].CANTIDAD_REMISIONADA!=null)){
+                    $model.setValue($newRecord, "CANTIDAD_REMISIONADA",(json_detalle.DETALLE[i].CANTIDAD_REMISIONADA).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID_PEDIDO_DETALLE!=null)){
+                    $model.setValue($newRecord, "ID_PEDIDO_DETALLE",(json_detalle.DETALLE[i].ID_PEDIDO_DETALLE).toString());
+                    }
+                    if((json_detalle.DETALLE[i].ID!=null)){
+                    $model.setValue($newRecord, "ID",(json_detalle.DETALLE[i].ID).toString());
+                    }
+                    if((json_detalle.DETALLE[i].SER_ENT_SAL!=null)){
+                    $model.setValue($newRecord, "SER_ENT_SAL",(json_detalle.DETALLE[i].SER_ENT_SAL).toString());
+                    }
+                    if((json_detalle.DETALLE[i].NUM_ENT_SAL!=null)){
+                    $model.setValue($newRecord, "NUM_ENT_SAL",(json_detalle.DETALLE[i].NUM_ENT_SAL).toString());
+                    }
+                    
+                    }
+                    
+                    }
+                    
+                    
+                    
+                    
+                    ```
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process cerrar-modal (
+        name: Cerrar modal
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 54202339292585113
+        }
+    )
+
+    process crear-coleccion (
+        name: Crear Coleccion
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE 
+                TMP_REMISIONES VARCHAR2(100):= 'TMP_REMISIONES';
+                
+                BEGIN
+                    apex_collection.create_or_truncate_collection (TMP_REMISIONES);
+                
+                END;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 54201785150585107
+        }
+    )
+
+    process relacionar-comprobantes (
+        name: Relacionar Comprobantes
+        type: executeCode
+        editableRegion: @remisiones-para-factura
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE 
+                TMP_REMISIONES VARCHAR2(100):= 'TMP_REMISIONES';
+                
+                BEGIN
+                /*iF NVL(:AUTORIZAR,'N') = 'S' THEN
+                   INSERT INTO VTW_COMPROBANTES_CABECERA_REM (ID_COMPROBANTE,ID_COMPROBANTE_REF) 
+                   VALUES (:P649_ID_FACTURA,:ID);
+                
+                END IF;
+                   EXCEPTION
+                    WHEN OTHERS THEN
+                     RAISE_APPLICATION_ERROR(-20000,'Error al relacionar los comprobantes: '||sqlerrm);*/
+                IF NVL(:AUTORIZAR,'N') = 'S' THEN
+                     apex_collection.add_member (p_collection_name      => TMP_REMISIONES,
+                
+                     p_c001                 => :ID);
+                END IF;     
+                END;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        successMessage {
+            successMessage:
+                ```
+                Operación realizada con éxito
+                
+                ```
+        }
+        advanced {
+            executionMappingIdentifier: 49512435584490738
+        }
+    )
+
+    process remisiones-para-factura-save-interactive-grid-data (
+        name: Remisiones para factura - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @remisiones-para-factura
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 47812670331587539
+        }
+        serverSideCondition {
+            type: never
+        }
+    )
+
+)
+

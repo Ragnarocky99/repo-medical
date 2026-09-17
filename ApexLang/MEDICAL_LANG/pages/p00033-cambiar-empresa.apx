@@ -1,0 +1,138 @@
+page 33 (
+    name: Cambiar Empresa
+    alias: CAMBIAR-EMPRESA
+    title: Cambiar Empresa
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    readOnly {
+        type: functionBody
+        plsqlFunctionBody:
+            ```plsql
+            declare
+            v_id varchar2(10);
+            
+            BEGIN
+            SELECT  W_BUSCA_PARAMETRO(NULL,'COD_ADMIN') INTO v_id FROM DUAL;
+            IF v_id=:P0_GRUPO_USUARIO then
+            return false;
+            else
+            return true;
+            
+            
+            end if;
+            exception 
+            when no_data_found then
+            return true;
+            
+            END;
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region seleccionar-empresa (
+        name: Seleccionar Empresa
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P33_COD_EMPRESA (
+        type: popupLov
+        label {
+            label: Cod Empresa
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-empresas
+        }
+        layout {
+            sequence: 10
+            region: @seleccionar-empresa
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction setear-empresa (
+        name: Setear Empresa
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P33_COD_EMPRESA
+        }
+
+        action plugin-com-fos-execute-plsql-code (
+            action: plugin/fosExecutePlSqlCode
+            settings {
+                plSqlCode:
+                    ```plsql
+                    begin
+                       :P0_COD_EMPRESA  := :P33_COD_EMPRESA;
+                       :P0_ID_EMPRESA  := :P33_COD_EMPRESA;
+                       :P0_DESC_EMPRESA := traer_nombre_empresa(:P0_COD_EMPRESA);
+                    
+                       -- Una vez asignado la empresa, busco si existe alguna sucursal por defecto o la 01.
+                       :P0_COD_SUCURSAL := trae_sucursal_dflt(:P0_COD_EMPRESA);
+                       :P0_DESC_SUCURSAL:= trae_nombre_sucursal(:P0_COD_EMPRESA, :P0_COD_SUCURSAL);
+                       
+                    Exception
+                        when others then
+                             raise_application_error(-20000, 'Error al asignar. '||sqlerrm);
+                    end;
+                    ```
+                itemsToSubmit: P33_COD_EMPRESA
+                itemsToReturn: P33_COD_EMPRESA
+                successMessage: Asignado Correctamente
+                errorMessage: #SQLERRM#
+                extraOptions: [
+                    suppressChangeEvent
+                    escapeSpecialCharactersInMessages
+                ]
+            }
+            affectedElements {
+                selectionType: region
+                region: @/variables-globales
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+)
+

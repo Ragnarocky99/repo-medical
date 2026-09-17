@@ -1,0 +1,3183 @@
+page 183 (
+    name: Carga de Inventario
+    alias: CARGA-DE-INVENTARIO
+    title: Carga de Inventario
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration: var orden=0;
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:13.5px;
+                color:#3f46bb;
+            }
+            .mostrar{
+                font-weight: bold;
+                color: black;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region botones (
+        name: Botones
+        type: staticContent
+        layout {
+            sequence: 40
+            slot: body
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region butones (
+        name: Butones
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @inventario-cab
+            slot: subRegions
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: [
+                #DEFAULT#
+                t-ButtonRegion--noUI
+            ]
+        }
+    )
+
+    region conteo-inventario (
+        name: Conteo Inventario
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select I.ID,
+                       I.ID_EMPRESA,
+                       I.ID_NUM_INVENT_CAB,
+                       I.ID_ARTICULO,
+                       A.DESCRIPCION,
+                       I.FEC_ALTA,
+                       I.CANT_REAL,
+                       I.CANT_FISICA,
+                       I.CANT_BLOQUEO,
+                       I.ORDEN,
+                       I.COD_USUARIO_AUD,
+                       I.ID_LOTE,
+                       I.NRO_LOTE,
+                       I.LOTE_VENC,
+                       I.ID_UNIDAD_MEDIDA,
+                       I.CANTIDAD_UB,
+                       I.ID_MONEDA,
+                       I.TIP_CAMBIO,
+                       I.COSTO,
+                      I.OBSERVACION
+                  from STW_INVENT_DET_PROV I,STW_ARTICULOS A
+                  WHERE ID_NUM_INVENT_CAB=:P183_ID
+                  AND I.ID_ARTICULO=A.ID
+                ```
+            pageItemsToSubmit: P183_ID
+        }
+        layout {
+            sequence: 20
+            parentRegion: @selector
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: never
+        }
+        readOnly {
+            type: item=value
+            item: P183_IND_CERRADO
+            value: S
+        }
+        toolbar {
+            controls: [
+                searchCol
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                
+                
+                
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    orden=orden-1;
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                            }; 
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                            };    
+                       
+                       
+                                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 42444295146537207
+        }
+
+        savedReport 426068 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_NUM_INVENT_CAB
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    width: 73
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @CANT_REAL
+                layout {
+                    width: 116
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @CANT_FISICA
+                layout {
+                    width: 95
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @CANT_BLOQUEO
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ORDEN
+                layout {
+                    show: false
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_LOTE
+                layout {
+                    width: 122
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @LOTE_VENC
+                layout {
+                    show: false
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 46
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_UB
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 118
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    width: 59
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @COSTO
+                layout {
+                    width: 112
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    width: 65
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    width: 212
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @FEC_ALTA
+                layout {
+                    sequence: 20
+                }
+            )
+
+            sort (
+                column: @FEC_ALTA
+                sort {
+                    direction: desc
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column CANTIDAD_UB (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: CANTIDAD_UB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANT_BLOQUEO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: CANT_BLOQUEO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANT_FISICA (
+            type: numberField
+            heading {
+                heading: <p>Cant Fisica</p>
+                alignment: center
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANT_FISICA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_REAL (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: CANT_REAL
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COSTO (
+            type: hidden
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: COSTO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column DESCRIPCION (
+            type: textarea
+            heading {
+                heading: <p>Descripción</p>
+                alignment: center
+            }
+            layout {
+                sequence: 210
+                columnAlignment: center
+            }
+            validation {
+                valueRequired: true
+                maxLength: 120
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column FEC_ALTA (
+            type: datePicker
+            heading {
+                heading: <p> Fecha y Hora </p>
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: DD-MM-YYYY HH24:MI
+            }
+            source {
+                databaseColumn: FEC_ALTA
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: STW_INVENT_DET_ID_SEQ
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+            }
+            settings {
+                displayAs: modalDialog
+                popupWidth: 450
+                popupHeight: 450
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_COD_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_LOTE (
+            type: selectList
+            heading {
+                heading: <p>Lote</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT L.NRO_LOTE,L.ID FROM STW_LOTES L,
+                    STW_ARTICULOS A
+                    WHERE L.ID_ARTICULO=:ID_ARTICULO
+                    AND L.ID_EMPRESA=:P0_COD_EMPRESA 
+                    AND A.ID=L.ID_ARTICULO
+                    ```
+            }
+            cascadingLov {
+                parentColumns: ID_ARTICULO
+                itemsToSubmit: ID_ARTICULO
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: ID_LOTE
+                dataType: number
+            }
+        )
+
+        column ID_MONEDA (
+            type: hidden
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_NUM_INVENT_CAB (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_NUM_INVENT_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: selectList
+            heading {
+                heading: <p>UM</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT UPPER(ABREVIATURA),ID FROM 
+                    STW_UNIDADES_MEDIDA 
+                    ```
+            }
+            layout {
+                sequence: 150
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column LOTE_VENC (
+            type: textField
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: LOTE_VENC
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            layout {
+                sequence: 130
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ORDEN (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ORDEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Conteo Inventario
+        }
+    )
+
+    region inventario (
+        name: Inventario
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select I.ID,
+                       I.ID_EMPRESA,
+                       I.ID_NUM_INVENT_CAB,
+                       I.ID_ARTICULO,
+                       A.DESCRIPCION,
+                       A.ID_ENVASE,
+                       A.ID_MARCA,
+                       A.ID_RUBRO,
+                       A.COD_ORIGEN_ART,
+                       I.CANT_REAL,
+                       I.CANT_FISICA,
+                       I.CANT_BLOQUEO,
+                       I.ORDEN,
+                       I.COD_USUARIO_AUD,
+                       I.ID_LOTE,
+                       I.NRO_LOTE,
+                       I.LOTE_VENC,
+                       I.ID_UNIDAD_MEDIDA,
+                       I.CANTIDAD_UB,
+                       I.ID_MONEDA,
+                       I.TIP_CAMBIO,
+                       I.COSTO,
+                      I.OBSERVACION,
+                      (I.CANT_REAL - I.CANT_FISICA) as Diferencia,
+                      I.IND_AJS_LOTE
+                  from STW_INVENT_DET I,STW_ARTICULOS A
+                  WHERE ID_NUM_INVENT_CAB=:P183_ID
+                  AND I.ID_ARTICULO=A.ID
+                ```
+            pageItemsToSubmit: P183_ID
+        }
+        layout {
+            sequence: 10
+            parentRegion: @selector
+            slot: subRegions
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        readOnly {
+            type: item=value
+            item: P183_IND_CERRADO
+            value: S
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        componentAdvanced {
+            initJavaScriptFunction:
+                ```javascript-browser
+                function(config){
+                        config.defaultGridViewOptions = {
+                            footer: false
+                        }
+                
+                
+                
+                        config.initActions = function(actions){
+                            var rowDelete = actions.lookup("row-delete"),
+                                originalDeleteAction = rowDelete.action;
+                
+                            rowDelete.action = function(_, el){
+                                    originalDeleteAction(_, el);
+                                    orden=orden-1;
+                            };    
+                        
+                
+                            var rowRevert = actions.lookup("row-revert"),
+                                originalRevertAction = rowRevert.action;
+                
+                            rowRevert.action = function(_, el){
+                                    originalRevertAction(_, el);
+                            }; 
+                
+                            var rowRefresh = actions.lookup("row-refresh"),
+                                originalRefresthAction = rowRefresh.action;
+                
+                            rowRefresh.action = function(_, el){
+                                   //originalRefreshAction(_, el); esta correcto sea revert. por alguna explicacion que dio el autor.
+                                    originalRevertAction(_, el);
+                            }; 
+                
+                            
+                            var rowDuplicate = actions.lookup("row-duplicate"),
+                                originalDuplicateAction = rowDuplicate.action;
+                
+                            rowDuplicate.action = function(_, el){
+                                    originalDuplicateAction(_, el);
+                            };    
+                       
+                       
+                                
+                
+                        } ;      
+                        return config;
+                }
+                ```
+        }
+        advanced {
+            savedReportMappingIdentifier: 38587238805069746
+        }
+
+        savedReport 393738 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @DIFERENCIA
+                layout {
+                    width: 117
+                    sequence: 22
+                }
+            )
+
+            displayColumn (
+                column: @ID_ENVASE
+                layout {
+                    width: 108
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID_MARCA
+                layout {
+                    width: 98
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_RUBRO
+                layout {
+                    width: 128
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @COD_ORIGEN_ART
+                layout {
+                    width: 104
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @IND_AJS_LOTE
+                layout {
+                    width: 81
+                    sequence: 21
+                }
+            )
+
+            displayColumn (
+                column: @DESCRIPCION
+                layout {
+                    width: 410
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_NUM_INVENT_CAB
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    width: 85
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @CANT_REAL
+                layout {
+                    width: 117
+                    sequence: 19
+                }
+            )
+
+            displayColumn (
+                column: @CANT_FISICA
+                layout {
+                    width: 94
+                    sequence: 20
+                }
+            )
+
+            displayColumn (
+                column: @CANT_BLOQUEO
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @ORDEN
+                layout {
+                    show: false
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_LOTE
+                layout {
+                    width: 82
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @NRO_LOTE
+                layout {
+                    show: false
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @LOTE_VENC
+                layout {
+                    show: false
+                    sequence: 18
+                }
+            )
+
+            displayColumn (
+                column: @ID_UNIDAD_MEDIDA
+                layout {
+                    width: 62
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD_UB
+                layout {
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    width: 126
+                    sequence: 23
+                }
+            )
+
+            displayColumn (
+                column: @TIP_CAMBIO
+                layout {
+                    width: 70
+                    sequence: 24
+                }
+            )
+
+            displayColumn (
+                column: @COSTO
+                layout {
+                    width: 94
+                    sequence: 25
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    width: 40
+                    sequence: 26
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    width: 40
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column CANTIDAD_UB (
+            type: hidden
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: CANTIDAD_UB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANT_BLOQUEO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: CANT_BLOQUEO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column CANT_FISICA (
+            type: numberField
+            heading {
+                heading: <p>Cant Fisica</p>
+                alignment: center
+                alternativeLabel: Cant Fisica
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: CANT_FISICA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column CANT_REAL (
+            type: numberField
+            heading {
+                heading: <p>Cant Sistema</p>
+                alignment: center
+                alternativeLabel: Cant Sistema
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: CANT_REAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column COD_ORIGEN_ART (
+            type: textField
+            heading {
+                heading: <p>Cod. Fabricante</p>
+                alignment: center
+            }
+            layout {
+                sequence: 260
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 100
+            }
+            source {
+                databaseColumn: COD_ORIGEN_ART
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COSTO (
+            type: numberField
+            heading {
+                heading: <p>Costo</p>
+                alignment: center
+                alternativeLabel: Costo
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 190
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                databaseColumn: COSTO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column DESCRIPCION (
+            type: textarea
+            heading {
+                heading: <p>Articulo</p>
+                alignment: center
+                alternativeLabel: Descripción
+            }
+            layout {
+                sequence: 210
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: DESCRIPCION
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column DIFERENCIA (
+            type: numberField
+            heading {
+                heading: <p>Diferencia</p>
+                alignment: center
+            }
+            layout {
+                sequence: 220
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: DIFERENCIA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            default {
+                type: sequence
+                sequence: STW_INVENT_DET_ID_SEQ
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: popupLov
+            heading {
+                heading: <p>Cod. Articulo</p>
+                alignment: center
+                alternativeLabel: Articulo
+            }
+            settings {
+                displayAs: modalDialog
+                popupWidth: 450
+                popupHeight: 450
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-articulos
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_COD_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_ENVASE (
+            type: selectList
+            heading {
+                heading: <p>Presentacion</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 230
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_ENVASE
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_LOTE (
+            type: selectList
+            heading {
+                heading: <p>Lote</p>
+                alignment: center
+                alternativeLabel: Lote
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT L.NRO_LOTE,L.ID FROM STW_LOTES L,
+                    STW_ARTICULOS A
+                    WHERE L.ID_ARTICULO=:ID_ARTICULO
+                    AND L.ID_EMPRESA=:P0_COD_EMPRESA 
+                    AND A.ID=L.ID_ARTICULO
+                    ```
+            }
+            cascadingLov {
+                parentColumns: ID_ARTICULO
+                itemsToSubmit: ID_ARTICULO
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_LOTE
+                dataType: number
+            }
+        )
+
+        column ID_MARCA (
+            type: selectList
+            heading {
+                heading: <p>Marca</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 240
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_MARCA
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_MONEDA (
+            type: selectList
+            heading {
+                heading: <p>Moneda</p>
+                alignment: center
+                alternativeLabel: Moneda
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-monedas
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_NUM_INVENT_CAB (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_NUM_INVENT_CAB
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_RUBRO (
+            type: selectList
+            heading {
+                heading: <p>Categoria</p>
+                alignment: center
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-rubros-articulos
+            }
+            layout {
+                sequence: 250
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_RUBRO
+                dataType: number
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: selectList
+            heading {
+                heading: <p>UM</p>
+                alignment: center
+                alternativeLabel: UM
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT UPPER(ABREVIATURA),ID FROM 
+                    STW_UNIDADES_MEDIDA 
+                    ```
+            }
+            layout {
+                sequence: 150
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: ID_UNIDAD_MEDIDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column IND_AJS_LOTE (
+            type: checkbox
+            heading {
+                heading: <p>Ajusta Lote</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 270
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_AJS_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column LOTE_VENC (
+            type: textField
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: LOTE_VENC
+                dataType: date
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column NRO_LOTE (
+            type: textField
+            layout {
+                sequence: 130
+            }
+            validation {
+                maxLength: 30
+            }
+            source {
+                databaseColumn: NRO_LOTE
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column OBSERVACION (
+            type: textarea
+            heading {
+                heading: <p>Obs</p>
+                alignment: center
+                alternativeLabel: Obs
+            }
+            layout {
+                sequence: 200
+            }
+            validation {
+                maxLength: 3000
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ORDEN (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ORDEN
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column TIP_CAMBIO (
+            type: numberField
+            heading {
+                heading: <p>Cambio</p>
+                alignment: center
+                alternativeLabel: Cambio
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 180
+                columnAlignment: end
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: TIP_CAMBIO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Inventario
+        }
+    )
+
+    region inventario-cab (
+        name: INVENTARIO_CAB
+        type: form
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       NUM_INVENT,
+                       FEC_INI_INVENT,
+                       FEC_FIN_INVENT,
+                       ID_SUCURSAL,
+                       IND_CERRADO,
+                       COD_USUARIO_AUD,
+                       FEC_ALTA,
+                       ID_SUCURSAL_CENTRAL
+                  from STW_INVENT_CAB
+                  WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region selector (
+        name: Selector
+        type: regionDisplaySelector
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                margin-top-none
+                margin-bottom-none
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        settings {
+            includeShowAll: false
+            rememberSelection: bySession
+        }
+    )
+
+    pageItem P183_COD_USUARIO_AUD (
+        type: hidden
+        layout {
+            sequence: 110
+            region: @inventario-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @inventario-cab
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P183_FEC_ALTA (
+        type: hidden
+        layout {
+            sequence: 120
+            region: @inventario-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @inventario-cab
+            column: FEC_ALTA
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P183_FEC_FIN_INVENT (
+        type: datePicker
+        label {
+            label: <p>Fecha Final :</p>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @inventario-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @inventario-cab
+            column: FEC_FIN_INVENT
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P183_FEC_INI_INVENT (
+        type: datePicker
+        label {
+            label: <p>Fecha Inicial:</p>
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 50
+            region: @inventario-cab
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY HH24:MI
+            width: 30
+        }
+        source {
+            formRegion: @inventario-cab
+            column: FEC_INI_INVENT
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: SYSDATE
+        }
+    )
+
+    pageItem P183_ID (
+        type: hidden
+        layout {
+            sequence: 60
+            region: @inventario-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @inventario-cab
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: STW_INVENT_CAB_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P183_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 70
+            region: @inventario-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @inventario-cab
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_EMPRESA
+        }
+    )
+
+    pageItem P183_ID_INV (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 140
+            region: @inventario-cab
+            slot: regionBody
+        }
+    )
+
+    pageItem P183_ID_SUCURSAL (
+        type: popupLov
+        label {
+            label: <p>Sucursal:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-sucursales
+        }
+        layout {
+            sequence: 40
+            region: @inventario-cab
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: mostrar
+        }
+        source {
+            formRegion: @inventario-cab
+            column: ID_SUCURSAL
+            dataType: number
+        }
+    )
+
+    pageItem P183_ID_SUCURSAL_CENTRAL (
+        type: hidden
+        layout {
+            sequence: 130
+            region: @inventario-cab
+            slot: regionBody
+        }
+        source {
+            formRegion: @inventario-cab
+            column: ID_SUCURSAL_CENTRAL
+            dataType: number
+        }
+    )
+
+    pageItem P183_IND_CERRADO (
+        type: checkbox
+        label {
+            label: <p>Cerrado</p>
+            alignment: left
+        }
+        settings {
+            useDefaults: false
+            checkedValue: S
+            uncheckedValue: N
+        }
+        layout {
+            sequence: 100
+            region: @inventario-cab
+            slot: regionBody
+            alignment: left
+            column: 3
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @inventario-cab
+            column: IND_CERRADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P183_NUM_INVENT (
+        type: numberField
+        label {
+            label: <p>Numero:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 80
+            region: @inventario-cab
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        source {
+            formRegion: @inventario-cab
+            column: NUM_INVENT
+            dataType: number
+        }
+    )
+
+    button count (
+        buttonName: COUNT
+        label: Confirmar Conteo
+        layout {
+            sequence: 10
+            region: @inventario-cab
+            slot: change
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--warning
+                t-Button--simple
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: "Seguro que quiere confimrar el conteo ? "
+            style: information
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @botones
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P183_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @botones
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            cssClasses: t-Button--danger
+            icon: fa-trash
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: ¿Desea eliminar el registro?
+            style: warning
+        }
+        serverSideCondition {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                IF :P183_ID IS NOT NULL AND :P183_IND_CERRADO='S' THEN
+                RETURN FALSE;
+                ELSIF :P183_ID IS NOT NULL THEN 
+                RETURN TRUE;
+                END IF;
+                ```
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+    )
+
+    button open (
+        buttonName: OPEN
+        label: Abrir Inventario
+        layout {
+            sequence: 20
+            region: @butones
+            slot: regionBody
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--stretch
+            ]
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: never
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button print (
+        buttonName: PRINT
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @inventario-cab
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--primary
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P183_ID
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 30
+            region: @botones
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save-as
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P183_ID
+        }
+    )
+
+    button volver (
+        buttonName: Volver
+        label: Volver
+        layout {
+            sequence: 10
+            region: @inventario-cab
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-arrow
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 197
+            }
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction cargar-datos-del-articulo (
+        name: Cargar Datos del Articulo
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @inventario
+            columns: ID_ARTICULO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT ID_UNIDAD_MEDIDA FROM STW_ARTICULOS
+                    WHERE ID_EMPRESA=:P0_COD_EMPRESA AND
+                    ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_UNIDAD_MEDIDA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT DESCRIPCION FROM 
+                    STW_ARTICULOS WHERE
+                    ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: DESCRIPCION
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT ID_MONEDA_BASE FROM STW_ARTICULOS
+                    WHERE ID=:ID_ARTICULO
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_MONEDA
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-4 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT TRAE_COSTO_PROM(:P0_COD_EMPRESA,:ID_ARTICULO,sysdate)FROM DUAL;
+                    
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COSTO
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-5 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT ID
+                    FROM STW_LOTES
+                    WHERE ID_ARTICULO=:ID_ARTICULO
+                    AND ID_EMPRESA=:P0_COD_EMPRESA
+                    AND ROWNUM=1
+                    ```
+                itemsToSubmit: ID_ARTICULO
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ID_LOTE
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cargar-id (
+        name: Cargar ID
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P183_ID
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :p183_id
+                itemsToSubmit: P183_ID
+            }
+            affectedElements {
+                selectionType: items
+                items: P183_ID_INV
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction cargar-lote (
+        name: Cargar Lote
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @inventario
+            columns: ID_LOTE
+        }
+        clientSideCondition {
+            type: itemColumnIsNotNull
+            column: ID_LOTE
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare 
+                    nro_lote STW_LOTES.NRO_LOTE%TYPE;
+                    begin
+                    SELECT NRO_LOTE
+                    INTO NRO_LOTE
+                    FROM  STW_LOTES
+                    WHERE ID=:ID_LOTE
+                    AND ID_EMPRESA=:P0_COD_EMPRESA;
+                    RETURN NRO_LOTE;
+                    EXCEPTION 
+                    WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20000,'No se encontro el numero de lote');
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de lotes');
+                    end;
+                    ```
+                itemsToSubmit: ID_LOTE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: NRO_LOTE
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-2 (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    declare 
+                    fecha_venc date;
+                    begin
+                    SELECT FEC_VENCIMIENTO F
+                    INTO FECHA_VENC
+                    FROM
+                    STW_LOTES
+                    WHERE ID=:ID_LOTE
+                    AND ID_EMPRESA=:P0_COD_EMPRESA;
+                    RETURN FECHA_VENC;
+                    end;
+                    EXCEPTION when no_DATA_FOUND THEN
+                    RETURN NULL;
+                    WHEN OTHERS THEN
+                    RAISE_APPLICATION_ERROR(-20000,'Error en la tabla de lotes'||sqlerrm);
+                    ```
+                itemsToSubmit: ID_LOTE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: LOTE_VENC
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+        action native-set-value-3 (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT NVL(SUM(CANT_DISPON),0) FROM 
+                    STW_EXISTENCIA_ART WHERE
+                    ID_LOTE=:ID_LOTE
+                    AND ID_ARTICULO=:ID_ARTICULO
+                    AND ID_EMPRESA=:P0_COD_EMPRESA
+                    ```
+                itemsToSubmit: [
+                    ID_LOTE
+                    ID_ARTICULO
+                ]
+            }
+            affectedElements {
+                selectionType: columns
+                columns: CANT_REAL
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fec (
+        name: CONVERT_FEC
+        execution {
+            sequence: 70
+        }
+        when {
+            selectionType: items
+            items: P183_FEC_FIN_INVENT
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P183_FEC_FIN_INVENT) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P183_FEC_FIN_INVENT,'/','');
+                            conv_fecha := substr(:P183_FEC_FIN_INVENT,1,2)||'/'||
+                                                      substr(:P183_FEC_FIN_INVENT,3,2)||'/'||
+                                                      lpad(substr(:P183_FEC_FIN_INVENT,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P183_FEC_FIN_INVENT := conv_fecha;
+                            ELSIF (length(:P183_FEC_FIN_INVENT) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P183_FEC_FIN_INVENT) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P183_FEC_FIN_INVENT
+                itemsToReturn: P183_FEC_FIN_INVENT
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 60
+        }
+        when {
+            selectionType: items
+            items: P183_FEC_INI_INVENT
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P183_FEC_INI_INVENT) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P183_FEC_INI_INVENT,'/','');
+                            conv_fecha := substr(:P183_FEC_INI_INVENT,1,2)||'/'||
+                                                      substr(:P183_FEC_INI_INVENT,3,2)||'/'||
+                                                      lpad(substr(:P183_FEC_INI_INVENT,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P183_FEC_INI_INVENT := conv_fecha;
+                            ELSIF (length(:P183_FEC_INI_INVENT) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P183_FEC_INI_INVENT) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P183_FEC_INI_INVENT
+                itemsToReturn: P183_FEC_INI_INVENT
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction orden (
+        name: Orden
+        execution {
+            sequence: 40
+        }
+        when {
+            event: apexafterrefresh
+            selectionType: region
+            region: @inventario
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode: orden += 1;
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: ORDEN
+            }
+        )
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: orden
+            }
+            affectedElements {
+                selectionType: columns
+                columns: ORDEN
+            }
+            execution {
+                sequence: 20
+            }
+        )
+
+    )
+
+    dynamicAction traer-cambio (
+        name: Traer Cambio
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @inventario
+            columns: ID_MONEDA
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: plsqlFunctionBody
+                plsqlFunctionBody:
+                    ```plsql
+                    BEGIN
+                    RETURN FTIPOS_CAMBIO(:ID_MONEDA,SYSDATE,'C','V');
+                    END;
+                    ```
+                itemsToSubmit: ID_MONEDA
+            }
+            affectedElements {
+                selectionType: columns
+                columns: TIP_CAMBIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    validation validar-inventario (
+        name: Validar Inventario
+        execution {
+            sequence: 10
+        }
+        validation {
+            type: functionBodyReturningBoolean
+            plsqlFunctionBody:
+                ```plsql
+                declare 
+                v_bandera number:=0;
+                begin
+                SELECT 1
+                INTO v_bandera
+                 FROM STW_INVENT_CAB
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA
+                AND IND_CERRADO='N'
+                AND ID_SUCURSAL=:P0_COD_SUCURSAL
+                AND ROWNUM=1;
+                IF V_BANDERA=1 THEN
+                RETURN FALSE;
+                END IF;
+                EXCEPTION 
+                WHEN NO_DATA_FOUND THEN
+                RETURN TRUE;
+                END;
+                ```
+        }
+        error {
+            errorMessage: "Hay un inventario Activo ! "
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,OPEN
+        }
+    )
+
+    computation p183-id-sucursal-central (
+        itemName: P183_ID_SUCURSAL_CENTRAL
+        execution {
+            sequence: 20
+            point: afterSubmit
+        }
+        computation {
+            type: expression
+            plsqlExpression: :P183_ID_SUCURSAL
+        }
+    )
+
+    computation p183-num-invent (
+        itemName: P183_NUM_INVENT
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        computation {
+            type: functionBody
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                v_numero number;
+                begin
+                if :P183_NUM_INVENT IS NULL THEN 
+                SELECT nvl(MAX(NUM_INVENT),0)+1  
+                into v_numero
+                FROM STW_INVENT_CAB
+                WHERE ID_EMPRESA=:P0_COD_EMPRESA;
+                return v_numero;
+                END IF;
+                RETURN :P183_NUM_INVENT;
+                EXCEPTION 
+                WHEN OTHERS THEN 
+                RAISE_APPLICATION_ERROR(20000,'Error en la tabla de inventario');
+                end;
+                ```
+        }
+    )
+
+    process borrar-detalle (
+        name: Borrar Detalle
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                /* Borra todas las lineas de detalle, al borrarse la cabecera  */
+                delete from STW_INVENT_DET
+                where ID_NUM_INVENT_CAB = :P183_ID;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 40238891167374623
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process borrar-detalle-prov (
+        name: Borrar Detalle_PROV
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                /* Borra todas las lineas de detalle, al borrarse la cabecera  */
+                delete from STW_INVENT_DET_PROV
+                where ID_NUM_INVENT_CAB = :P183_ID;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 43298892314153626
+        }
+        serverSideCondition {
+            whenButtonPressed: @delete
+        }
+    )
+
+    process cabecera-inventario (
+        name: Cabecera_Inventario
+        type: formAutoRowProcessing
+        formRegion: @inventario-cab
+        execution {
+            sequence: 30
+        }
+        advanced {
+            executionMappingIdentifier: 39370883053123828
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,CREATE,DELETE,OPEN
+        }
+    )
+
+    process initialize-form-carga-de-inventario (
+        name: Initialize form Carga de Inventario
+        type: formInitialization
+        formRegion: @inventario-cab
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 38585928302069733
+        }
+    )
+
+    process inventario-det-save-interactive-grid-data (
+        name: INVENTARIO_DET - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @inventario
+        target {
+            targetType: plsqlCode
+            dmlPlsqlCode:
+                ```plsql
+                begin
+                
+                
+                    case :APEX$ROW_STATUS
+                            when 'C' then
+                             
+                         
+                
+                          
+                                insert into STW_INVENT_DET
+                                (ID_EMPRESA,ID_NUM_INVENT_CAB,ID_ARTICULO,CANT_REAL,CANT_FISICA,CANT_BLOQUEO,ORDEN,COD_USUARIO_AUD,ID_LOTE,NRO_LOTE,LOTE_VENC,
+                                ID_UNIDAD_MEDIDA,CANTIDAD_UB,ID_MONEDA,TIP_CAMBIO,COSTO,OBSERVACION, IND_AJS_LOTE)
+                                values(:P0_COD_EMPRESA,:P183_ID,:ID_ARTICULO,:CANT_REAL,:CANT_FISICA,:CANT_BLOQUE,:ORDEN,:APP_USER,:ID_LOTE,:NRO_LOTE,:LOTE_VENC,
+                                :ID_UNIDAD_MEDIDA,:CANTIDA_UB,:ID_MONEDA,:TIP_CAMBIO,REPLACE(:COSTO,'.',''),:OBSERVACION, :IND_AJS_LOTE);
+                            
+                            WHEN 'U' then  
+                         
+                   
+                
+                 
+                
+                                update STW_INVENT_DET D
+                                    set  D.ID_ARTICULO=:ID_ARTICULO,
+                                         D.CANT_REAL=:CANT_REAL,
+                                         D.CANT_FISICA=:CANT_FISICA,
+                                         D.CANT_BLOQUEO=:CANT_BLOQUEO,
+                                         D.ORDEN=:ORDEN,
+                                         D.ID_LOTE=:ID_LOTE,
+                                         D.NRO_LOTE=:NRO_LOTE,
+                                         D.LOTE_VENC=:LOTE_VENC,
+                                         D.ID_UNIDAD_MEDIDA=:ID_UNIDAD_MEDIDA,
+                                         D.ID_MONEDA=:ID_MONEDA,
+                                         D.TIP_CAMBIO=:TIP_CAMBIO,
+                                         D.COSTO=REPLACE(:COSTO,'.',''),
+                                         D.OBSERVACION=:OBSERVACION,
+                                         D.IND_AJS_LOTE=:IND_AJS_LOTE
+                                where   D.ID_NUM_INVENT_CAB = :P183_ID
+                                    and D.id = :id;
+                
+                           when 'D' then
+                                delete STW_INVENT_DET  d   
+                                WHERE d.ID_NUM_INVENT_CAB = :ID_NUM_INVENT_CAB
+                                           and d.id = :id;  
+                    end case;
+                                         
+                
+                END;
+                
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 39369743231123817
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: SAVE,CREATE
+        }
+    )
+
+    process limpiar-sesion (
+        name: Limpiar_Sesion
+        type: clearSessionState
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 42447906239537244
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: DELETE
+        }
+    )
+
+    process realizar-conteo (
+        name: Realizar Conteo
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    CURSOR CURSOR_DETALLE IS
+                        SELECT I.ID_ARTICULO, I.ID_EMPRESA, I.ID_NUM_INVENT_CAB, SUM(NVL(I.CANT_FISICA,0)) CANT_FISICA,
+                               I.COD_USUARIO_AUD, I.ID_LOTE, I.NRO_LOTE, I.LOTE_VENC, I.ID_UNIDAD_MEDIDA,I.ID_MONEDA,
+                               I.TIP_CAMBIO
+                          FROM STW_INVENT_DET_PROV I
+                         WHERE I.ID_EMPRESA=:P0_COD_EMPRESA
+                          AND I.ID_NUM_INVENT_CAB=:P183_ID
+                        GROUP BY I.ID_ARTICULO,I.ID_LOTE,I.ID_NUM_INVENT_CAB,I.COD_USUARIO_AUD,I.NRO_LOTE,I.LOTE_VENC,
+                                 I.ID_UNIDAD_MEDIDA,I.ID_MONEDA,I.TIP_CAMBIO,I.ID_EMPRESA;
+                BEGIN
+                    FOR ITEM_DETALLE IN CURSOR_DETALLE
+                    LOOP
+                        BEGIN
+                            INSERT INTO STW_INVENT_DET(ID_EMPRESA,ID_NUM_INVENT_CAB,CANT_FISICA,COD_USUARIO_AUD,ID_LOTE,NRO_LOTE,
+                                                       LOTE_VENC,ID_UNIDAD_MEDIDA,ID_MONEDA,TIP_CAMBIO,COSTO,ID_ARTICULO,CANT_REAL)
+                            VALUES (ITEM_DETALLE.ID_EMPRESA,ITEM_DETALLE.ID_NUM_INVENT_CAB,
+                                    ITEM_DETALLE.CANT_FISICA,ITEM_DETALLE.COD_USUARIO_AUD,ITEM_DETALLE.ID_LOTE,ITEM_DETALLE.NRO_LOTE,ITEM_DETALLE.LOTE_VENC,
+                                    ITEM_DETALLE.ID_UNIDAD_MEDIDA,ITEM_DETALLE.ID_MONEDA,ITEM_DETALLE.TIP_CAMBIO,TRAE_COSTO_PROM(:P0_COD_EMPRESA,ITEM_DETALLE.ID_ARTICULO,SYSDATE),ITEM_DETALLE.ID_ARTICULO,(SELECT NVL(SUM(CANT_DISPON),0)
+                                                                                                                                                                                                               FROM STW_EXISTENCIA_ART
+                                                                                                                                                                                                              WHERE ID_LOTE=ITEM_DETALLE.ID_LOTE
+                                                                                                                                                                                                                AND ID_ARTICULO=ITEM_DETALLE.ID_ARTICULO
+                                                                                                                                                                                                                AND ID_EMPRESA=:P0_ID_EMPRESA
+                                                                                                                                                                                                                AND ID_SUCURSAL = :P183_ID_SUCURSAL));
+                        EXCEPTION
+                            WHEN OTHERS THEN
+                                CONTINUE;
+                        END;
+                    END LOOP;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        RAISE_APPLICATION_ERROR(-20000,'ERROR NO SE PUDO REALIZAR EL CONTEO');
+                END;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        successMessage {
+            successMessage: Conteo Realizada de Manera Correcta!
+        }
+        advanced {
+            executionMappingIdentifier: 43298739487153625
+        }
+        serverSideCondition {
+            whenButtonPressed: @count
+        }
+    )
+
+    branch (
+        name: Go To Page 196
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 196
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @print
+        }
+    )
+
+)
+

@@ -1,0 +1,630 @@
+page 739 (
+    name: Informacion de Cotizacion
+    alias: INFORMACION-DE-COTIZACION
+    title: Informacion de Cotizacion
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region competencia (
+        name: Competencia
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT DISTINCT HP.FEC_ALTA,
+                                HP.ID_PROVEEDOR,
+                                HP.PRECIO_VENTA,
+                                AG.COD_ARTICULO,
+                                AG.DESCRIPCION DESC_ARTICULO,
+                                AG.ID_ENVASE,
+                                AG.ID_UNIDAD_MEDIDA,
+                                AG.ID_MARCA
+                       
+                  FROM STW_ARTICULOS               AC  -- Articulo Cotizacion
+                  JOIN STW_ARTICULOS               AG ON AC.ID_GRUPO_ART = AG.ID_GRUPO_ART
+                  JOIN CMW_HIST_PRECIO_COMPETENCIA HP ON AG.ID = HP.ID_ARTICULO
+                 WHERE AC.ID = :P739_ID_ARTICULO
+                   AND HP.IND_ACTIVO = 'S'
+                ```
+            pageItemsToSubmit: P739_ID_ARTICULO
+        }
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--noBorder
+                t-Region--scrollBody
+            ]
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            includeSearchBar: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 74348874741653124
+        }
+
+        column COD_ARTICULO (
+            type: plainText
+            heading {
+                heading: Cod. Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column DESC_ARTICULO (
+            type: plainText
+            heading {
+                heading: Articulo
+                alignment: center
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column FEC_ALTA (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_ENVASE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Presentacion
+                alignment: center
+            }
+            lov {
+                lov: @lv-envases
+            }
+            layout {
+                sequence: 60
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column ID_MARCA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Marca
+                alignment: center
+            }
+            lov {
+                lov: @lv-marcas
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: H
+            }
+        )
+
+        column ID_PROVEEDOR (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Proveedor
+                alignment: center
+            }
+            lov {
+                lov: @lv-proveedores
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_UNIDAD_MEDIDA (
+            type: plainTextBasedOnLov
+            heading {
+                heading: U.M
+                alignment: center
+            }
+            lov {
+                lov: @lv-unidades-medida
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column PRECIO_VENTA (
+            type: plainText
+            heading {
+                heading: Precio Venta
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        savedReport 743992 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_ARTICULO (
+                sequence: 4
+            )
+
+            displayColumn DESC_ARTICULO (
+                sequence: 5
+            )
+
+            displayColumn FEC_ALTA (
+                sequence: 1
+            )
+
+            displayColumn ID_ENVASE (
+                sequence: 6
+            )
+
+            displayColumn ID_MARCA (
+                sequence: 8
+            )
+
+            displayColumn ID_PROVEEDOR (
+                sequence: 2
+            )
+
+            displayColumn ID_UNIDAD_MEDIDA (
+                sequence: 7
+            )
+
+            displayColumn PRECIO_VENTA (
+                sequence: 3
+            )
+
+        )
+
+    )
+
+    region cotizacion (
+        name: Cotizacion
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                -- Rama 1: Cliente igual, APROBADO = 'S', tomando la fecha de CA.FEC_OCC
+                SELECT FECHA, ID_CLIENTE, PRECIO_UNITARIO, APROBADO
+                FROM (
+                  SELECT CA.FEC_OCC AS FECHA,
+                         PC.ID_CLIENTE,
+                         CA.PRECIO_UNITARIO,
+                         'S' APROBADO
+                    FROM CMW_COTIZA_ARTICULOS CA
+                    JOIN VTW_PEDIDOS_CABECERA PC ON PC.ID = CA.ID_PEDIDO
+                   WHERE CA.FEC_OCC IS NOT NULL
+                     AND PC.ID_CLIENTE = :P739_ID_CLIENTE
+                     AND CA.ID_ARTICULO = :P739_ID_ARTICULO
+                     AND CA.ID != :P739_ID_COTIZA
+                     AND (NVL(CANTIDAD_APROBADA, 0) -NVL(CANT_ANULADA, 0)) > 0
+                     AND CANTIDAD_APROBADA IS NOT NULL
+                     AND CANTIDAD_APROBADA != 0
+                     AND NVL(CA.PRECIO_UNITARIO, 0) != 0
+                   ORDER BY CA.FEC_OCC DESC
+                )
+                WHERE ROWNUM = 1
+                  AND ID_CLIENTE != 3479 -- Cliente Selene
+                
+                UNION ALL
+                
+                -- Rama 2: Cliente distinto, APROBADO = 'S', tomando la fecha de CA.FEC_OCC
+                SELECT FECHA, ID_CLIENTE, PRECIO_UNITARIO, APROBADO
+                FROM (
+                  SELECT CA.FEC_OCC AS FECHA,
+                         PC.ID_CLIENTE,
+                         CA.PRECIO_UNITARIO,
+                         'S' APROBADO
+                    FROM CMW_COTIZA_ARTICULOS CA
+                    JOIN VTW_PEDIDOS_CABECERA PC ON PC.ID = CA.ID_PEDIDO
+                   WHERE CA.FEC_OCC IS NOT NULL
+                     AND PC.ID_CLIENTE != :P739_ID_CLIENTE
+                     AND CA.ID_ARTICULO = :P739_ID_ARTICULO
+                     AND CA.ID != :P739_ID_COTIZA
+                     AND (NVL(CANTIDAD_APROBADA, 0) -NVL(CANT_ANULADA, 0)) > 0
+                     AND CANTIDAD_APROBADA IS NOT NULL
+                     AND CANTIDAD_APROBADA != 0
+                     AND NVL(CA.PRECIO_UNITARIO, 0) != 0
+                   ORDER BY CA.FEC_OCC DESC
+                )
+                WHERE ROWNUM = 1
+                  AND ID_CLIENTE != 3479 -- Cliente Selene
+                
+                UNION ALL
+                
+                -- Rama 3: Cliente igual, APROBADO distinto de 'S', se toma la fecha de PC.FEC_COMPROBANTE
+                SELECT FECHA, ID_CLIENTE, PRECIO_UNITARIO, APROBADO
+                FROM (
+                  SELECT PC.FEC_COMPROBANTE AS FECHA,
+                         PC.ID_CLIENTE,
+                         CA.PRECIO_UNITARIO,
+                         'N' APROBADO
+                    FROM CMW_COTIZA_ARTICULOS CA
+                    JOIN VTW_PEDIDOS_CABECERA PC ON PC.ID = CA.ID_PEDIDO
+                   WHERE PC.ID_CLIENTE = :P739_ID_CLIENTE
+                     AND CA.ID_ARTICULO = :P739_ID_ARTICULO
+                     AND CA.ID != :P739_ID_COTIZA
+                     AND (NVL(CANTIDAD_APROBADA, 0) -NVL(CANT_ANULADA, 0)) >= 0
+                     AND (CANTIDAD_APROBADA IS NULL OR CANTIDAD_APROBADA = 0)
+                     AND NVL(CA.PRECIO_UNITARIO, 0) != 0
+                   ORDER BY PC.FEC_COMPROBANTE DESC
+                )
+                WHERE ROWNUM = 1
+                  AND ID_CLIENTE != 3479 -- Cliente Selene
+                
+                UNION ALL
+                
+                -- Rama 4: Cliente distinto, APROBADO distinto de 'S', se toma la fecha de PC.FEC_COMPROBANTE
+                SELECT FECHA, ID_CLIENTE, PRECIO_UNITARIO, APROBADO
+                FROM (
+                  SELECT PC.FEC_COMPROBANTE AS FECHA,
+                         PC.ID_CLIENTE,
+                         CA.PRECIO_UNITARIO,
+                         'N' APROBADO
+                    FROM CMW_COTIZA_ARTICULOS CA
+                    JOIN VTW_PEDIDOS_CABECERA PC ON PC.ID = CA.ID_PEDIDO
+                   WHERE PC.ID_CLIENTE != :P739_ID_CLIENTE
+                     AND CA.ID_ARTICULO = :P739_ID_ARTICULO
+                     AND CA.ID != :P739_ID_COTIZA
+                     AND (NVL(CANTIDAD_APROBADA, 0) -NVL(CANT_ANULADA, 0)) >= 0
+                     AND (CANTIDAD_APROBADA IS NULL OR CANTIDAD_APROBADA = 0)
+                     AND NVL(CA.PRECIO_UNITARIO, 0) != 0
+                   ORDER BY PC.FEC_COMPROBANTE DESC
+                )
+                WHERE ROWNUM = 1
+                  AND ID_CLIENTE != 3479 -- Cliente Selene
+                
+                ORDER BY FECHA DESC;
+                
+                ```
+            pageItemsToSubmit: [
+                P739_ID_CLIENTE
+                P739_ID_ARTICULO
+                P739_ID_COTIZA
+            ]
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--noBorder
+                t-Region--scrollBody
+            ]
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        messages {
+            whenNoDataFound: No hay datos
+        }
+        searchBar {
+            includeSearchBar: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 20713903176591931
+        }
+
+        column APROBADO (
+            type: plainText
+            heading {
+                heading: Aprobado
+                alignment: center
+            }
+            layout {
+                sequence: 40
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column FECHA (
+            type: plainText
+            heading {
+                heading: Fecha
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_CLIENTE (
+            type: plainTextBasedOnLov
+            heading {
+                heading: Cliente
+                alignment: center
+            }
+            lov {
+                lov: @lv-clientes
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column PRECIO_UNITARIO (
+            type: plainText
+            heading {
+                heading: Precio Ultimo
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        savedReport 212073 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn FECHA (
+                sequence: 1
+            )
+
+            displayColumn ID_CLIENTE (
+                sequence: 2
+            )
+
+            displayColumn PRECIO_UNITARIO (
+                sequence: 3
+            )
+
+            highlight ir-condition (
+                name: Cotizacion
+                condition {
+                    column: APROBADO
+                    value: N
+                }
+                colors {
+                    background: #fff5ce
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+            highlight ir-condition-2 (
+                name: OCC
+                condition {
+                    column: APROBADO
+                    value: S
+                }
+                colors {
+                    background: #cce5ff
+                }
+                execution {
+                    sequence: 10
+                }
+            )
+
+        )
+
+    )
+
+    pageItem P739_ID_ARTICULO (
+        type: textField
+        label {
+            label: Id Cliente
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P739_ID_CLIENTE (
+        type: textField
+        label {
+            label: Id Cliente
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P739_ID_COTIZA (
+        type: textField
+        label {
+            label: Id Cliente
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            slot: contentBody
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    dynamicAction ocultar-items (
+        name: Ocultar Items
+        execution {
+            sequence: 10
+        }
+        when {
+            event: ready
+        }
+
+        action native-hide (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: [
+                    P739_ID_CLIENTE
+                    P739_ID_ARTICULO
+                    P739_ID_COTIZA
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+        action native-hide-2 (
+            action: hide
+            affectedElements {
+                selectionType: items
+                items: [
+                    P739_ID_CLIENTE
+                    P739_ID_ARTICULO
+                    P739_ID_COTIZA
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+

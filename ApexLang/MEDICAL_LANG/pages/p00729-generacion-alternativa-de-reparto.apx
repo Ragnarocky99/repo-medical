@@ -1,0 +1,601 @@
+page 729 (
+    name: Generacion Alternativa de Reparto
+    alias: GENERACION-ALTERNATIVA-DE-REPARTO
+    title: Generacion Alternativa de Reparto
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region detalles-a-generar (
+        name: Detalles a Generar
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                  select sd.tip_comprobante,
+                         sd.cod_usuario_aud,
+                         decode(nvl(sd.ind_cancelado,'N'),'S','Si','N','No') ind_cancelado,
+                         sd.nro_comprobante,
+                         sd.direccion_envio,
+                         decode(nvl(sd.estado,'PE'),'PE','Pendiente','CA','Cancelado','EN','Enviado') estado,
+                         sd.fec_estado
+                    from rpw_solicitud_reparto_det sd
+                    join rpw_solicitud_reparto_cab sc on sc.id = sd.id_solicitud_rep_cab
+                   where SC.ID IN (select column_value from apex_string.split(:P729_SELECTED_IDS,','))
+                     and nvl(sd.ind_cancelado,'N') = 'N'
+                     and nvl(sd.estado,'XY') != 'EN'
+                     and not exists(
+                     select 1
+                       from rpw_reparto_detalle  rd
+                       join rpw_reparto_cabecera rc on rc.id = rd.id_reparto_cabecera
+                       where rd.id_solicitud_det = sd.id
+                         and nvl(rc.estado,'N') = 'N' 
+                     ); 
+                ```
+            pageItemsToSubmit: P729_SELECTED_IDS
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        advanced {
+            savedReportMappingIdentifier: 69970440775301749
+        }
+
+        column COD_USUARIO_AUD (
+            type: plainText
+            heading {
+                heading: Cod Usuario Aud
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column DIRECCION_ENVIO (
+            type: plainText
+            heading {
+                heading: Direccion Envio
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column ESTADO (
+            type: plainText
+            heading {
+                heading: Estado
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column FEC_ESTADO (
+            type: plainText
+            heading {
+                heading: Fec Estado
+            }
+            layout {
+                sequence: 150
+            }
+            source {
+                dataType: DATE
+            }
+            advanced {
+                endUserAlias: G
+            }
+        )
+
+        column IND_CANCELADO (
+            type: plainText
+            heading {
+                heading: Cancelado
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column NRO_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Nro Comprobante
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column TIP_COMPROBANTE (
+            type: plainText
+            heading {
+                heading: Tip Comprobante
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles a Generar
+        }
+
+        savedReport 158991 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_USUARIO_AUD (
+                sequence: 2
+            )
+
+            displayColumn DIRECCION_ENVIO (
+                sequence: 5
+            )
+
+            displayColumn ESTADO (
+                sequence: 6
+            )
+
+            displayColumn FEC_ESTADO (
+                sequence: 7
+            )
+
+            displayColumn IND_CANCELADO (
+                sequence: 3
+            )
+
+            displayColumn NRO_COMPROBANTE (
+                sequence: 4
+            )
+
+            displayColumn TIP_COMPROBANTE (
+                sequence: 1
+            )
+
+        )
+
+    )
+
+    region generacion-de-reparto (
+        name: Generacion de Reparto
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    pageItem P729_ESTADO (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @generacion-de-reparto
+            slot: regionBody
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_ID_ACOMPANHANTE (
+        type: popupLov
+        label {
+            label: <p><b style="color:red;">*</b>Acompanhante:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 950
+            popupHeight: 950
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-repartidores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 130
+            region: @generacion-de-reparto
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_ID_REPARTIDOR (
+        type: popupLov
+        label {
+            label: <p><b style="color:red;">*</b>Repartidor:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 950
+            popupHeight: 950
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-repartidores
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 80
+            region: @generacion-de-reparto
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_ID_REPARTO_OUT (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 180
+            region: @generacion-de-reparto
+            slot: regionBody
+        }
+    )
+
+    pageItem P729_ID_VEHICULO (
+        type: popupLov
+        label {
+            label: <p><b style="color:red;">*</b>Vehiculo:</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            popupWidth: 950
+            popupHeight: 950
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-vehiculos
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 110
+            region: @generacion-de-reparto
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_ID_ZONA (
+        type: popupLov
+        label {
+            label: <p><b style="color:red;">*</b>Zona:</p>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-zonas-geo-pg
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 140
+            region: @generacion-de-reparto
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_MOTIVO_REPARTO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 150
+            region: @generacion-de-reparto
+            slot: regionBody
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_SELECTED_IDS (
+        type: popupLov
+        label {
+            label: <p>Repartos Elegidos</p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            title: Solicitudes Pendientes
+            popupWidth: 800
+            popupHeight: 500
+        }
+        lov {
+            type: sharedComponent
+            lov: @solicitudes-pendientes-reparto-lv
+        }
+        multipleValues {
+            type: delimitedList
+            separator: ,
+        }
+        layout {
+            sequence: 90
+            region: @generacion-de-reparto
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P729_SUCURSAL (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @generacion-de-reparto
+            slot: regionBody
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+    )
+
+    pageItem P729_TOT_COMPROBANTE (
+        type: hidden
+        layout {
+            sequence: 70
+            region: @generacion-de-reparto
+            slot: regionBody
+        }
+        advanced {
+            warnOnUnsavedChanges: ignore
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button generarreparto (
+        buttonName: GenerarReparto
+        label: Generar Reparto
+        layout {
+            sequence: 120
+            region: @generacion-de-reparto
+            slot: regionBody
+            startNewRow: false
+        }
+        appearance {
+            buttonTemplate: @text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction refresh (
+        name: Refresh
+        execution {
+            sequence: 10
+        }
+        when {
+            selectionType: items
+            items: P729_SELECTED_IDS
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @detalles-a-generar
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    process generar-reparto (
+        name: Generar Reparto
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                  RPW_GENERA_REPARTO_ALTERNATIVO(P_ID_REPARTIDOR => :P729_ID_REPARTIDOR,
+                                                 P_ID_VEHICULO => :P729_ID_VEHICULO,
+                                                 P_ID_ACOMPANHANTE => :P729_ID_ACOMPANHANTE,
+                                                 P_ID_ZONA => :P729_ID_ZONA,
+                                                 P_ID_EMPRESA => :P0_ID_EMPRESA,
+                                                 P_ID_SUCURSAL => :P0_ID_SUCURSAL,
+                                                 P_COD_USUARIO_AUD => :APP_USER,
+                                                 P_SELECTED_IDS => :P729_SELECTED_IDS,
+                                                 P_ID_REPARTO => :P729_ID_REPARTO_OUT);
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        successMessage {
+            successMessage:
+                ```
+                Exito. Se ha generado el reparto correctamente, sera redireccionado al reparto generado
+                
+                ```
+        }
+        advanced {
+            executionMappingIdentifier: 69969371301301738
+        }
+    )
+
+    branch (
+        name: Ir a reparto
+        execution {
+            sequence: 10
+        }
+        behavior {
+            target: {
+                page: 725
+                items: {
+                    P725_ID: &P729_ID_REPARTO_OUT.
+                }
+            }
+        }
+    )
+
+)
+

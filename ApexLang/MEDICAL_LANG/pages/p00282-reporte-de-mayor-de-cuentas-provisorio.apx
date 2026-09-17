@@ -1,0 +1,706 @@
+page 282 (
+    name: Reporte de Mayor de Cuentas Provisorio
+    alias: REPORTE-DE-MAYOR-DE-CUENTAS-PROVISORIO
+    title: Reporte de Mayor de Cuentas Provisorio
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region filtros (
+        name: Filtros
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+    )
+
+    region reporte (
+        name: Reporte
+        type: interactiveReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT --D.ID AS ID_DET,
+                       --EM.ID AS ID_EMP,
+                       --P.ID AS ID_PLAN_CUENTA,
+                       P.ID_EMPRESA,
+                       --C.FEC_ASIENTO,
+                       E.COD_EJERCICIO,
+                       P.COD_CUENTA,
+                       P.NOMBRE_CUENTA,
+                       SUM(NVL(D.MON_DEBE,0)) MON_DEBE,
+                       SUM(NVL(D.MON_HABER,0)) MON_HABER,         
+                        
+                       --SA.SALDO_ANT,
+                
+                       /*SUM(CASE P.TIPO_CUENTA
+                               WHEN 'A' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_debe,0)  -   NVL(D.mon_haber,0)
+                               WHEN 'H' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_haber,0) -   NVL(D.mon_debe,0)
+                               WHEN 'P' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_haber,0) -   NVL(D.mon_debe,0)
+                               WHEN 'D' THEN NVL(SA.SALDO_ANT,0) + NVL(D.mon_debe,0)  -   NVL(D.mon_haber,0)
+                            END) SALDO_TIP_CUENTA,
+                        
+                        */
+                       --sum(trae_saldo_ant_co(em.id, p.cod_cuenta, e.cod_ejercicio, d.id, :P282_M_FEC_INI))saldo_ant,
+                       --sum(trae_saldo_act_co(em.id, p.cod_cuenta, e.cod_ejercicio, d.id, :P282_M_FEC_INI))saldo,
+                       C.ID_SUCURSAL,
+                       S.DESCRIPCION SUCURSAL_DESC,
+                       P.TIPO_CUENTA
+                
+                
+                       
+                FROM   COW_DIARIO_DETALLES_PROV  D,
+                       COW_DIARIO_CABECERAS_PROV C,
+                       COW_PLAN_CUENTAS          P,
+                       BSW_MONEDAS               M,
+                       BSW_SUCURSALES            S,
+                       COW_EJERCICIOS            E,
+                       BSW_EMPRESAS              EM
+                       
+                       
+                WHERE EM.ID = :P0_COD_EMPRESA
+                  AND P.ID_EMPRESA = EM.ID
+                  AND (C.FEC_ASIENTO BETWEEN :P282_M_FEC_INI AND :P282_M_FEC_FIN)
+                  AND (P.COD_CUENTA BETWEEN :P282_M_COD_CUENTA_INI AND :P282_M_COD_CUENTA_FIN OR (:P282_M_COD_CUENTA_INI IS NULL AND :P282_M_COD_CUENTA_FIN IS NULL))
+                  AND E.COD_EJERCICIO = :P0_COD_EJERCICIO
+                  AND D.ID_EJERCICIO  = E.ID
+                  AND C.ID_EJERCICIO  = D.ID_EJERCICIO
+                  AND C.NUM_ASIENTO   = D.NUM_ASIENTO
+                  AND C.ID_SUCURSAL   = d.ID_SUCURSAL
+                  AND P.ID_EMPRESA    = d.ID_EMPRESA
+                  AND P.ID            = D.ID_PLAN_CUENTA
+                  AND P.ID_MONEDA     = m.ID(+)
+                  AND S.ID_EMPRESA    = c.ID_EMPRESA  
+                  AND S.ID            = c.ID_SUCURSAL
+                
+                GROUP BY 
+                       P.ID_EMPRESA,
+                       --D.FEC_ASIENTO,
+                       E.COD_EJERCICIO,
+                       P.COD_CUENTA,
+                       P.NOMBRE_CUENTA,
+                       --D.MON_DEBE,
+                       --D.MON_HABER,
+                       --SA.SALDO_ANT,
+                       C.ID_SUCURSAL,
+                       S.DESCRIPCION,
+                       P.TIPO_CUENTA
+                       
+                       
+                ORDER BY regexp_replace(
+                      regexp_replace(
+                        regexp_replace(
+                          P.COD_CUENTA,'(^|\.)(\d{3})','\1 \2'
+                          ),
+                        '(^|\.)(\d{2})','\1 0\2'
+                      ),
+                      '(^|\.)(\d)','\1 00\2'
+                    );
+                
+                ```
+            pageItemsToSubmit: [
+                P282_M_FEC_INI
+                P282_M_FEC_FIN
+                P282_M_COD_CUENTA_INI
+                P282_M_COD_CUENTA_FIN
+                P0_COD_EMPRESA
+                P0_COD_EJERCICIO
+            ]
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            regionDisplaySelector: true
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        performance {
+            maxRowsToProcess: 1000000
+        }
+        searchBar {
+            includeSearchBar: false
+        }
+        advanced {
+            savedReportMappingIdentifier: 66681885391485102
+        }
+
+        column COD_CUENTA (
+            type: plainText
+            heading {
+                heading: Cód. Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: C
+            }
+        )
+
+        column COD_EJERCICIO (
+            type: hidden
+            heading {
+                heading: Cod Ejercicio
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: B
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            heading {
+                heading: Id Empresa
+            }
+            layout {
+                sequence: 10
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: A
+            }
+        )
+
+        column ID_SUCURSAL (
+            type: hidden
+            heading {
+                heading: Id Sucursal
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: I
+            }
+        )
+
+        column MON_DEBE (
+            type: plainText
+            heading {
+                heading: Monto Debe
+                alignment: center
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: E
+            }
+        )
+
+        column MON_HABER (
+            type: plainText
+            heading {
+                heading: Monto Haber
+                alignment: center
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            advanced {
+                endUserAlias: F
+            }
+        )
+
+        column NOMBRE_CUENTA (
+            type: plainText
+            heading {
+                heading: Nombre Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: D
+            }
+        )
+
+        column SUCURSAL_DESC (
+            type: hidden
+            heading {
+                heading: Sucursal Desc
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: J
+            }
+        )
+
+        column TIPO_CUENTA (
+            type: plainText
+            heading {
+                heading: Tipo Cuenta
+                alignment: center
+            }
+            layout {
+                sequence: 110
+                columnAlignment: center
+            }
+            source {
+                dataType: STRING
+            }
+            advanced {
+                endUserAlias: K
+            }
+        )
+
+        savedReport 666961 (
+            visibility: primaryDefault
+            view {
+                rowsPerPage: 50
+            }
+
+            displayColumn COD_CUENTA (
+                sequence: 1
+            )
+
+            displayColumn MON_DEBE (
+                sequence: 3
+            )
+
+            displayColumn MON_HABER (
+                sequence: 4
+            )
+
+            displayColumn NOMBRE_CUENTA (
+                sequence: 2
+            )
+
+            displayColumn TIPO_CUENTA (
+                sequence: 5
+            )
+
+        )
+
+    )
+
+    pageItem P282_M_COD_CUENTA_FIN (
+        type: popupLov
+        label {
+            label: <p>Hasta: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas-contables-cod-asentables
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 40
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P282_M_COD_CUENTA_INI (
+        type: popupLov
+        label {
+            label: <p>Desde cuenta: </p>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cuentas-contables-cod-asentables
+            displayExtraValues: false
+            nullDisplayValue: --SIN SELECCIONAR--
+        }
+        layout {
+            sequence: 30
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P282_M_FEC_FIN (
+        type: datePicker
+        label {
+            label: <p>Hasta: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            column: 6
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: select last_day(trunc(sysdate)) from dual
+        }
+    )
+
+    pageItem P282_M_FEC_INI (
+        type: datePicker
+        label {
+            label: <p>Desde fecha: </p>
+            alignment: left
+        }
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: regionBody
+            alignment: left
+            column: 3
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT '01/01/'||to_char(sysdate,'YYYY') from dual
+        }
+    )
+
+    button b282-m-ejecutar (
+        buttonName: B282_M_EJECUTAR
+        label: Ejecutar
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-refresh
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button b282-m-imprimir (
+        buttonName: B282_M_IMPRIMIR
+        label: Imprimir
+        layout {
+            sequence: 10
+            region: @filtros
+            slot: help
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-print
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    dynamicAction convert-fecha (
+        name: CONVERT_FECHA
+        execution {
+            sequence: 20
+        }
+        when {
+            selectionType: items
+            items: P282_M_FEC_INI
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P282_M_FEC_INI) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P282_M_FEC_INI,'/','');
+                            conv_fecha := substr(:P282_M_FEC_INI,1,2)||'/'||
+                                                      substr(:P282_M_FEC_INI,3,2)||'/'||
+                                                      lpad(substr(:P282_M_FEC_INI,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P282_M_FEC_INI := conv_fecha;
+                            ELSIF (length(:P282_M_FEC_INI) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P282_M_FEC_INI) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P282_M_FEC_INI
+                itemsToReturn: P282_M_FEC_INI
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction convert-fecha-fin (
+        name: CONVERT_FECHA_FIN
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P282_M_FEC_FIN
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    declare 
+                        conv_fecha varchar2(20);
+                    
+                    begin
+                    
+                        if (length(:P282_M_FEC_FIN) = 8)
+                                 /*and (nvl(:P392_IVA_INCLUIDO,'N') = 'S' or :P392_TIP_COMPROBANTE IN  ('RTI'))*/ then
+                    
+                            conv_fecha := replace(:P282_M_FEC_FIN,'/','');
+                            conv_fecha := substr(:P282_M_FEC_FIN,1,2)||'/'||
+                                                      substr(:P282_M_FEC_FIN,3,2)||'/'||
+                                                      lpad(substr(:P282_M_FEC_FIN,5,4),4,'0');
+                            
+                            /*if conv_fecha between '01/'||to_date(conv_fecha, 'MM/YYYY') and last_day(conv_fecha) then
+                                :P392_FEC_COMPROBANTE := conv_fecha;
+                                raise_application_error(-20000,'fecha');
+                    
+                            end if;*/
+                            /*if conv_fecha between '01/' || to_date(conv_fecha, 'MM/YYYY') AND last_day(conv_fecha) then
+                                raise_application_error(-20000,'01/' || to_date(conv_fecha, 'MM/YYYY'));
+                            else
+                                raise_application_error(-20000,'no paso la validación de días');
+                            end if;*/
+                    
+                        :P282_M_FEC_FIN := conv_fecha;
+                            ELSIF (length(:P282_M_FEC_FIN) = 10) THEN
+                            NULL;
+                    
+                            ELSIF (length(:P282_M_FEC_FIN) > 10) THEN
+                                raise_application_error(-20000,'Formato de fecha inválido.');
+                        end if;
+                    end;
+                    ```
+                itemsToSubmit: P282_M_FEC_FIN
+                itemsToReturn: P282_M_FEC_FIN
+                suppressChangeEvent: true
+                showProcessing: true
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction mayorizado-refresh (
+        name: MAYORIZADO_REFRESH
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @b282-m-ejecutar
+        }
+
+        action native-refresh (
+            action: refresh
+            affectedElements {
+                selectionType: region
+                region: @reporte
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    branch (
+        name: Go To Page 271
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        behavior {
+            target: {
+                page: 271
+            }
+        }
+        serverSideCondition {
+            whenButtonPressed: @b282-m-imprimir
+        }
+    )
+
+)
+

@@ -1,0 +1,212 @@
+page 596 (
+    name: Imprimir Cheques Emitidos en Caja
+    alias: IMPRIMIR-CHEQUES-EMITIDOS-EN-CAJA
+    title: Imprimir Cheques Emitidos en Caja
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @ruta-de-navegación
+        }
+        layout {
+            sequence: 10
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P596_BANCO (
+        type: textField
+        label {
+            label: Banco
+            alignment: left
+        }
+        layout {
+            sequence: 30
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P596_ESTADO (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P596_NRO_CHEQUE (
+        type: textField
+        label {
+            label: Nro Cheque
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P596_PERIODO_EMI_FIN (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 70
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P596_PERIODO_EMI_INI (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 60
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P596_PERIODO_VENCI_FIN (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 50
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    pageItem P596_PERIODO_VENCI_INI (
+        type: textField
+        label {
+            label: New
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            slot: body
+            alignment: left
+        }
+        appearance {
+            template: @optional-floating
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+    )
+
+    branch (
+        name: Branch To PL/SQL Procedure
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        behavior {
+            type: plsqlProcedure
+            plsqlCode:
+                ```plsql
+                declare
+                  l_proc varchar2(100) := 'show report';
+                  l_report_url varchar2(32767 char) := W_BUSCA_PARAMETRO('BS','URL_REPORT');
+                BEGIN
+                  xlog (l_proc, 'url (orig):' || l_report_url);
+                  xlib_jasperreports.set_report_url(l_report_url);
+                  xlib_jasperreports.show_report (p_rep_name => apex_util.url_encode('Cheq_Emi_Caja'),
+                          p_rep_format          => apex_util.url_encode('pdf'),
+                          p_data_source         => apex_util.url_encode('default'),
+                          p_out_filename        => apex_util.url_encode(:P3_out_filename),
+                          p_rep_locale          => apex_util.url_encode('es_ES'),
+                          p_rep_encoding        => apex_util.url_encode('UTF-8'),
+                          p_additional_params   => ('P_ID_EMPRESA='|| :P0_ID_EMPRESA ||
+                          '&'||'P_PERIODO_VENCI_INI='||:P594_PERIODO_VENCI_INI||
+                          '&'||'P_PERIODO_VENCI_FIN='||:P594_PERIODO_VENCI_FIN|| 
+                          '&'||'P_PERIODO_EMI_INI='  ||:P594_PERIODO_EMI_INI||
+                          '&'||'P_PERIODO_EMI_FIN='  ||:P594_PERIODO_EMI_FIN||
+                          '&'||'P_ESTADO='           ||:P594_ESTADO || 
+                          '&'||'P_NRO_CHEQUE='       ||:P594_NRO_CHEQUE ||
+                          '&'||'P_BANCO='            ||:P594_BANCO ||
+                          '&'||'P_USUARIO='            ||:APP_USER)
+                          );
+                  apex_application.stop_apex_engine();
+                exception
+                  when apex_application.e_stop_apex_engine then
+                    null;
+                  when others then 
+                    xlog(l_proc, substr(dbms_utility.format_error_backtrace,1,3500), 'ERROR');
+                    raise;
+                end;   
+                                                     
+                ```
+        }
+    )
+
+)
+

@@ -1,0 +1,2213 @@
+page 638 (
+    name: Detalle Seguimiento de Presupuesto
+    alias: DETALLE-SEGUIMIENTO-DE-PRESUPUESTO
+    title: Detalle Seguimiento de Presupuesto
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: [
+            #DEFAULT#
+            ui-dialog--stretch
+        ]
+    }
+    dialog {
+        width: 1200
+        height: 300
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            ```
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region carga-varios (
+        name: Carga Varios
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P638_IND_VARIOS = 'S'
+        }
+    )
+
+    region datos-de-cotizacion (
+        name: Datos de Cotizacion
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+                t-Form--noPadding
+            ]
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P638_IND_VARIOS = 'N'
+        }
+    )
+
+    region detalle-seguimiento-de-presupuesto (
+        name: Detalle Seguimiento de Presupuesto
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                SELECT S.ID,
+                       S.ID_EMPRESA,
+                       S.DEFINICION,
+                       S.FEC_PROX_EVENTO,
+                       S.OBSERVACION,
+                       S.ID_PEDIDO,
+                       S.FEC_CARGA,
+                       S.COD_USU_AUD,
+                       S.RESPONSABLE,
+                       S.ID_ARTICULO,
+                       S.ID_PEDIDO_DET,
+                       S.ID_COTIZA_ART,
+                       S.IND_FINALIZADO,
+                       S.COD_USUARIO_FINALIZA,
+                       S.FEC_FINALIZADO,
+                       S.ID_APROBACION_LIC,
+                       S.ID_OFERTA
+                  FROM CLW_ACCIONES_SEGUI S
+                WHERE S.ID_EMPRESA = :P0_ID_EMPRESA
+                  AND ((S.ID_PEDIDO, S.ID_PEDIDO_DET) IN (SELECT CA.ID_PEDIDO, CA.ID_PEDIDO_DET
+                                                            FROM CMW_COTIZA_ARTICULOS CA
+                                                           WHERE CA.ID = :P638_ID_COTIZA_ART) OR
+                       S.ID_OFERTA IN (SELECT OA.ID_OFERTA
+                                             FROM LCW_OFERTAS_APROBACIONES OA
+                                            WHERE OA.ID = :P638_ID_APROBACION_LIC))
+                --AND   ((S.ID_PEDIDO  = :P638_ID_PEDIDO
+                --AND   (S.RESPONSABLE = :P638_RESPONSABLE OR :P638_RESPONSABLE IS NULL)
+                ---AND   S.ID_ARTICULO = :P638_ID_ARTICULO
+                --AND   S.ID_PEDIDO_DET = :P638_ID_PEDIDO_DET) OR S.ID_APROBACION_LIC = :P638_ID_APROBACION_LIC)
+                  --AND (S.ID_COTIZA_ART = :P638_ID_COTIZA_ART OR S.ID_APROBACION_LIC = :P638_ID_APROBACION_LIC)
+                --AND S.FEC_PROX_EVENTO = (SELECT MAX(SS.FEC_PROX_EVENTO) FROM CLW_ACCIONES_SEGUI SS WHERE SS.ID_PEDIDO = S.ID_PEDIDO)
+                
+                ```
+            pageItemsToSubmit: [
+                P638_ID_PEDIDO
+                P638_RESPONSABLE
+                P638_ID_ARTICULO
+                P638_ID_PEDIDO_DET
+            ]
+        }
+        layout {
+            sequence: 50
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: Detalles
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: NVL(:P638_IND_VARIOS, 'N') = 'N'
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+            addRowIfEmpty: false
+        }
+        toolbar {
+            controls: [
+                searchCol
+                searchField
+                actionsMenu
+                resetButton
+                saveButton
+            ]
+        }
+        download {
+            formats: [
+                csv
+                html
+                pdf
+                excel
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 44634069245781968
+        }
+
+        savedReport 446345 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @IND_FINALIZADO
+                layout {
+                    width: 88
+                    sequence: 14
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_FINALIZA
+                layout {
+                    width: 101
+                    sequence: 15
+                }
+            )
+
+            displayColumn (
+                column: @FEC_FINALIZADO
+                layout {
+                    width: 92
+                    sequence: 16
+                }
+            )
+
+            displayColumn (
+                column: @ID_ARTICULO
+                layout {
+                    show: false
+                    width: 99
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO_DET
+                layout {
+                    show: false
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @ID_COTIZA_ART
+                layout {
+                    show: false
+                    width: 59
+                    sequence: 13
+                }
+            )
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @APEX$ROW_ACTION
+                layout {
+                    frozen: true
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @DEFINICION
+                layout {
+                    width: 158
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    width: 326
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @ID_PEDIDO
+                layout {
+                    show: false
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @FEC_CARGA
+                layout {
+                    width: 135
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @FEC_PROX_EVENTO
+                layout {
+                    width: 148
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @ID_APROBACION_LIC
+                layout {
+                    show: false
+                    sequence: 17
+                }
+            )
+
+            displayColumn (
+                column: @COD_USU_AUD
+                layout {
+                    width: 101
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @RESPONSABLE
+                layout {
+                    width: 96
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @ID_OFERTA
+                layout {
+                    show: false
+                    sequence: 18
+                }
+            )
+
+            sort (
+                column: @FEC_CARGA
+                sort {
+                    direction: desc
+                    nulls: last
+                    sequence: 2
+                }
+            )
+
+            sort (
+                column: @FEC_PROX_EVENTO
+                sort {
+                    direction: desc
+                    nulls: last
+                    sequence: 1
+                }
+            )
+
+        )
+
+        column APEX$ROW_ACTION (
+            type: actionsMenu
+            layout {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: never
+            }
+        )
+
+        column APEX$ROW_SELECTOR (
+            type: rowSelector
+            layout {
+                sequence: 10
+            }
+        )
+
+        column COD_USUARIO_FINALIZA (
+            type: textField
+            heading {
+                heading: <p>Finalizado por</p>
+                alignment: center
+            }
+            layout {
+                sequence: 170
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: COD_USUARIO_FINALIZA
+                dataType: varchar2
+                queryOnly: true
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+        )
+
+        column COD_USU_AUD (
+            type: textField
+            heading {
+                heading: <p>Usuario</p>
+                alignment: center
+            }
+            layout {
+                sequence: 70
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                maxLength: 10
+            }
+            source {
+                databaseColumn: COD_USU_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID
+                execute: forEachRow
+            }
+        )
+
+        column DEFINICION (
+            type: popupLov
+            heading {
+                heading: <p>Definición</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+                popupWidth: 200
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-definiciones-segui
+                nullDisplayValue: --Sin Seleccionar--
+            }
+            layout {
+                sequence: 60
+            }
+            validation {
+                valueRequired: true
+                maxLength: 50
+            }
+            source {
+                databaseColumn: DEFINICION
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column FEC_CARGA (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Carga</p>
+                alignment: center
+            }
+            settings {
+                showTime: true
+            }
+            layout {
+                sequence: 80
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: DD/MM/YYYY HH24:MI
+            }
+            source {
+                databaseColumn: FEC_CARGA
+                dataType: date
+            }
+            default {
+                type: sqlQuerySingleValue
+                sqlQuerySingleValue: SELECT TO_CHAR(SYSDATE,'DD/MM/YYYY HH24:MI') FROM DUAL
+            }
+        )
+
+        column FEC_FINALIZADO (
+            type: datePicker
+            heading {
+                heading: <p>Finalizado el</p>
+                alignment: center
+            }
+            layout {
+                sequence: 180
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            source {
+                databaseColumn: FEC_FINALIZADO
+                dataType: date
+                queryOnly: true
+            }
+        )
+
+        column FEC_PROX_EVENTO (
+            type: datePicker
+            heading {
+                heading: <p>Fecha Prox Evento</p>
+                alignment: center
+            }
+            settings {
+                showTime: true
+            }
+            layout {
+                sequence: 90
+                columnAlignment: center
+            }
+            appearance {
+                formatMask: DD/MM/YYYY HH24:MI
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: FEC_PROX_EVENTO
+                dataType: date
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_APROBACION_LIC (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            layout {
+                sequence: 190
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_APROBACION_LIC
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_ARTICULO (
+            type: selectList
+            heading {
+                heading: <p>Cod Articulo</p>
+                alignment: center
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select cod_articulo, id   
+                    from stw_articulos
+                    ```
+            }
+            layout {
+                sequence: 130
+                columnAlignment: center
+            }
+            appearance {
+                cssClasses: is-readonly
+            }
+            validation {
+                valueRequired: true
+            }
+            source {
+                databaseColumn: ID_ARTICULO
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        column ID_COTIZA_ART (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            layout {
+                sequence: 150
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_COTIZA_ART
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: item
+                item: P0_ID_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_OFERTA (
+            type: numberField
+            heading {
+                heading: Id Oferta
+                alignment: end
+            }
+            layout {
+                sequence: 200
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_OFERTA
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+        )
+
+        column ID_PEDIDO (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_PEDIDO
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column ID_PEDIDO_DET (
+            type: numberField
+            heading {
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            source {
+                databaseColumn: ID_PEDIDO_DET
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+            enableUsersTo {
+                sort: false
+            }
+        )
+
+        column IND_FINALIZADO (
+            type: checkbox
+            heading {
+                heading: <p>Finalizado</p>
+                alignment: center
+            }
+            settings {
+                useDefaults: false
+                checkedValue: S
+                uncheckedValue: N
+            }
+            layout {
+                sequence: 160
+                columnAlignment: center
+            }
+            source {
+                databaseColumn: IND_FINALIZADO
+                dataType: varchar2
+            }
+            default {
+                type: static
+                staticValue: N
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+            }
+            readOnly {
+                type: expression
+                plsqlExpression:
+                    ```plsql
+                    (:RESPONSABLE != TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER) OR
+                    NVL(:IND_FINALIZADO, 'N') = 'S') AND TRAE_COD_GRUPO_USUARIO(:P0_ID_EMPRESA, :APP_USER) NOT IN ('DIR', 'ADMIN')
+                    ```
+                execute: forEachRow
+            }
+        )
+
+        column OBSERVACION (
+            type: textarea
+            heading {
+                heading: <p>Observación</p>
+                alignment: center
+            }
+            layout {
+                sequence: 100
+            }
+            validation {
+                maxLength: 200
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: none
+            }
+            enableUsersTo {
+                sort: false
+            }
+            readOnly {
+                type: itemIsNotNull
+                item: ID
+                execute: forEachRow
+            }
+        )
+
+        column RESPONSABLE (
+            type: popupLov
+            heading {
+                heading: <p>Responsable</p>
+                alignment: center
+            }
+            settings {
+                fetchOnSearch: true
+            }
+            lov {
+                type: sharedComponent
+                lov: @lv-usuarios
+            }
+            layout {
+                sequence: 120
+                columnAlignment: center
+            }
+            validation {
+                maxLength: 150
+            }
+            source {
+                databaseColumn: RESPONSABLE
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+        )
+
+        page {
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalle Seguimiento de Presupuesto
+        }
+    )
+
+    region filtro (
+        name: Filtro
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noPadding
+                t-Region--removeHeader js-removeLandmark
+                t-Region--scrollBody
+            ]
+        }
+    )
+
+    pageItem P638_CANT_PENDIENTE_OCC (
+        type: displayOnly
+        label {
+            label: <p>Cant. Pendiente OCC:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 120
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P638_CLIENTE (
+        type: displayOnly
+        label {
+            label: <p>Cliente:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            format: html
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 50
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_COD_ARTICULO (
+        type: displayOnly
+        label {
+            label: <p>Cod. Articulo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 20
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_COD_USU_AUD (
+        type: displayOnly
+        label {
+            label: <p>Usuario:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-varios
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_DEFINICION (
+        type: popupLov
+        label {
+            label: <p>Definicion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-definiciones-segui
+        }
+        layout {
+            sequence: 10
+            region: @carga-varios
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_DESC_ARTICULO (
+        type: displayOnly
+        label {
+            label: <p>Articulo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 40
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_FEC_CARGA (
+        type: displayOnly
+        label {
+            label: <p>Fecha Carga:&ensp;</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga-varios
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue: SELECT TO_CHAR(SYSDATE,'DD/MM/YYYY HH24:MI') FROM DUAL
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_FEC_ENTREGA (
+        type: displayOnly
+        label {
+            label: <p>Fecha Entrega:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 130
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P638_FEC_PROX_EVENTO (
+        type: datePicker
+        label {
+            label: <p>Fecha Proxima de Evento:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            showTime: true
+        }
+        layout {
+            sequence: 50
+            region: @carga-varios
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: DD/MM/YYYY HH24:MI
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_ID_APROBACION_LIC (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 150
+            region: @datos-de-cotizacion
+            slot: regionBody
+        }
+    )
+
+    pageItem P638_ID_ARTICULO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            region: @filtro
+            slot: regionBody
+        }
+    )
+
+    pageItem P638_ID_COTIZA_ART (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 80
+            region: @filtro
+            slot: regionBody
+        }
+    )
+
+    pageItem P638_ID_PEDIDO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @filtro
+            slot: regionBody
+        }
+    )
+
+    pageItem P638_ID_PEDIDO_DET (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 70
+            region: @filtro
+            slot: regionBody
+        }
+    )
+
+    pageItem P638_IND_VARIOS (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 90
+            region: @filtro
+            slot: regionBody
+        }
+        comments {
+            comments: Para saber si se hara carga por seleccion o por item
+        }
+    )
+
+    pageItem P638_MARCA (
+        type: displayOnly
+        label {
+            label: <p>Marca:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 100
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_NRO_OCC (
+        type: displayOnly
+        label {
+            label: <p>Nro. OCC:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 60
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_NRO_OCP (
+        type: displayOnly
+        label {
+            label: <p>Nro. OCP:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 70
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_NRO_PEDIDO (
+        type: displayOnly
+        label {
+            label: <p>Nro. PED/LIC:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 30
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_OBSERVACION (
+        type: textarea
+        label {
+            label: <p>Observacion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            autoHeight: true
+            charCounter: true
+        }
+        layout {
+            sequence: 60
+            region: @carga-varios
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: [
+                #DEFAULT#
+                t-Form-fieldContainer--stretchInputs
+            ]
+            width: 30
+            height: 5
+        }
+        validation {
+            maxLength: 200
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_PRESENTACION (
+        type: displayOnly
+        label {
+            label: <p>Presentacion:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 90
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_RESPONSABLE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 50
+            region: @filtro
+            slot: regionBody
+        }
+    )
+
+    pageItem P638_RESPONSABLE_ (
+        type: popupLov
+        label {
+            label: <p>Responsable:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            fetchOnSearch: true
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-usuarios
+        }
+        layout {
+            sequence: 70
+            region: @carga-varios
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_TIP_COMPROBANTE (
+        type: displayOnly
+        label {
+            label: <p>Tipo:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 10
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    pageItem P638_VENDEDOR (
+        type: displayOnly
+        label {
+            label: <p>Vendedor:&ensp;</p>
+            alignment: left
+        }
+        settings {
+            sendOnPageSubmit: false
+        }
+        layout {
+            sequence: 110
+            region: @datos-de-cotizacion
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            newColumn: false
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    button guardar (
+        buttonName: Guardar
+        label: Guardar
+        layout {
+            sequence: 10
+            region: @carga-varios
+            slot: create
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    dynamicAction cargar-datos-en-coleccion (
+        name: Cargar datos en coleccion
+        execution {
+            sequence: 70
+        }
+        when {
+            event: ready
+        }
+
+        action native-execute-plsql-code (
+            action: executeServerSideCode
+            settings {
+                plsqlCode:
+                    ```plsql
+                    DECLARE
+                        CURSOR SEGUIMIENTO IS
+                            SELECT NVL(S.IND_FINALIZADO, 'N') IND_FINALIZADO,
+                                   OBTENER_ESTADO_OCC(S.ID_COTIZA_ART) ESTADO_OCC,
+                                   S.ID
+                              FROM CLW_ACCIONES_SEGUI S
+                            WHERE S.ID_EMPRESA = :P0_ID_EMPRESA
+                              AND ((S.ID_PEDIDO, S.ID_PEDIDO_DET) IN (SELECT CA.ID_PEDIDO, CA.ID_PEDIDO_DET
+                                                                        FROM CMW_COTIZA_ARTICULOS CA
+                                                                       WHERE CA.ID = :P638_ID_COTIZA_ART) OR
+                                   S.ID_OFERTA IN (SELECT OA.ID_OFERTA
+                                                         FROM LCW_OFERTAS_APROBACIONES OA
+                                                        WHERE OA.ID = :P638_ID_APROBACION_LIC));
+                    
+                    BEGIN
+                        APEX_COLLECTION.create_or_truncate_collection('DETALLES_SEGUIMIENTO');
+                    
+                        FOR SEG IN SEGUIMIENTO
+                        LOOP
+                            APEX_COLLECTION.add_member(
+                                p_collection_name => 'DETALLES_SEGUIMIENTO',
+                                p_c001            => SEG.IND_FINALIZADO,
+                                p_c002            => SEG.ESTADO_OCC,
+                                p_n001            => SEG.ID
+                            );
+                        END LOOP;
+                    END;
+                    ```
+                itemsToSubmit: [
+                    P638_ID_COTIZA_ART
+                    P638_ID_APROBACION_LIC
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction eventos-al-dar-finalizado (
+        name: Eventos al dar finalizado
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: columns
+            interactiveGrid: @detalle-seguimiento-de-presupuesto
+            columns: IND_FINALIZADO
+        }
+
+        action cod-usuario-finaliza (
+            name: COD_USUARIO_FINALIZA
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: :APP_USER
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_FINALIZA
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_FINALIZADO
+                value: S
+            }
+        )
+
+        action cod-usuario-finaliza-2 (
+            name: COD_USUARIO_FINALIZA
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: COD_USUARIO_FINALIZA
+            }
+            execution {
+                sequence: 50
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_FINALIZADO
+                value: N
+            }
+        )
+
+        action fec-finalizado (
+            name: FEC_FINALIZADO
+            action: setValue
+            settings {
+                type: plsqlExpression
+                plsqlExpression: SYSDATE
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: FEC_FINALIZADO
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_FINALIZADO
+                value: S
+            }
+        )
+
+        action fec-finalizado-2 (
+            name: FEC_FINALIZADO
+            action: setValue
+            affectedElements {
+                selectionType: columns
+                columns: FEC_FINALIZADO
+            }
+            execution {
+                sequence: 60
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumn=value
+                column: IND_FINALIZADO
+                value: N
+            }
+        )
+
+    )
+
+    dynamicAction habilitar-copiado-en-grilla (
+        name: Habilitar copiado en grilla
+        execution {
+            sequence: 50
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    document.addEventListener('copy', (event) => {
+                        const activeElement = $(document.activeElement)[0];
+                        const textToCopy = activeElement?.innerText || window.getSelection();
+                        event.clipboardData.setData('text/plain', textToCopy);
+                        event.preventDefault();
+                    });
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction inicializar-lic (
+        name: Inicializar LIC
+        execution {
+            sequence: 120
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalle-seguimiento-de-presupuesto
+        }
+        clientSideCondition {
+            type: itemColumnIsNotNull
+            componentType: item
+            item: P638_ID_APROBACION_LIC
+        }
+
+        action lic (
+            name: LIC
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT LO.ID_ARTICULO,
+                           OA.ID,
+                           OA.ID_OFERTA
+                      FROM LCW_OFERTAS_APROBACIONES OA
+                      JOIN LCW_OFERTAS              LO ON LO.ID = OA.ID_OFERTA
+                     WHERE OA.ID = :P638_ID_APROBACION_LIC
+                    ```
+                itemsToSubmit: P638_ID_APROBACION_LIC
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    ID_ARTICULO
+                    ID_APROBACION_LIC
+                    ID_OFERTA
+                ]
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: ID_APROBACION_LIC
+            }
+        )
+
+    )
+
+    dynamicAction inicializar-ped (
+        name: Inicializar PED
+        execution {
+            sequence: 110
+        }
+        when {
+            event: region/interactiveGrid/apexbeginrecordedit
+            selectionType: region
+            region: @detalle-seguimiento-de-presupuesto
+        }
+        clientSideCondition {
+            type: itemColumnIsNotNull
+            componentType: item
+            item: P638_ID_COTIZA_ART
+        }
+
+        action ped (
+            name: PED
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT ID_ARTICULO,
+                           ID_PEDIDO,
+                           ID_PEDIDO_DET,
+                           ID
+                      FROM CMW_COTIZA_ARTICULOS
+                     WHERE ID = :P638_ID_COTIZA_ART
+                    ```
+                itemsToSubmit: P638_ID_COTIZA_ART
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: columns
+                columns: [
+                    ID_ARTICULO
+                    ID_PEDIDO
+                    ID_PEDIDO_DET
+                    ID_COTIZA_ART
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+            clientSideCondition {
+                type: itemColumnIsNull
+                column: ID_COTIZA_ART
+            }
+        )
+
+    )
+
+    dynamicAction poner-modo-edicion (
+        name: Poner modo edicion
+        execution {
+            sequence: 40
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P638_IND_VARIOS = 'N'
+        }
+
+        action native-javascript-code (
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                    var grid = apex.region("Detalles").call("getViews").grid;
+                    grid.setEditMode(true);
+                    ```
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-cotizacion (
+        name: Setear Datos Cotizacion
+        execution {
+            sequence: 90
+        }
+        when {
+            selectionType: items
+            items: P638_ID_COTIZA_ART
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT TIP_COMPROBANTE, ID_PEDIDO, ID_PEDIDO_DET,
+                           NRO_COMPROBANTE||' / Item '||NRO_ITEM, CLIENTE, NRO_OCC, NRO_OCP, ID_ARTICULO,
+                           COD_ARTICULO||' / Fab. '||COD_FABRICANTE, DESC_ARTICULO, PRESENTACION_ARTICULO||' '||UM_ARTICULO,
+                           MARCA_ARTICULO, VENDEDOR||' / Soporte '||SOPORTE,
+                           CANT_PENDIENTE, FEC_PLAZO
+                      FROM CLWV_SEGUIMIENTO_PRESUPUESTO SP
+                     WHERE SP.ID_COTIZA_ART = :P638_ID_COTIZA_ART
+                       AND ROWNUM = 1
+                    ```
+                itemsToSubmit: P638_ID_COTIZA_ART
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P638_TIP_COMPROBANTE
+                    P638_ID_PEDIDO
+                    P638_ID_PEDIDO_DET
+                    P638_NRO_PEDIDO
+                    P638_CLIENTE
+                    P638_NRO_OCC
+                    P638_NRO_OCP
+                    P638_ID_ARTICULO
+                    P638_COD_ARTICULO
+                    P638_DESC_ARTICULO
+                    P638_PRESENTACION
+                    P638_MARCA
+                    P638_VENDEDOR
+                    P638_CANT_PENDIENTE_OCC
+                    P638_FEC_ENTREGA
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P638_ID_COTIZA_ART
+            }
+        )
+
+    )
+
+    dynamicAction setear-datos-licitacion (
+        name: Setear Datos Licitacion
+        execution {
+            sequence: 100
+        }
+        when {
+            selectionType: items
+            items: P638_ID_APROBACION_LIC
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT TIP_COMPROBANTE, ID_PEDIDO, ID_PEDIDO_DET,
+                           NRO_COMPROBANTE||' / Item '||NRO_ITEM, CLIENTE, NRO_OCC, NRO_OCP, ID_ARTICULO,
+                           COD_ARTICULO||' / Fab. '||COD_FABRICANTE, DESC_ARTICULO, PRESENTACION_ARTICULO||' '||UM_ARTICULO,
+                           MARCA_ARTICULO, VENDEDOR||' / Soporte '||SOPORTE,
+                           CANT_PENDIENTE, FEC_PLAZO
+                      FROM CLWV_SEGUIMIENTO_PRESUPUESTO SP
+                     WHERE SP.ID_APROBACION_LIC = :P638_ID_APROBACION_LIC
+                       AND ROWNUM = 1
+                    ```
+                itemsToSubmit: P638_ID_APROBACION_LIC
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: [
+                    P638_TIP_COMPROBANTE
+                    P638_ID_PEDIDO
+                    P638_ID_PEDIDO_DET
+                    P638_NRO_PEDIDO
+                    P638_CLIENTE
+                    P638_NRO_OCC
+                    P638_NRO_OCP
+                    P638_ID_ARTICULO
+                    P638_COD_ARTICULO
+                    P638_DESC_ARTICULO
+                    P638_PRESENTACION
+                    P638_MARCA
+                    P638_VENDEDOR
+                    P638_CANT_PENDIENTE_OCC
+                    P638_FEC_ENTREGA
+                ]
+            }
+            execution {
+                sequence: 10
+            }
+            clientSideCondition {
+                type: itemIsNotNull
+                item: P638_ID_APROBACION_LIC
+            }
+        )
+
+    )
+
+    dynamicAction submit (
+        name: Submit
+        execution {
+            sequence: 60
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @guardar
+        }
+
+        action native-submit-page (
+            action: submitPage
+            settings {
+                requestButtonName: Guardar
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction submit-save (
+        name: Submit SAVE
+        execution {
+            sequence: 80
+        }
+        when {
+            event: region/interactiveGrid/interactivegridsave
+            selectionType: region
+            region: @detalle-seguimiento-de-presupuesto
+        }
+
+        action native-submit-page (
+            action: submitPage
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction verificar-cantidad-seleccionados (
+        name: Verificar cantidad seleccionados
+        execution {
+            sequence: 20
+        }
+        when {
+            event: ready
+        }
+        serverSideCondition {
+            type: never
+        }
+
+        action native-alert (
+            action: alert
+            settings {
+                message: Debe seleccionar al menos 2 registros
+                style: warning
+            }
+            execution {
+                sequence: 10
+            }
+            serverSideCondition {
+                type: expression
+                plsqlExpression:
+                    ```plsql
+                    NVL(APEX_STRING.SPLIT(:P635_ID_PEDIDOS, '|').COUNT(), 0) <= 1 AND
+                    NVL(APEX_STRING.SPLIT(:P635_ID_APROBACIONES, '|').COUNT(), 0) <= 1
+                    ```
+            }
+        )
+
+        action native-dialog-close (
+            action: closeDialog
+            execution {
+                sequence: 20
+            }
+            serverSideCondition {
+                type: expression
+                plsqlExpression:
+                    ```plsql
+                    NVL(APEX_STRING.SPLIT(:P635_ID_PEDIDOS, '|').COUNT(), 0) <= 1 AND
+                    NVL(APEX_STRING.SPLIT(:P635_ID_APROBACIONES, '|').COUNT(), 0) <= 1
+                    ```
+            }
+        )
+
+    )
+
+    process actualizar-coleccion (
+        name: Actualizar Coleccion
+        type: executeCode
+        editableRegion: @detalle-seguimiento-de-presupuesto
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VSEQ_ID NUMBER;
+                BEGIN
+                    BEGIN
+                        SELECT SEQ_ID
+                          INTO VSEQ_ID
+                          FROM APEX_COLLECTIONS
+                         WHERE COLLECTION_NAME = 'DETALLES_SEGUIMIENTO'
+                           AND N001 = :ID;
+                    EXCEPTION
+                        WHEN NO_DATA_FOUND THEN
+                            VSEQ_ID := NULL;
+                        WHEN OTHERS THEN
+                            RAISE_APPLICATION_ERROR(-20000, SQLERRM);
+                    END;
+                    
+                    IF VSEQ_ID IS NOT NULL THEN
+                        APEX_COLLECTION.update_member(
+                            p_collection_name => 'DETALLES_SEGUIMIENTO',
+                            p_seq  => VSEQ_ID,
+                            p_c001 => NVL(:IND_FINALIZADO, 'N'),
+                            p_c002 => OBTENER_ESTADO_OCC(:ID_COTIZA_ART),
+                            p_n001 => :ID
+                        );
+                    ELSE
+                        IF :APEX$ROW_STATUS = 'C' /*AND :RESPONSABLE = TRAE_ID_USUARIO(:P0_ID_EMPRESA, :APP_USER) */THEN
+                            APEX_COLLECTION.add_member(
+                                p_collection_name => 'DETALLES_SEGUIMIENTO',
+                                p_c001            => NVL(:IND_FINALIZADO, 'N'),
+                                p_c002            => OBTENER_ESTADO_OCC(:ID_COTIZA_ART),
+                                p_n001            => :ID
+                            );
+                        END IF;
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: afterSubmit
+        }
+        advanced {
+            executionMappingIdentifier: 37181446642162138
+        }
+    )
+
+    process cargar-seguimiento-presupuesto-varios (
+        name: Cargar Seguimiento Presupuesto - Varios
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                  CURSOR SELECCION IS
+                    SELECT N001 ID_PEDIDO,
+                           N002 ID_PEDIDO_DET,
+                           N003 ID_COTIZA_ART,
+                           N004 ID_ARTICULO,
+                           N005 ID_APROBACION_LIC,
+                           (SELECT OA.ID_OFERTA FROM LCW_OFERTAS_APROBACIONES OA WHERE OA.ID = N005) ID_OFERTA
+                      FROM APEX_COLLECTIONS
+                     WHERE COLLECTION_NAME = 'COL_SEGUIMIENTO_PRESUPUESTO';
+                  VID_PEDIDO         APEX_T_VARCHAR2 := APEX_STRING.SPLIT(:P635_ID_PEDIDOS, '|');
+                  VID_ARTICULO       APEX_T_VARCHAR2 := APEX_STRING.SPLIT(:P635_ID_ARTICULOS, '|');
+                  VID_PEDIDO_DETALLE APEX_T_VARCHAR2 := APEX_STRING.SPLIT(:P635_ID_PEDIDO_DETALLES, '|');
+                  VID_COTIZA_ART     APEX_T_VARCHAR2 := APEX_STRING.SPLIT(:P635_ID_COTIZA_ARTS, '|');
+                  VID_OFERTA         CLW_ACCIONES_SEGUI.ID_OFERTA%TYPE;
+                  VID_APROBACION     APEX_T_VARCHAR2 := APEX_STRING.SPLIT(:P635_ID_APROBACIONES, '|');
+                  v_cnt              NUMBER;
+                BEGIN
+                  IF VID_PEDIDO.COUNT = VID_ARTICULO.COUNT AND
+                     VID_PEDIDO.COUNT = VID_PEDIDO_DETALLE.COUNT AND
+                     VID_PEDIDO.COUNT = VID_COTIZA_ART.COUNT AND
+                     VID_PEDIDO.COUNT = VID_APROBACION.COUNT
+                
+                  THEN
+                    --FOR i IN 1 .. VID_PEDIDO.COUNT LOOP
+                    FOR I IN SELECCION LOOP
+                      SELECT COUNT(*) 
+                        INTO v_cnt
+                        FROM CLW_ACCIONES_SEGUI
+                       WHERE ((ID_PEDIDO      = I.ID_PEDIDO AND
+                              ID_PEDIDO_DET  = I.ID_PEDIDO_DET AND
+                              ID_COTIZA_ART  = I.ID_COTIZA_ART) OR
+                              ID_APROBACION_LIC = I.ID_APROBACION_LIC)
+                         AND ID_EMPRESA     = :P0_ID_EMPRESA
+                         AND ID_ARTICULO    = I.ID_ARTICULO
+                         
+                         AND RESPONSABLE    = :P638_RESPONSABLE_
+                         AND DEFINICION     = :P638_DEFINICION
+                         AND (OBSERVACION   = :P638_OBSERVACION OR :P638_OBSERVACION IS NULL)
+                         AND COD_USU_AUD    = :APP_USER
+                        -- AND TRUNC(FEC_PROX_EVENTO) = TO_DATE(:P638_FEC_PROX_EVENTO, 'dd/MM/'
+                       ;
+                
+                      IF v_cnt = 0 THEN
+                        INSERT INTO CLW_ACCIONES_SEGUI(
+                          ID_PEDIDO,
+                          ID_EMPRESA,
+                          ID_ARTICULO,
+                          ID_PEDIDO_DET,
+                          ID_COTIZA_ART,
+                          DEFINICION,
+                          COD_USU_AUD,
+                          FEC_CARGA,
+                          FEC_PROX_EVENTO,
+                          OBSERVACION,
+                          RESPONSABLE,
+                          ID_APROBACION_LIC,
+                          ID_OFERTA
+                        ) VALUES (
+                          I.ID_PEDIDO,
+                          :P0_ID_EMPRESA,
+                          I.ID_ARTICULO,
+                          I.ID_PEDIDO_DET,
+                          I.ID_COTIZA_ART,
+                          :P638_DEFINICION,
+                          :APP_USER,
+                          SYSDATE,
+                          TO_DATE(:P638_FEC_PROX_EVENTO,'DD/MM/YYYY HH24:MI'),
+                          :P638_OBSERVACION,
+                          :P638_RESPONSABLE_,
+                          I.ID_APROBACION_LIC,
+                          I.ID_OFERTA
+                        );
+                      END IF;
+                    END LOOP;
+                  END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        advanced {
+            executionMappingIdentifier: 18095887032726418
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P638_IND_VARIOS = 'S'
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        execution {
+            sequence: 60
+        }
+        advanced {
+            executionMappingIdentifier: 18096291256726422
+        }
+        serverSideCondition {
+            whenButtonPressed: @guardar
+        }
+    )
+
+    process detalle-seguimiento-de-presupuesto-save-interactive-grid-data (
+        name: Detalle Seguimiento de Presupuesto - Save Interactive Grid Data
+        type: interactiveGridAutoRowProcessing
+        editableRegion: @detalle-seguimiento-de-presupuesto
+        execution {
+            sequence: 40
+        }
+        advanced {
+            executionMappingIdentifier: 45058710696125248
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P638_IND_VARIOS = 'N'
+        }
+    )
+
+    process eliminar-coleccion (
+        name: Eliminar Coleccion
+        type: executeCode
+        editableRegion: @detalle-seguimiento-de-presupuesto
+        source {
+            plsqlCode: " APEX_COLLECTION.create_or_truncate_collection('DETALLES_SEGUIMIENTO');"
+        }
+        execution {
+            sequence: 20
+        }
+        advanced {
+            executionMappingIdentifier: 37182125833162145
+        }
+    )
+
+    process validar-tareas (
+        name: Validar tareas
+        type: executeCode
+        editableRegion: @detalle-seguimiento-de-presupuesto
+        source {
+            plsqlCode:
+                ```plsql
+                DECLARE
+                    VCANT_FINALIZADO    NUMBER;
+                    VCANT_REGISTROS     NUMBER;
+                BEGIN
+                    BEGIN
+                        SELECT COUNT(*)
+                          INTO VCANT_FINALIZADO
+                          FROM APEX_COLLECTIONS
+                         WHERE COLLECTION_NAME = 'DETALLES_SEGUIMIENTO'
+                           AND C001 = 'S';
+                    END;
+                
+                     BEGIN
+                        SELECT COUNT(*)
+                          INTO VCANT_REGISTROS
+                          FROM APEX_COLLECTIONS
+                         WHERE COLLECTION_NAME = 'DETALLES_SEGUIMIENTO';
+                    END;
+                
+                    IF VCANT_FINALIZADO = VCANT_REGISTROS THEN
+                        RAISE_APPLICATION_ERROR(-20000, 'No puede finalizar todas las tareas.');
+                    END IF;
+                END;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 37182085431162144
+        }
+    )
+
+)
+

@@ -1,0 +1,1619 @@
+page 208 (
+    name: Carga de Habilitacion de Cajas
+    alias: CARGA-DE-HABILITACION-DE-CAJAS
+    title: Carga de Habilitacion de Cajas
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @modal-dialog
+        templateOptions: #DEFAULT#
+    }
+    dialog {
+        resizable: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    javaScript {
+        functionAndGlobalVariableDeclaration:
+            ```javascript-browser
+            (function($) {
+            
+                function update(model) {
+                    var montoRealKey = model.getFieldKey("MONTO_REAL");
+                    //var cambioSaldoKey = model.getFieldKey("TIP_CAMBIO");
+                    total = 0;
+                    //total_importe = 0;
+            
+                    console.log(">> empieza calculo")
+                    model.forEach(function(record, index, id) {
+                        var monto_real = parseFloat(record[montoRealKey].replace(/\./g,''));
+                        //var cambio_saldo = parseFloat(record[cambioSaldoKey].replace(/\./g,''));
+                            meta = model.getRecordMetadata(id);
+            
+                        if (!isNaN(monto_real) && !meta.deleted && !meta.agg) {
+                            total += monto_real;
+                            //total_importe += monto_cuota*cambio_saldo;
+                        }
+                    });
+                    
+                    console.log(">> setting sum MONTO_CUOTA column to " + total)
+                    $s("P208_MONTO_TOTAL", total);
+            
+                    //
+                    //var cambio_cobro = parseFloat(apex.item( "P170_TIP_CAMBIO" ).getValue().replace(',', '.'));
+                    //total_importe = total_importe/cambio_cobro;
+                    //apex.item( "P170_TOTAL" ).setValue(total);
+                    //apex.item( "P170_IMPORTE" ).setValue(total_importe);
+                    //$s("P170_TOTAL", total);
+                    //$s("P170_IMPORTE", total_importe);
+                    //$s("P170_IMPORTE", total_importe.toString());
+                }
+            
+                $(function() {
+                   
+                    $("#det").on("interactivegridviewmodelcreate", function(event, ui) {
+                        var sid,
+                            model = ui.model;
+            
+                        if ( ui.viewId === "grid" ) {
+                            sid = model.subscribe( {
+                                onChange: function(type, change) {
+                                    console.log(">> model changed ", type, change);
+                                    if ( type === "set" ) {
+                                         if (change.field === "MONTO_REAL" ) {
+                                            update( model );
+                                        }
+                                    } else if (type !== "move" && type !== "metaChange") {
+                                      update( model );
+                                    }
+                                },
+                                progressView: $("#P208_MONTO_TOTAL")
+                            } );
+                             update( model );           
+                            model.fetchAll(function() {});
+                        }
+                    });
+                });
+            })(apex.jQuery);
+            ```
+        executeWhenPageLoads:
+            ```javascript-browser
+            document.getElementById("P208_ID_SUCURSAL").readOnly = true;
+            document.getElementById("P208_SUCURSAL_DESC").readOnly = true;
+            document.getElementById("P208_CAJA_DESC").readOnly = true;
+            document.getElementById("P208_NRO_HABILITACION").readOnly = true;
+            document.getElementById("P208_COD_USUARIO_AUD").readOnly = true;
+            document.getElementById("P208_FEC_HABILITACION").readOnly = true;
+            document.getElementById("P208_HORA_HABILITACION").readOnly = true;
+            document.getElementById("P208_FEC_CIERRE").readOnly = true;
+            document.getElementById("P208_HORA_CIERRE").readOnly = true;
+            document.getElementById("P208_MONTO_TOTAL").readOnly = true;
+            ```
+    }
+    css {
+        inline:
+            ```css
+            p{
+                font-family: "Arial", serif;
+                font-weight: bold;
+                font-size:11.5px;
+                color:#3f46bb;
+            }
+            
+            .cambio{
+                vertical-align: middle;
+                border-style: dashed;
+                border-width: thin;
+                border-color: #afa9a9;
+                background-color:#eeeeee;
+                pointer-events: none;
+            }
+            ```
+    }
+    security {
+        authorizationScheme: @derecho-pagina-3
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: dialogFooter
+        }
+        appearance {
+            template: @buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    region carga-de-habilitacion-de-cajas (
+        name: Carga de Habilitacion de Cajas
+        type: form
+        source {
+            location: localDatabase
+            tableName: CCW_HABILITACIONES
+        }
+        layout {
+            sequence: 20
+            slot: contentBody
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+                t-Form--noPadding
+                t-Form--stretchInputs
+            ]
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+        editAuthorization {
+            add: @derechos-insertar-2
+            update: @derechos-actualizar-2
+            delete: @derechos-borrar-2
+        }
+    )
+
+    region detalles-caja (
+        name: Detalles_Caja
+        type: interactiveGrid
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select ID,
+                       ID_EMPRESA,
+                       ID_HABILITACION,
+                       ID_SUBTIPO_TRANS,
+                       ID_MONEDA,
+                       TIPO_CAMBIO,
+                       CANTIDAD,
+                       MONTO_REAL,
+                       MONTO_SISTEMA,
+                       OBSERVACION,
+                       IND_VERIFICADO,
+                       COD_USUARIO_AUD,
+                       TIPO
+                  from CCW_HABILITACIONES_DETALLE
+                  where ID_HABILITACION = :P208_ID
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: contentBody
+        }
+        appearance {
+            template: @interactive-report
+            templateOptions: #DEFAULT#
+        }
+        advanced {
+            htmlDomId: det
+            regionDisplaySelector: true
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_HORA_CIERRE
+        }
+        componentAppearance {
+            selectFirstRow: false
+        }
+        pagination {
+            showTotalCount: false
+        }
+        toolbar {
+            show: false
+        }
+        download {
+            formats: [
+                csv
+                html
+                excel
+                pdf
+            ]
+        }
+        advanced {
+            savedReportMappingIdentifier: 29295823244351303
+        }
+
+        savedReport 293018 (
+            visibility: primary
+            view {
+                default: grid
+            }
+            singleRowView {
+                displayedColumns: true
+            }
+
+            displayColumn (
+                column: @ID
+                layout {
+                    sequence: 1
+                }
+            )
+
+            displayColumn (
+                column: @ID_EMPRESA
+                layout {
+                    sequence: 2
+                }
+            )
+
+            displayColumn (
+                column: @ID_HABILITACION
+                layout {
+                    sequence: 3
+                }
+            )
+
+            displayColumn (
+                column: @ID_SUBTIPO_TRANS
+                layout {
+                    sequence: 4
+                }
+            )
+
+            displayColumn (
+                column: @ID_MONEDA
+                layout {
+                    sequence: 5
+                }
+            )
+
+            displayColumn (
+                column: @TIPO_CAMBIO
+                layout {
+                    sequence: 6
+                }
+            )
+
+            displayColumn (
+                column: @CANTIDAD
+                layout {
+                    sequence: 7
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_REAL
+                layout {
+                    sequence: 8
+                }
+            )
+
+            displayColumn (
+                column: @MONTO_SISTEMA
+                layout {
+                    sequence: 9
+                }
+            )
+
+            displayColumn (
+                column: @OBSERVACION
+                layout {
+                    sequence: 10
+                }
+            )
+
+            displayColumn (
+                column: @IND_VERIFICADO
+                layout {
+                    sequence: 11
+                }
+            )
+
+            displayColumn (
+                column: @COD_USUARIO_AUD
+                layout {
+                    sequence: 12
+                }
+            )
+
+            displayColumn (
+                column: @TIPO
+                layout {
+                    sequence: 13
+                }
+            )
+
+        )
+
+        column CANTIDAD (
+            type: hidden
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: CANTIDAD
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column COD_USUARIO_AUD (
+            type: hidden
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: COD_USUARIO_AUD
+                dataType: varchar2
+            }
+            default {
+                type: expression
+                plsqlExpression: :APP_USER
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID (
+            type: hidden
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: ID
+                dataType: number
+                primaryKey: true
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_EMPRESA (
+            type: hidden
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: ID_EMPRESA
+                dataType: number
+            }
+            default {
+                type: expression
+                plsqlExpression: :P0_COD_EMPRESA
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_HABILITACION (
+            type: hidden
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: ID_HABILITACION
+                dataType: number
+            }
+            default {
+                type: item
+                item: P208_ID
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column ID_MONEDA (
+            type: selectList
+            heading {
+                heading: <p>Moneda</p>
+            }
+            lov {
+                type: sharedComponent
+                lov: @bsw-monedas-cod-moneda
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: ID_MONEDA
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column ID_SUBTIPO_TRANS (
+            type: selectList
+            heading {
+                heading: <p>Subtipo Transacción</p>
+            }
+            lov {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT '('||SUBTIPO_TRANS||') ' || DESCRIPCION, ID
+                    FROM BSW_SUBTIPOS_TRANS
+                    WHERE ID_TIPO_TRANS = :P208_ID_TRANS
+                    ORDER BY length(SUBTIPO_TRANS), SUBTIPO_TRANS
+                    ```
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: ID_SUBTIPO_TRANS
+                dataType: number
+            }
+            columnFilter {
+                performanceImpactingOperators: [
+                    contains
+                    startsWith
+                    caseInsensitive
+                    regexp
+                ]
+                lovType: useLov
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column IND_VERIFICADO (
+            type: hidden
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: IND_VERIFICADO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column MONTO_REAL (
+            type: numberField
+            heading {
+                heading: <p>Monto Real</p>
+                alignment: end
+            }
+            settings {
+                numberAlignment: end
+                virtualKeyboard: text
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G999G999G990
+            }
+            source {
+                databaseColumn: MONTO_REAL
+                dataType: number
+            }
+            columnFilter {
+                lovType: none
+            }
+            enableUsersTo {
+                hide: false
+            }
+        )
+
+        column MONTO_SISTEMA (
+            type: hidden
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: MONTO_SISTEMA
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column OBSERVACION (
+            type: hidden
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: OBSERVACION
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO (
+            type: hidden
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: TIPO
+                dataType: varchar2
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        column TIPO_CAMBIO (
+            type: hidden
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: TIPO_CAMBIO
+                dataType: number
+            }
+            exportPrinting {
+                includeInExportPrint: false
+            }
+        )
+
+        page {
+            size: a4
+            units: millimeters
+            width: 297
+            height: 210
+            borderWidth: 0.5
+            borderColor: #666666
+        }
+        pageHeader {
+            pageHeaderText: Detalles_Caja
+        }
+    )
+
+    region total (
+        name: Total
+        type: staticContent
+        layout {
+            sequence: 10
+            parentRegion: @detalles-caja
+            slot: subRegions
+        }
+        appearance {
+            template: @title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+    )
+
+    pageItem P208_CAJA_DESC (
+        type: textField
+        label {
+            label: <p>Caja Descripción:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 40
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: cambio
+        }
+    )
+
+    pageItem P208_COD_SECTOR_VEN (
+        type: hidden
+        layout {
+            sequence: 200
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: COD_SECTOR_VEN
+            dataType: varchar2
+        }
+    )
+
+    pageItem P208_COD_USUARIO (
+        type: textField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Cód. Usuario Asignado:</a>
+            alignment: left
+        }
+        layout {
+            sequence: 90
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P208_COD_USUARIO_AUD (
+        type: textField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Alta por:</a>
+            alignment: left
+        }
+        layout {
+            sequence: 80
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            valueRequired: true
+            maxLength: 10
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: COD_USUARIO_AUD
+            dataType: varchar2
+        }
+        default {
+            type: expression
+            plsqlExpression: :APP_USER
+        }
+    )
+
+    pageItem P208_ESTADO (
+        type: hidden
+        layout {
+            sequence: 160
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: ESTADO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P208_FEC_ALTA (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 190
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: FEC_ALTA
+            dataType: date
+        }
+    )
+
+    pageItem P208_FEC_CIERRE (
+        type: datePicker
+        label {
+            label: <p>Fecha Cierre:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 140
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: FEC_CIERRE
+            dataType: date
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_FEC_CIERRE
+        }
+    )
+
+    pageItem P208_FEC_HABILITACION (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 100
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: FEC_HABILITACION
+            dataType: date
+        }
+        default {
+            type: expression
+            plsqlExpression: sysdate
+        }
+    )
+
+    pageItem P208_HORA_CIERRE (
+        type: textField
+        label {
+            label: <p>Hora Cierre:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 150
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        validation {
+            maxLength: 10
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: HORA_CIERRE
+            dataType: varchar2
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_HORA_CIERRE
+        }
+    )
+
+    pageItem P208_HORA_HABILITACION (
+        type: hidden
+        layout {
+            sequence: 110
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: HORA_HABILITACION
+            dataType: varchar2
+        }
+        default {
+            type: functionBody
+            plsqlFunctionBody: return to_char(sysdate, 'HH24:MI:SS');
+        }
+    )
+
+    pageItem P208_ID (
+        type: hidden
+        layout {
+            sequence: 170
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: ID
+            dataType: number
+            primaryKey: true
+        }
+        default {
+            type: sequence
+            sequence: CCW_HABILITACIONES_ID_SEQ
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+
+    pageItem P208_ID_CAJA (
+        type: popupLov
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Caja:</a>
+            alignment: left
+        }
+        settings {
+            displayAs: modalDialog
+        }
+        lov {
+            type: sharedComponent
+            lov: @lv-cajeros
+        }
+        layout {
+            sequence: 30
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: ID_CAJA
+            dataType: number
+        }
+    )
+
+    pageItem P208_ID_EMPRESA (
+        type: hidden
+        layout {
+            sequence: 180
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: ID_EMPRESA
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_EMPRESA
+        }
+    )
+
+    pageItem P208_ID_SUCURSAL (
+        type: selectList
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Id Sucursal:</a>
+            alignment: left
+        }
+        lov {
+            type: sharedComponent
+            lov: @bsw-sucursales-cod-sucursal
+        }
+        layout {
+            sequence: 10
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            height: 1
+        }
+        validation {
+            valueRequired: true
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: ID_SUCURSAL
+            dataType: number
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_COD_SUCURSAL
+        }
+    )
+
+    pageItem P208_ID_TRANS (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @total
+            slot: regionBody
+        }
+        default {
+            type: expression
+            plsqlExpression: W_BUSCA_PARAMETRO('CC','TIPO_TRANS_CAJ')
+        }
+    )
+
+    pageItem P208_ID_USUARIO (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 120
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: ID_USUARIO
+            dataType: number
+        }
+        default {
+            type: sqlQuerySingleValue
+            sqlQuerySingleValue:
+                ```sql
+                SELECT ID
+                FROM BSW_USUARIOS
+                WHERE COD_USUARIO = :APP_USER
+                ```
+        }
+    )
+
+    pageItem P208_IND_DEPOSITO (
+        type: hidden
+        layout {
+            sequence: 210
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: IND_DEPOSITO
+            dataType: varchar2
+        }
+    )
+
+    pageItem P208_MONTO_TOTAL (
+        type: numberField
+        label {
+            label: <p>Total:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 30
+            region: @total
+            slot: regionBody
+            alignment: left
+            column: 10
+            columnSpan: 3
+            labelColumnSpan: 1
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 30
+        }
+        advanced {
+            cssClasses: cambio
+        }
+    )
+
+    pageItem P208_NRO_HABILITACION (
+        type: numberField
+        label {
+            label: <a style=" color:#3f46bb; font-weight:bold;">Nro. Habilitacion:</a>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 70
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @required
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+            maxLength: 255
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: NRO_HABILITACION
+            dataType: number
+        }
+    )
+
+    pageItem P208_SALDO_CIERRE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 60
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+        }
+    )
+
+    pageItem P208_SALDO_INICIAL (
+        type: numberField
+        label {
+            label: <p>Saldo Inicial:</p>
+            alignment: left
+        }
+        settings {
+            numberAlignment: end
+            virtualKeyboard: text
+        }
+        layout {
+            sequence: 50
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            formatMask: 999G999G999G999G999G999G990
+            width: 32
+        }
+        validation {
+            maxLength: 255
+        }
+        source {
+            formRegion: @carga-de-habilitacion-de-cajas
+            column: SALDO_INICIAL
+            dataType: number
+        }
+        readOnly {
+            type: item=value
+            item: P208_ESTADO
+            value: N
+        }
+    )
+
+    pageItem P208_SUCURSAL_DESC (
+        type: textField
+        label {
+            label: <p>Sucursal Descripción:</p>
+            alignment: left
+        }
+        layout {
+            sequence: 20
+            region: @carga-de-habilitacion-de-cajas
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+            columnSpan: 6
+            labelColumnSpan: 3
+        }
+        appearance {
+            template: @optional
+            templateOptions: #DEFAULT#
+            width: 30
+        }
+        advanced {
+            cssClasses: cambio
+        }
+        default {
+            type: expression
+            plsqlExpression: :P0_DESC_SUCURSAL
+        }
+    )
+
+    button anular-cierre (
+        buttonName: ANULAR_CIERRE
+        label: Anular Cierre
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa fa-reply
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_HORA_CIERRE
+        }
+    )
+
+    button cancel (
+        buttonName: CANCEL
+        label: Cancelar
+        layout {
+            sequence: 10
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: definedByDynamicAction
+        }
+    )
+
+    button create (
+        buttonName: CREATE
+        label: Habilitar
+        layout {
+            sequence: 40
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: "	fa fa-check"
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P208_ID
+        }
+        security {
+            authorizationScheme: @derechos-insertar-2
+        }
+    )
+
+    button delete (
+        buttonName: DELETE
+        label: Borrar
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @text
+            templateOptions: #DEFAULT#
+            cssClasses: t-Button--danger
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+            style: danger
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_ID
+        }
+        security {
+            authorizationScheme: @derechos-borrar-2
+        }
+        config {
+            buildOption: @comentado
+        }
+    )
+
+    button save (
+        buttonName: SAVE
+        label: Aplicar Cambios
+        layout {
+            sequence: 20
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @text-with-icon
+            hot: true
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-save
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_ID
+        }
+        security {
+            authorizationScheme: @derechos-actualizar-2
+        }
+    )
+
+    dynamicAction cancel-dialog (
+        name: Cancel Dialog
+        execution {
+            sequence: 20
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @cancel
+        }
+
+        action native-dialog-cancel (
+            action: cancelDialog
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cargar-valor-caja-desc (
+        name: Cargar Valor Caja_Desc
+        execution {
+            sequence: 30
+        }
+        when {
+            selectionType: items
+            items: P208_ID_CAJA
+        }
+
+        action set-desc-caja (
+            name: SET DESC CAJA
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select descripcion from ccw_cajas
+                    where id = :p208_id_caja
+                    ```
+                itemsToSubmit: P208_ID_CAJA
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P208_CAJA_DESC
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+        action set-sucursal (
+            name: SET SUCURSAL
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT F.ID_SUCURSAL 
+                    FROM CCW_CAJAS F
+                    WHERE F.ID = :P208_ID_CAJA
+                      AND F.ID_EMPRESA = :P0_ID_EMPRESA
+                    ```
+                itemsToSubmit: [
+                    P0_ID_EMPRESA
+                    P208_ID_CAJA
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P208_ID_SUCURSAL
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+
+        action set-usuario (
+            name: SET USUARIO
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT F.ID_USUARIO_ASIG 
+                    FROM CCW_CAJAS F
+                    WHERE F.ID = :P208_ID_CAJA
+                      AND F.ID_EMPRESA = :P0_ID_EMPRESA
+                    ```
+                itemsToSubmit: [
+                    P0_ID_EMPRESA
+                    P208_ID_CAJA
+                ]
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P208_ID_USUARIO
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction cod-usuario (
+        name: Cod usuario
+        execution {
+            sequence: 40
+        }
+        when {
+            selectionType: items
+            items: P208_ID_USUARIO
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT U.COD_USUARIO
+                    FROM BSW_USUARIOS U
+                    WHERE U.ID = :P208_ID_USUARIO
+                    ```
+                itemsToSubmit: P208_ID_USUARIO
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P208_COD_USUARIO
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction desc-sucursal (
+        name: Desc sucursal
+        execution {
+            sequence: 50
+        }
+        when {
+            selectionType: items
+            items: P208_ID_SUCURSAL
+        }
+
+        action native-set-value (
+            action: setValue
+            settings {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    SELECT SU.DESCRIPCION
+                    FROM BSW_SUCURSALES SU
+                    WHERE SU.ID = :P208_ID_SUCURSAL
+                    ```
+                itemsToSubmit: P208_ID_SUCURSAL
+                escapeSpecialChars: false
+            }
+            affectedElements {
+                selectionType: items
+                items: P208_SUCURSAL_DESC
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    dynamicAction limpiar-fec-hora-cierre (
+        name: Limpiar_Fec_Hora_Cierre
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: button
+            button: @anular-cierre
+        }
+
+        action native-set-value (
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: [
+                    P208_FEC_CIERRE
+                    P208_HORA_CIERRE
+                ]
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+
+    )
+
+    computation p208-caja-desc (
+        itemName: P208_CAJA_DESC
+        execution {
+            sequence: 30
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION FROM CCW_CAJAS
+                WHERE ID = :P208_ID_CAJA
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_ID
+        }
+    )
+
+    computation p208-nro-habilitacion (
+        itemName: P208_NRO_HABILITACION
+        execution {
+            sequence: 10
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT 
+                    CASE WHEN MAX(TO_CHAR(NRO_HABILITACION)) IS NULL THEN 1 ELSE MAX(TO_CHAR(NRO_HABILITACION)+1) END
+                FROM CCW_HABILITACIONES
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P208_NRO_HABILITACION
+        }
+    )
+
+    computation p208-sucursal-desc (
+        itemName: P208_SUCURSAL_DESC
+        execution {
+            sequence: 20
+        }
+        computation {
+            sqlQuery:
+                ```sql
+                SELECT DESCRIPCION FROM BSW_SUCURSALES
+                WHERE ID = :P208_ID_SUCURSAL
+                ```
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P208_ID
+        }
+    )
+
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            showSuccessMessages: false
+        }
+        execution {
+            sequence: 80
+        }
+        advanced {
+            executionMappingIdentifier: 24959861298701079
+        }
+        serverSideCondition {
+            type: requestIsContainedInValue
+            value: CREATE,SAVE,DELETE
+        }
+    )
+
+    process initialize-form-carga-de-habilitacion-de-cajas (
+        name: Initialize form Carga de Habilitacion de Cajas
+        type: formInitialization
+        formRegion: @carga-de-habilitacion-de-cajas
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+        advanced {
+            executionMappingIdentifier: 24959023050701079
+        }
+    )
+
+    process process-form-carga-de-habilitacion-de-cajas (
+        name: Process form Carga de Habilitacion de Cajas
+        type: formAutoRowProcessing
+        formRegion: @carga-de-habilitacion-de-cajas
+        execution {
+            sequence: 10
+        }
+        advanced {
+            executionMappingIdentifier: 24959460344701079
+        }
+    )
+
+)
+

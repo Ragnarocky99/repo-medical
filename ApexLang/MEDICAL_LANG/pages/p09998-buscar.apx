@@ -1,0 +1,71 @@
+page 9998 (
+    name: Buscar
+    alias: BUSCAR
+    title: Buscar
+    appearance {
+        pageTemplate: @standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+
+    pageItem P9998_NEW (
+        type: hidden
+        layout {
+            sequence: 30
+            slot: body
+        }
+    )
+
+    dynamicAction buscador (
+        name: Buscador
+        execution {
+            sequence: 10
+        }
+        when {
+            event: click
+            selectionType: items
+            items: P9998_NEW
+        }
+
+        action plugin-de-danielh-apexspotlight (
+            action: plugin/apexSpotlightSearch
+            settings {
+                dataSourceSql:
+                    ```sql
+                    SELECT aap.page_id||' - '||aap.page_title AS title
+                          ,M.DESCRIPCION || '  >' || aap.page_title AS description
+                          ,apex_page.get_url(p_page => aap.page_id) AS link
+                          ,'fa-arrow-right' AS icon
+                      FROM apex_application_pages aap,bsw_acceso_por_grupos_apex a,bsw_formas_paginas f,bsw_modulos m
+                     WHERE aap.application_id = :app_id
+                       AND aap.page_mode = 'Normal'
+                       AND aap.page_requires_authentication = 'Yes'
+                       AND aap.page_id != 0
+                       AND F.PAGE_NO=aap.page_id
+                       AND A.ID_GRUPO=:P0_GRUPO_USUARIO
+                       AND F.NAV_ID IN (SELECT PAGINA_ID
+                                                FROM BSW_ACCESO_POR_GRUPOS_APEX
+                                               WHERE ID_GRUPO = :P0_GRUPO_USUARIO)
+                       AND A.PAGINA_ID=F.NAV_ID
+                       AND F.MOSTRAR_MENU='S'
+                       AND F.ID_MODULO=M.ID
+                     ORDER BY aap.page_id
+                    
+                    ```
+                enableInPageSearch: false
+            }
+            execution {
+                sequence: 10
+            }
+        )
+
+    )
+
+)
+
